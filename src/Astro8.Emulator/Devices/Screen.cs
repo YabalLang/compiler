@@ -7,57 +7,35 @@ using static SDL2.SDL.SDL_WindowFlags;
 using static SDL2.SDL.SDL_RendererFlags;
 using static SDL2.SDL.SDL_TextureAccess;
 
-public record struct ScreenColor(uint Value)
+public record struct ScreenColor(int Value)
 {
-    public static readonly ScreenColor White = new(0xFFFFFFFF);
-    public static readonly ScreenColor Black = new(0xFF000000);
+    public static readonly ScreenColor White = new(0xFFFF);
+    public static readonly ScreenColor Black = new(0x0000);
 
-    public static implicit operator ScreenColor(uint value) => new(value);
-    public static implicit operator ScreenColor(Color value) => new((uint)value.ToArgb());
+    public static implicit operator ScreenColor(int value) => new(value);
 }
 
 public class Screen : IDisposable, IMemoryDevice
 {
     private readonly int _pixelScale;
-    private readonly uint[] _data;
+    private readonly uint[] _textureData;
     private bool _dirty;
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _texture;
+    private readonly object _lock = new();
 
     public Screen(int width = 64, int height = 64, int pixelScale = 9)
     {
         Width = width;
         Height = height;
         _pixelScale = pixelScale;
-        _data = new uint[width * height];
+        _textureData = new uint[width * height];
     }
 
     public int Width { get; }
 
     public int Height { get; }
-
-    public ScreenColor this[int index]
-    {
-        get => Color.FromArgb((int) _data[index]);
-        set
-        {
-            var argb = value.Value;
-            var span = _data.AsSpan();
-
-            if (span[index] != argb)
-            {
-                span[index] = argb;
-                _dirty = true;
-            }
-        }
-    }
-
-    public ScreenColor this[int x, int y]
-    {
-        get => this[x + y * Width];
-        set => this[x + y * Width] = value;
-    }
 
     public bool Init()
     {
@@ -80,7 +58,7 @@ public class Screen : IDisposable, IMemoryDevice
             return false;
         }
 
-        _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
+        _renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
         if (_renderer == IntPtr.Zero)
         {
@@ -100,7 +78,7 @@ public class Screen : IDisposable, IMemoryDevice
 
         _texture = SDL_CreateTexture(
             _renderer,
-            SDL_PIXELFORMAT_ARGB8888,
+            SDL_PIXELFORMAT_RGBA8888,
             (int) SDL_TEXTUREACCESS_STREAMING,
             Width,
             Height
@@ -147,15 +125,18 @@ public class Screen : IDisposable, IMemoryDevice
     {
         int result;
 
-        fixed (uint* p = _data)
+        lock (_lock)
         {
-            result = SDL_UpdateTexture
-            (
-                _texture,
-                default,
-                (IntPtr)p,
-                Width * sizeof(uint)
-            );
+            fixed (uint* p = _textureData)
+            {
+                result = SDL_UpdateTexture
+                (
+                    _texture,
+                    default,
+                    (IntPtr) p,
+                    Width * sizeof(uint)
+                );
+            }
         }
 
         if (result != 0)
@@ -163,6 +144,7 @@ public class Screen : IDisposable, IMemoryDevice
             throw new Exception("SDL_UpdateTexture failed");
         }
 
+        _dirty = false;
         UpdateTexture();
     }
 
@@ -178,22 +160,47 @@ public class Screen : IDisposable, IMemoryDevice
         ReleaseUnmanagedResources();
     }
 
-    int IMemoryDevice.Length => _data.Length;
+    int IMemoryDevice.Length => _textureData.Length;
 
-    public void Write(int address, int value)
+    public void Initialize(Memory memory, Span<int> span)
     {
-        var argb = unchecked((uint) value);
-        var span = _data.AsSpan();
-
-        if (span[address] != argb)
+        for (var i = 0; i < span.Length; i++)
         {
-            span[address] = argb;
+            _textureData[i] = GetRgba(span[i]);
+        }
+
+        _dirty = true;
+    }
+
+    public void Write(Memory memory, int address, int value)
+    {
+        if (address < 0 || address >= _textureData.Length)
+        {
+            return;
+        }
+
+        var rgba = GetRgba(value);
+
+        if (_textureData[address] == rgba)
+        {
+            return;
+        }
+
+        lock (_lock)
+        {
+            _textureData[address] = rgba;
             _dirty = true;
         }
     }
 
-    public int Read(int address)
+    private static uint GetRgba(int value)
     {
-        return unchecked((int) _data[address]);
+        var r = Instruction.BitRange(value, 10, 5) * 8; // Get first 5 bits
+        var g = Instruction.BitRange(value, 5, 5) * 8; // get middle bits
+        var b = Instruction.BitRange(value, 0, 5) * 8; // Gets last 5 bits
+        const int a = 255;
+
+        var rgba = (uint) (r << 24 | g << 16 | b << 8 | a);
+        return rgba;
     }
 }

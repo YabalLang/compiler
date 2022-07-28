@@ -7,17 +7,16 @@ public static class HexFile
     public static IEnumerable<int> LoadFile(string path)
     {
         using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var reader = new StreamReader(stream);
 
-        foreach (var value in Load(stream))
+        foreach (var value in Load(reader))
         {
             yield return value;
         }
     }
 
-    public static IEnumerable<int> Load(Stream stream)
+    public static IEnumerable<int> Load(TextReader reader)
     {
-        using var reader = new StreamReader(stream);
-
         CheckHeader(reader);
 
         while (reader.ReadLine() is { } line)
@@ -44,10 +43,13 @@ public static class HexFile
 
                     if (end == -1)
                     {
-                        end = line.Length;
+                        end = value.Length;
+                    }
+                    else
+                    {
+                        end += 1;
                     }
 
-                    end += 1;
                     i += end;
 
                     if (!int.TryParse(value[..end], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result))

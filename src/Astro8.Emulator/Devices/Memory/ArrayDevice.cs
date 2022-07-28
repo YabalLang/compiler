@@ -11,13 +11,8 @@ public class ArrayDevice : IMemoryDevice
 
     public int Length => _array.Length;
 
-    public void Write(int address, int value)
+    public void Initialize(Memory memory, Span<int> span)
     {
-        _array[address] = value;
-    }
-
-    public int Read(int address)
-    {
-        return _array[address];
+        _array.AsSpan().CopyTo(span);
     }
 }

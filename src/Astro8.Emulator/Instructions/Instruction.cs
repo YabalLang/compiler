@@ -32,6 +32,7 @@ public readonly record struct Instruction(int Raw)
     public const int OUT = 24;
 
     private readonly int _microInstructionId = BitRange(Raw, 11, 5);
+    private readonly int _data = BitRange(Raw, 0, 11);
 
     public int MicroInstructionId
     {
@@ -41,7 +42,7 @@ public readonly record struct Instruction(int Raw)
 
     public int Data
     {
-        get => BitRange(Raw, 0, 11);
+        get => _data;
         init => Raw = (MicroInstructionId << 11) | value;
     }
 
@@ -78,7 +79,7 @@ public readonly record struct Instruction(int Raw)
         };
     }
 
-    private static int BitRange(int value, int offset, int n)
+    public static int BitRange(int value, int offset, int n)
     {
         value >>= offset;
         var mask = (1 << n) - 1;

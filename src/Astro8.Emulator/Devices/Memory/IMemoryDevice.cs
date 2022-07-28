@@ -4,7 +4,16 @@ public interface IMemoryDevice
 {
     int Length { get; }
 
-    void Write(int address, int value);
+    void Initialize(Memory memory, Span<int> span)
+    {
+    }
 
-    int Read(int address);
+    void Write(Memory memory, int address, int value)
+    {
+    }
+
+    int Read(Memory memory, Span<int> span, int address)
+    {
+        return span[address];
+    }
 }

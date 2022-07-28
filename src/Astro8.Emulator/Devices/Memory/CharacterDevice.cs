@@ -28,7 +28,6 @@ public class CharacterDevice : IMemoryDevice
     }
 
     private readonly Screen _screen;
-    private readonly int[] _memory;
     private readonly int _width;
     private readonly int _height;
 
@@ -37,26 +36,21 @@ public class CharacterDevice : IMemoryDevice
         _screen = screen;
         _width = screen.Width / RenderWidth;
         _height = screen.Height / RenderWidth;
-
-        var size = (int)Math.Ceiling((double) screen.Width / RenderWidth * screen.Height / RenderWidth);
-        _memory = new int[size];
+        Length = (int)Math.Ceiling((double) screen.Width / RenderWidth * screen.Height / RenderWidth);
     }
 
-    public int this[int x, int y]
-    {
-        get => _memory[x + y * _width];
-        set => Write(x + y * _width, value);
-    }
+    public int Length { get; }
 
-    public int Length => _memory.Length;
-
-    public void Write(int address, int value)
+    public void Write(Memory memory, int address, int value)
     {
+        if (!memory.TryFindMapping(_screen, out var screenMapping))
+        {
+            return;
+        }
+
         var characterOffset = value * FontSize;
         var screenX = address % _width * RenderWidth;
         var screenY = address / _height * RenderHeight;
-
-        _memory[address] = value;
 
         for (var i = 0; i < FontSize; i++)
         {
@@ -74,13 +68,15 @@ public class CharacterDevice : IMemoryDevice
                 continue;
             }
 
-            var color = CharacterRom[characterOffset + i] ? ScreenColor.White : ScreenColor.Black;
-            _screen[screenX + x, screenY + y] = color;
-        }
-    }
+            var offset = characterOffset + i;
 
-    public int Read(int address)
-    {
-        return _memory[address];
+            if (offset < 0 || offset >= CharacterRom.Length)
+            {
+                continue;
+            }
+
+            var color = CharacterRom[offset] ? ScreenColor.White : ScreenColor.Black;
+            screenMapping.Write(screenX + x + ((screenY + y) * _screen.Width), color.Value);
+        }
     }
 }

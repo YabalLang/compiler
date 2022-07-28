@@ -1,0 +1,40 @@
+﻿{
+  "Cpu": {
+    // Max tick speed of the CPU
+    "TickSpeed": 5
+  },
+
+  "Program": {
+    "Path": "program_machine_code",
+    "Size": "0x3FFE"
+  },
+
+  "Screen": {
+    // Note: changing the resolution will also resize the memory allocation of the screen and character device.
+    "Width": 64,
+    "Height": 64,
+
+    "Scale": 9
+  },
+
+  "Memory": {
+    // Max amount of memory in bytes.
+    "Size": "0xFFFF",
+
+    // Mapping of device in memory.
+    "Devices": [
+      {
+        "Type": "Program",
+        "Address": "0x0000"
+      },
+      {
+        "Type": "Character",
+        "Address": "0x3FFE"
+      },
+      {
+        "Type": "Screen",
+        "Address": "0xEFFF"
+      }
+    ]
+  }
+}
