@@ -4,7 +4,7 @@ public interface IMemoryDevice
 {
     int Length { get; }
 
-    void Initialize(Memory memory, Span<int> span)
+    void Initialize(Memory memory, Span<int> span, bool isState)
     {
     }
 

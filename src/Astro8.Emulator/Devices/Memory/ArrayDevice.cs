@@ -11,8 +11,11 @@ public class ArrayDevice : IMemoryDevice
 
     public int Length => _array.Length;
 
-    public void Initialize(Memory memory, Span<int> span)
+    public void Initialize(Memory memory, Span<int> span, bool isState)
     {
-        _array.AsSpan().CopyTo(span);
+        if (!isState)
+        {
+            _array.AsSpan().CopyTo(span);
+        }
     }
 }

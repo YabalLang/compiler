@@ -1,8 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using PointerOrData = Astro8.Either<Astro8.InstructionPointer, int>;
 
 namespace Astro8;
 
-public readonly struct Either<TLeft, TRight>
+public readonly struct Either<TLeft, TRight> : IEquatable<Either<TLeft, TRight>>
     where TLeft : notnull
     where TRight : notnull
 {
@@ -34,19 +36,67 @@ public readonly struct Either<TLeft, TRight>
 
     public static implicit operator Either<TLeft, TRight>(TLeft left) => new(left);
     public static implicit operator Either<TLeft, TRight>(TRight right) => new(right);
+
+    public override string? ToString()
+    {
+        return IsRight ? Right.ToString() : Left.ToString();
+    }
+
+    public bool Equals(Either<TLeft, TRight> other)
+    {
+        return IsRight == other.IsRight &&
+               EqualityComparer<TRight?>.Default.Equals(Right, other.Right) &&
+               EqualityComparer<TLeft?>.Default.Equals(Left, other.Left);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Either<TLeft, TRight> other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(IsRight, Right, Left);
+    }
+
+    public static bool operator ==(Either<TLeft, TRight> left, Either<TLeft, TRight> right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(Either<TLeft, TRight> left, Either<TLeft, TRight> right)
+    {
+        return !left.Equals(right);
+    }
 }
 
-public class InstructionLabel
+public class InstructionPointer
+{
+    private readonly InstructionBuilder _builder;
+
+    public InstructionPointer(InstructionBuilder builder, string? name)
+    {
+        Name = name;
+        _builder = builder;
+    }
+
+    public string? Name { get; }
+
+    public override string? ToString()
+    {
+        return $":{Name}";
+    }
+}
+
+public class InstructionLabel : InstructionPointer
 {
     private readonly InstructionBuilder _builder;
 
     public InstructionLabel(InstructionBuilder builder, string? name)
+        : base(builder, name)
     {
         _builder = builder;
-        Name = name;
     }
-
-    public string? Name { get; }
 
     public void Mark()
     {
@@ -56,118 +106,207 @@ public class InstructionLabel
 
 public class InstructionBuilder
 {
-    private record struct InstructionItem(Instruction Instruction, InstructionLabel? Label);
+    private int _referenceCount;
+    private int _labelCount;
 
-    private readonly List<Either<InstructionLabel, InstructionItem>> _instructions = new();
+    private record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label)
+    {
+        public override string? ToString()
+        {
+            if (Instruction is null)
+            {
+                return $"@{Label?.Name}";
+            }
 
-    public int Count => _instructions.Count;
+            if (Label is null)
+            {
+                return Instruction?.ToString();
+            }
+
+            return $"{Instruction} @{Label.Name}";
+        }
+    }
+
+    private readonly List<Either<InstructionPointer, InstructionItem>> _instructions = new();
 
     public InstructionLabel CreateLabel(string? name = null)
     {
-        return new InstructionLabel(this, name);
+        return new InstructionLabel(this, name ?? $"Label {_labelCount++}");
     }
 
-    public void Mark(InstructionLabel label)
+    public InstructionBuilder CreateLabel(string name, out InstructionLabel label)
     {
-        _instructions.Add(label);
+        label = CreateLabel(name);
+        return this;
     }
 
-    public InstructionBuilder Emit(int id, int data = 0)
+    public InstructionBuilder CreateLabel(out InstructionLabel label)
     {
-        if (id > Instruction.MaxInstructionId)
+        label = CreateLabel();
+        return this;
+    }
+
+    public InstructionPointer CreatePointer()
+    {
+        if (_instructions.Count > 1 && _instructions[^2] is {Left: { } pointer})
+        {
+            return pointer;
+        }
+
+        pointer = new InstructionPointer(this, $"pointer {_referenceCount++}");
+        _instructions.Insert(_instructions.Count - 1, pointer);
+        return pointer;
+    }
+
+    public InstructionBuilder CreatePointer(out InstructionPointer pointer)
+    {
+        pointer = CreatePointer();
+        return this;
+    }
+
+    public InstructionBuilder Mark(InstructionLabel pointer)
+    {
+        _instructions.Add(pointer);
+        return this;
+    }
+
+    public InstructionBuilder Emit(int id, int data = 0, int? index = null)
+    {
+        if (id > InstructionReference.MaxInstructionId)
         {
             throw new ArgumentOutOfRangeException(nameof(id));
         }
 
-        if (data > Instruction.MaxDataLength)
+        if (data > InstructionReference.MaxDataLength)
         {
             throw new ArgumentOutOfRangeException(nameof(data));
         }
 
-        _instructions.Add(new InstructionItem(Instruction.Create(id, data), null));
+        var value = new InstructionItem(InstructionReference.Create(id, data), null);
+
+        if (index.HasValue)
+        {
+            _instructions.Insert(index.Value, value);
+        }
+        else
+        {
+            _instructions.Add(value);
+        }
+
         return this;
     }
 
-    public InstructionBuilder Emit(int id, InstructionLabel label)
+    public InstructionBuilder Emit(int id, InstructionPointer pointer, int? index = null)
     {
-        _instructions.Add(new InstructionItem(Instruction.Create(id), label));
+        var value = new InstructionItem(InstructionReference.Create(id), pointer);
+
+        if (index.HasValue)
+        {
+            _instructions.Insert(index.Value, value);
+        }
+        else
+        {
+            _instructions.Add(value);
+        }
+
         return this;
     }
 
-    public InstructionBuilder EmitRaw(int value)
+    public InstructionBuilder Emit(int id, PointerOrData either, int? index = null)
     {
-        _instructions.Add(new InstructionItem(value, null));
+        if (either.IsRight)
+        {
+            Emit(id, either.Right, index);
+        }
+        else
+        {
+            Emit(id, either.Left, index);
+        }
+
         return this;
     }
 
-    public InstructionBuilder Nop() => Emit(Instruction.NOP);
-
-    public InstructionBuilder LoadA(int address) => Emit(Instruction.AIN, address);
-
-    public InstructionBuilder LoadB(int address) => Emit(Instruction.BIN, address);
-
-    public InstructionBuilder LoadC(int address) => Emit(Instruction.CIN, address);
-
-    public InstructionBuilder SetA(int value) => Emit(Instruction.LDIA, value);
-
-    public InstructionBuilder SetB(int value) => Emit(Instruction.LDIB, value);
-
-    public InstructionBuilder LoadB_FromExpansion() => Emit(Instruction.RDEXP);
-
-    public InstructionBuilder LoadA_FromExpansion() => Emit(Instruction.WREXP);
-
-    public InstructionBuilder StoreA(int address) => Emit(Instruction.STA, address);
-
-    public InstructionBuilder StoreC(int address) => Emit(Instruction.STC, address);
-
-    public InstructionBuilder Add() => Emit(Instruction.ADD);
-
-    public InstructionBuilder Sub() => Emit(Instruction.SUB);
-
-    public InstructionBuilder Mult() => Emit(Instruction.MULT);
-
-    public InstructionBuilder Div() => Emit(Instruction.DIV);
-
-    public InstructionBuilder Jump(int counter) => Emit(Instruction.JMP, counter);
-
-    public InstructionBuilder Jump(InstructionLabel counter) => Emit(Instruction.JMP, counter);
-
-    public InstructionBuilder JumpIfAZero(int counter) => Emit(Instruction.JMPZ, counter);
-
-    public InstructionBuilder JumpIfAZero(InstructionLabel counter) => Emit(Instruction.JMPZ, counter);
-
-    public InstructionBuilder JumpIfCarryBit(int counter) => Emit(Instruction.JMPC, counter);
-
-    public InstructionBuilder JumpIfCarryBit(InstructionLabel counter) => Emit(Instruction.JMPC, counter);
-
-    public InstructionBuilder LoadA() => Emit(Instruction.LDAIN);
-
-    public InstructionBuilder StoreB_ToAddressUsingA() => Emit(Instruction.STAOUT);
-
-    public InstructionBuilder StoreA_LargeAddress(int address)
+    public InstructionBuilder EmitRaw(PointerOrData value)
     {
-        Emit(Instruction.STLGE);
+        if (value.IsRight)
+        {
+            _instructions.Add(new InstructionItem(new InstructionReference(value.Right), null));
+        }
+        else
+        {
+            _instructions.Add(new InstructionItem(null, value.Left));
+        }
+
+        return this;
+    }
+
+    public InstructionBuilder Nop() => Emit(InstructionReference.NOP);
+
+    public InstructionBuilder LoadA(PointerOrData address) => Emit(InstructionReference.AIN, address);
+
+    public InstructionBuilder LoadB(PointerOrData address) => Emit(InstructionReference.BIN, address);
+
+    public InstructionBuilder LoadC(PointerOrData address) => Emit(InstructionReference.CIN, address);
+
+    public InstructionBuilder SetA(PointerOrData value) => Emit(InstructionReference.LDIA, value);
+
+    public InstructionBuilder SetB(PointerOrData value) => Emit(InstructionReference.LDIB, value);
+
+    public InstructionBuilder MovExpansionToA() => Emit(InstructionReference.RDEXP);
+
+    public InstructionBuilder MovAToExpansion() => Emit(InstructionReference.WREXP);
+
+    public InstructionBuilder StoreA(PointerOrData address) => Emit(InstructionReference.STA, address);
+
+    public InstructionBuilder StoreC(PointerOrData address) => Emit(InstructionReference.STC, address);
+
+    public InstructionBuilder Add() => Emit(InstructionReference.ADD);
+
+    public InstructionBuilder Sub() => Emit(InstructionReference.SUB);
+
+    public InstructionBuilder Mult() => Emit(InstructionReference.MULT);
+
+    public InstructionBuilder Div() => Emit(InstructionReference.DIV);
+
+    public InstructionBuilder Jump(PointerOrData counter) => Emit(InstructionReference.JMP, counter);
+
+    public InstructionBuilder Jump(InstructionPointer counter) => Emit(InstructionReference.JMP, counter);
+
+    public InstructionBuilder JumpIfAZero(PointerOrData counter) => Emit(InstructionReference.JMPZ, counter);
+
+    public InstructionBuilder JumpIfAZero(InstructionPointer counter) => Emit(InstructionReference.JMPZ, counter);
+
+    public InstructionBuilder JumpIfCarryBit(PointerOrData counter) => Emit(InstructionReference.JMPC, counter);
+
+    public InstructionBuilder JumpIfCarryBit(InstructionPointer counter) => Emit(InstructionReference.JMPC, counter);
+
+    public InstructionBuilder LoadA() => Emit(InstructionReference.LDAIN);
+
+    public InstructionBuilder StoreB_ToAddressUsingA() => Emit(InstructionReference.STAOUT);
+
+    public InstructionBuilder StoreA_Large(int address)
+    {
+        Emit(InstructionReference.STLGE);
         EmitRaw(address);
         return this;
     }
 
-    public InstructionBuilder LoadA_LargeAddress(int address)
+    public InstructionBuilder LoadA_Large(InstructionPointer address)
     {
-        Emit(Instruction.LDLGE);
+        Emit(InstructionReference.LDLGE);
         EmitRaw(address);
         return this;
     }
 
-    public InstructionBuilder SwapA_B() => Emit(Instruction.SWP);
+    public InstructionBuilder SwapA_B() => Emit(InstructionReference.SWP);
 
-    public InstructionBuilder SwapA_C() => Emit(Instruction.SWPC);
+    public InstructionBuilder SwapA_C() => Emit(InstructionReference.SWPC);
 
-    public InstructionBuilder Halt() => Emit(Instruction.HLT);
+    public InstructionBuilder Halt() => Emit(InstructionReference.HLT);
 
     public int[] ToArray()
     {
-        var array = new int[_instructions.Count];
-        var labels = new Dictionary<InstructionLabel, int>();
+        var labels = new Dictionary<InstructionPointer, int>();
         var i = 0;
 
         foreach (var either in _instructions)
@@ -182,6 +321,7 @@ public class InstructionBuilder
             }
         }
 
+        var array = new int[i];
         i = 0;
 
         foreach (var either in _instructions)
@@ -193,13 +333,27 @@ public class InstructionBuilder
 
             var (instruction, label) = either.Right;
 
-            if (label is null)
+            if (!instruction.HasValue)
             {
-                array[i] = instruction;
+                if (label is null)
+                {
+                    throw new InvalidOperationException("Invalid instruction");
+                }
+
+                if (!labels.TryGetValue(label, out var index))
+                {
+                    throw new InvalidOperationException("Label not found");
+                }
+
+                array[i] = index;
+            }
+            else if (label is null)
+            {
+                array[i] = instruction.Value;
             }
             else if (labels.TryGetValue(label, out var index))
             {
-                array[i] = instruction with
+                array[i] = instruction.Value with
                 {
                     Data = index
                 };
@@ -213,5 +367,22 @@ public class InstructionBuilder
         }
 
         return array;
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+
+        for (var i = 0; i < _instructions.Count; i++)
+        {
+            if (i > 0)
+            {
+                sb.AppendLine();
+            }
+
+            sb.Append(_instructions[i].ToString());
+        }
+
+        return sb.ToString();
     }
 }

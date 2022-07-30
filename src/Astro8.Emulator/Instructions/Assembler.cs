@@ -3,9 +3,9 @@
 public class Assembler
 {
     private readonly InstructionBuilder _builder;
-    private readonly int _varA;
-    private readonly int _varB;
-    private readonly int _varC;
+    private readonly InstructionPointer _tempA;
+    private readonly InstructionPointer _tempB;
+    private readonly InstructionPointer _tempC;
 
     public Assembler()
     {
@@ -13,9 +13,9 @@ public class Assembler
 
         var label = _builder.CreateLabel();
         _builder.Jump(label);
-        _varA = _builder.Nop().Count;
-        _varB = _builder.Nop().Count;
-        _varC = _builder.Nop().Count;
+        _tempA = _builder.Nop().CreatePointer();
+        _tempB = _builder.Nop().CreatePointer();
+        _tempC = _builder.Nop().CreatePointer();
         label.Mark();
     }
 
@@ -35,35 +35,47 @@ public class Assembler
     {
         if (target == "a")
         {
-            if (value == "b")
+            if (value == "a")
+            {
+                _builder.Nop();
+            }
+            else if (value == "b")
             {
                 // You can't store B directly to memory, so we have to swap values around.
-                _builder.StoreC(_varC);
+                _builder.StoreC(_tempC);
                 _builder.SwapA_B();
-                _builder.StoreA(_varA);
-                _builder.LoadB(_varA);
-                _builder.LoadC(_varC);
+                _builder.StoreA(_tempA);
+                _builder.LoadB(_tempA);
+                _builder.LoadC(_tempC);
             }
             else if (value == "c")
             {
-                _builder.StoreC(_varC);
-                _builder.LoadA(_varC);
+                _builder.StoreC(_tempC);
+                _builder.LoadA(_tempC);
             }
             else if (int.TryParse(value, out var valueInt))
             {
-                if (valueInt <= Instruction.MaxDataLength)
+                if (valueInt <= InstructionReference.MaxDataLength)
                 {
                     _builder.SetA(valueInt);
                 }
                 else
                 {
-                    _builder.StoreA(_varB);
-                    _builder.SetA(valueInt / Instruction.MaxDataLength);
-                    _builder.SetB(Instruction.MaxDataLength);
+                    _builder.SetA(_tempB);
+                    _builder.StoreB_ToAddressUsingA();
+                    _builder.SetA(valueInt / InstructionReference.MaxDataLength);
+                    _builder.SetB(InstructionReference.MaxDataLength);
                     _builder.Mult();
-                    _builder.SetA(valueInt % Instruction.MaxDataLength);
-                    _builder.Add();
-                    _builder.LoadB(_varB);
+
+                    var reminder = valueInt % InstructionReference.MaxDataLength;
+
+                    if (reminder > 0)
+                    {
+                        _builder.SetA(valueInt % InstructionReference.MaxDataLength);
+                        _builder.Add();
+                    }
+
+                    _builder.LoadB(_tempB);
                 }
             }
             else
@@ -75,23 +87,42 @@ public class Assembler
         {
             if (value == "a")
             {
-                _builder.StoreA(_varA);
-                _builder.LoadB(_varA);
+                _builder.StoreA(_tempA);
+                _builder.LoadB(_tempA);
+            }
+            else if (value == "b")
+            {
+                _builder.Nop();
             }
             else if (value == "c")
             {
-                _builder.StoreC(_varC);
-                _builder.LoadB(_varC);
+                _builder.StoreC(_tempA);
+                _builder.LoadB(_tempA);
             }
             else if (int.TryParse(value, out var valueInt))
             {
-                if (valueInt < Instruction.MaxDataLength)
+                if (valueInt < InstructionReference.MaxDataLength)
                 {
                     _builder.SetB(valueInt);
                 }
                 else
                 {
+                    _builder.StoreA(_tempA);
+                    _builder.SetA(valueInt / InstructionReference.MaxDataLength);
+                    _builder.SetB(InstructionReference.MaxDataLength);
+                    _builder.Mult();
 
+                    var reminder = valueInt % InstructionReference.MaxDataLength;
+
+                    if (reminder > 0)
+                    {
+                        _builder.SetA(valueInt % InstructionReference.MaxDataLength);
+                        _builder.Add();
+                    }
+
+                    _builder.StoreA(_tempB);
+                    _builder.LoadA(_tempA);
+                    _builder.LoadB(_tempB);
                 }
             }
             else
@@ -103,24 +134,24 @@ public class Assembler
         {
             if (value == "a")
             {
-                _builder.StoreA(_varA);
-                _builder.LoadC(_varA);
+                _builder.StoreA(_tempA);
+                _builder.LoadC(_tempA);
             }
             else if (value == "b")
             {
                 // You can't store B directly to memory, so we have to swap values around.
                 _builder.SwapA_B();
-                _builder.StoreA(_varA);
+                _builder.StoreA(_tempA);
                 _builder.SwapA_B();
-                _builder.LoadC(_varA);
+                _builder.LoadC(_tempA);
             }
-            else if (int.TryParse(value, out var valueInt))
+            else if (value == "b")
             {
-                throw new NotImplementedException();
+                _builder.Nop();
             }
             else
             {
-                throw new Exception("Invalid value");
+                throw new NotImplementedException();
             }
         }
     }

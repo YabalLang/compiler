@@ -6,10 +6,10 @@ public class Memory
 {
     public record MemoryDevice(int Start, int Length, IMemoryDevice Device, Memory Memory)
     {
-        public void Initialize()
+        public void Initialize(bool isLoadState)
         {
             var span = Memory._data.AsSpan(Start, Length);
-            Device.Initialize(Memory, span);
+            Device.Initialize(Memory, span, isLoadState);
         }
 
         public void Write(int address, int value)
@@ -38,10 +38,15 @@ public class Memory
     private readonly MemoryDevice?[] _deviceMapping;
     private readonly List<MemoryDevice> _devices = new();
 
-    public Memory(int size)
+    public Memory(int[] data)
     {
-        _data = new int[size];
-        _deviceMapping = new MemoryDevice?[size];
+        _data = data;
+        _deviceMapping = new MemoryDevice?[data.Length];
+    }
+
+    public Memory(int size)
+        : this(new int[size])
+    {
     }
 
     public int Length => _data.Length;
@@ -88,7 +93,7 @@ public class Memory
         }
 
         _devices.Add(mapping);
-        device.Initialize(this, _data.AsSpan(offset, device.Length));
+        device.Initialize(this, _data.AsSpan(offset, device.Length), false);
 
         return end;
     }
@@ -139,7 +144,7 @@ public class Memory
 
         foreach (var device in _devices)
         {
-            device.Initialize();
+            device.Initialize(true);
         }
     }
 }

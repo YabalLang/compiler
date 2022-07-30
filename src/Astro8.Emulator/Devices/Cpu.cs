@@ -85,7 +85,7 @@ public class Cpu
                 continue;
             }
 
-            var instruction = Instruction.From(_instructionReg);
+            var instruction = InstructionReference.From(_instructionReg);
             var offset = (instruction.MicroInstructionId * 64) + (step * 4) + (_flags[0] * 2) + _flags[1];
             var microInstruction = _microInstructions[offset];
 
@@ -228,7 +228,7 @@ public class Cpu
             }
             else if (microInstruction.IsJ)
             {
-                _programCounter = instruction.Data;
+                _programCounter = _bus;
             }
             else if (microInstruction.IsAW)
             {

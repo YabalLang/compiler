@@ -15,6 +15,16 @@ public static class HexFile
         }
     }
 
+    public static IEnumerable<int> Load(string str)
+    {
+        using var reader = new StringReader(str);
+
+        foreach (var value in Load(reader))
+        {
+            yield return value;
+        }
+    }
+
     public static IEnumerable<int> Load(TextReader reader)
     {
         CheckHeader(reader);
@@ -25,16 +35,11 @@ public static class HexFile
 
             if (start == -1)
             {
-                yield break;
+                continue;
             }
 
             for (var i = start + 1; i < line.Length;)
             {
-                if (i + 5 > line.Length)
-                {
-                    continue;
-                }
-
                 int result;
 
                 {

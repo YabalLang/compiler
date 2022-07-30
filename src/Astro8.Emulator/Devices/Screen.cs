@@ -162,7 +162,7 @@ public class Screen : IDisposable, IMemoryDevice
 
     int IMemoryDevice.Length => _textureData.Length;
 
-    public void Initialize(Memory memory, Span<int> span)
+    public void Initialize(Memory memory, Span<int> span, bool isState)
     {
         for (var i = 0; i < span.Length; i++)
         {
@@ -195,9 +195,9 @@ public class Screen : IDisposable, IMemoryDevice
 
     private static uint GetRgba(int value)
     {
-        var r = Instruction.BitRange(value, 10, 5) * 8; // Get first 5 bits
-        var g = Instruction.BitRange(value, 5, 5) * 8; // get middle bits
-        var b = Instruction.BitRange(value, 0, 5) * 8; // Gets last 5 bits
+        var r = InstructionReference.BitRange(value, 10, 5) * 8; // Get first 5 bits
+        var g = InstructionReference.BitRange(value, 5, 5) * 8; // get middle bits
+        var b = InstructionReference.BitRange(value, 0, 5) * 8; // Gets last 5 bits
         const int a = 255;
 
         var rgba = (uint) (r << 24 | g << 16 | b << 8 | a);

@@ -2,6 +2,8 @@ using Astro8;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
+_ = Instruction.Default;
+
 var config = Config.Load();
 
 using var screen = new Screen(
