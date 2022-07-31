@@ -36,8 +36,4 @@
       <ProjectReference Include="..\Astro8.Emulator\Astro8.Emulator.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Config" />
-    </ItemGroup>
-
 </Project>
