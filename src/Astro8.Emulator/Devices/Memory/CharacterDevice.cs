@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace Astro8;
+﻿namespace Astro8.Devices;
 
 public class CharacterDevice : IMemoryDevice
 {
@@ -41,13 +39,16 @@ public class CharacterDevice : IMemoryDevice
 
     public int Length { get; }
 
+    public void Initialize(Memory memory, Span<int> span, bool isState)
+    {
+        for (var i = 0; i < span.Length; i++)
+        {
+            Write(memory, i, span[i]);
+        }
+    }
+
     public void Write(Memory memory, int address, int value)
     {
-        if (!memory.TryFindMapping(_screen, out var screenMapping))
-        {
-            return;
-        }
-
         var characterOffset = value * FontSize;
         var screenX = address % _width * RenderWidth;
         var screenY = address / _height * RenderHeight;
@@ -76,7 +77,7 @@ public class CharacterDevice : IMemoryDevice
             }
 
             var color = CharacterRom[offset] ? ScreenColor.White : ScreenColor.Black;
-            screenMapping.Write(screenX + x + ((screenY + y) * _screen.Width), color.Value);
+            _screen.WriteOverlay(screenX + x + (screenY + y) * _screen.Width, color.Value);
         }
     }
 }

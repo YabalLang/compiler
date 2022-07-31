@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Astro8;
+namespace Astro8.Devices;
 
 public class Memory
 {
@@ -44,7 +44,7 @@ public class Memory
         _deviceMapping = new MemoryDevice?[data.Length];
     }
 
-    public Memory(int size)
+    public Memory(int size = 0xFFFF)
         : this(new int[size])
     {
     }

@@ -1,35 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Astro8</RootNamespace>
         <LangVersion>preview</LangVersion>
     </PropertyGroup>
-    
-    <PropertyGroup>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <SelfContained>true</SelfContained>
-        <PublishTrimmed>true</PublishTrimmed>
-        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
-        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.*" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
-        <None Update="native\win-x64\SDL2.dll" Visible="false">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Link>SDL2.dll</Link>
-        </None>
-        <None Update="config.jsonc">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
 
 </Project>

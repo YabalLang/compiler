@@ -1,41 +1,26 @@
-﻿using System.Drawing;
-
-namespace Astro8;
+﻿namespace Astro8.Devices;
 
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_WindowFlags;
 using static SDL2.SDL.SDL_RendererFlags;
 using static SDL2.SDL.SDL_TextureAccess;
 
-public record struct ScreenColor(int Value)
+public class SdlScreen : Screen, IDisposable
 {
-    public static readonly ScreenColor White = new(0xFFFF);
-    public static readonly ScreenColor Black = new(0x0000);
-
-    public static implicit operator ScreenColor(int value) => new(value);
-}
-
-public class Screen : IDisposable, IMemoryDevice
-{
-    private readonly int _pixelScale;
+    private readonly object _lock = new();
     private readonly uint[] _textureData;
-    private bool _dirty;
+    private readonly int _pixelScale;
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _texture;
-    private readonly object _lock = new();
+    private bool _dirty;
 
-    public Screen(int width = 64, int height = 64, int pixelScale = 9)
+    public SdlScreen(int width = 64, int height = 64, int pixelScale = 9)
+        : base(width, height)
     {
-        Width = width;
-        Height = height;
-        _pixelScale = pixelScale;
         _textureData = new uint[width * height];
+        _pixelScale = pixelScale;
     }
-
-    public int Width { get; }
-
-    public int Height { get; }
 
     public bool Init()
     {
@@ -97,24 +82,6 @@ public class Screen : IDisposable, IMemoryDevice
         }
     }
 
-    private void ReleaseUnmanagedResources()
-    {
-        if (_texture != IntPtr.Zero) {
-            SDL_DestroyTexture(_texture);
-            _texture = IntPtr.Zero;
-        }
-
-        if (_renderer != IntPtr.Zero) {
-            SDL_DestroyRenderer(_renderer);
-            _renderer = IntPtr.Zero;
-        }
-
-        if (_window != IntPtr.Zero) {
-            SDL_DestroyWindow(_window);
-            _window = IntPtr.Zero;
-        }
-    }
-
     private void UpdateTexture()
     {
         SDL_RenderCopy(_renderer, _texture, default, default);
@@ -148,6 +115,45 @@ public class Screen : IDisposable, IMemoryDevice
         UpdateTexture();
     }
 
+    private void ReleaseUnmanagedResources()
+    {
+        if (_texture != IntPtr.Zero) {
+            SDL_DestroyTexture(_texture);
+            _texture = IntPtr.Zero;
+        }
+
+        if (_renderer != IntPtr.Zero) {
+            SDL_DestroyRenderer(_renderer);
+            _renderer = IntPtr.Zero;
+        }
+
+        if (_window != IntPtr.Zero) {
+            SDL_DestroyWindow(_window);
+            _window = IntPtr.Zero;
+        }
+    }
+
+    protected override void SetPixel(int address, ScreenColor color)
+    {
+        if (address < 0 || address >= _textureData.Length)
+        {
+            return;
+        }
+
+        var argb = (uint) color.ARGB;
+
+        if (_textureData[address] == argb)
+        {
+            return;
+        }
+
+        lock (_lock)
+        {
+            _textureData[address] = argb;
+            _dirty = true;
+        }
+    }
+
     public void Dispose()
     {
         ReleaseUnmanagedResources();
@@ -155,52 +161,9 @@ public class Screen : IDisposable, IMemoryDevice
         GC.SuppressFinalize(this);
     }
 
-    ~Screen()
+    ~SdlScreen()
     {
         ReleaseUnmanagedResources();
     }
 
-    int IMemoryDevice.Length => _textureData.Length;
-
-    public void Initialize(Memory memory, Span<int> span, bool isState)
-    {
-        for (var i = 0; i < span.Length; i++)
-        {
-            _textureData[i] = GetRgba(span[i]);
-        }
-
-        _dirty = true;
-    }
-
-    public void Write(Memory memory, int address, int value)
-    {
-        if (address < 0 || address >= _textureData.Length)
-        {
-            return;
-        }
-
-        var rgba = GetRgba(value);
-
-        if (_textureData[address] == rgba)
-        {
-            return;
-        }
-
-        lock (_lock)
-        {
-            _textureData[address] = rgba;
-            _dirty = true;
-        }
-    }
-
-    private static uint GetRgba(int value)
-    {
-        var r = InstructionReference.BitRange(value, 10, 5) * 8; // Get first 5 bits
-        var g = InstructionReference.BitRange(value, 5, 5) * 8; // get middle bits
-        var b = InstructionReference.BitRange(value, 0, 5) * 8; // Gets last 5 bits
-        const int a = 255;
-
-        var rgba = (uint) (r << 24 | g << 16 | b << 8 | a);
-        return rgba;
-    }
 }

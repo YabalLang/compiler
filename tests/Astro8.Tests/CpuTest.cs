@@ -1,3 +1,5 @@
+using Astro8.Devices;
+using Astro8.Instructions;
 using Xunit.Abstractions;
 
 namespace Astro8.Tests;
@@ -28,7 +30,7 @@ public class CpuTest
     [InlineData("c", "a", 1, 2, 1)]
     [InlineData("c", "b", 1, 2, 2)]
 
-    public void TestMovAB(string target, string value, int a, int b, int c)
+    public void Instruction_Mov(string target, string value, int a, int b, int c)
     {
         var builder = new Assembler();
         builder.Mov(target, value);
@@ -48,11 +50,11 @@ public class CpuTest
     }
 
     [Theory]
-    [InlineData(InstructionReference.ADD, 4, 2)]
-    [InlineData(InstructionReference.SUB, 0, 2)]
-    [InlineData(InstructionReference.MULT, 4, 2)]
-    [InlineData(InstructionReference.DIV, 1, 2)]
-    public void Instruction_Calculations(int instruction, int a, int b)
+    [InlineData("ADD", 4, 2)]
+    [InlineData("SUB", 0, 2)]
+    [InlineData("MULT", 4, 2)]
+    [InlineData("DIV", 1, 2)]
+    public void Instruction_Calculations(string instruction, int a, int b)
     {
         var instructions = new InstructionBuilder()
             .SetA(2)

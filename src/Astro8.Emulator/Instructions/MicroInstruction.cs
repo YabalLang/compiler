@@ -1,4 +1,4 @@
-﻿namespace Astro8;
+﻿namespace Astro8.Instructions;
 
 public readonly record struct MicroInstruction
 {

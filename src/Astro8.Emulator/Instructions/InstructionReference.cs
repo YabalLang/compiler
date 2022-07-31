@@ -1,35 +1,9 @@
-﻿namespace Astro8;
+﻿namespace Astro8.Instructions;
 
 public readonly record struct InstructionReference(int Raw)
 {
     public const int MaxInstructionId = 0b111111;
     public const int MaxDataLength = 2047;
-
-    public const int NOP    = 0b00000;
-    public const int AIN    = 0b00001;
-    public const int BIN    = 0b00010;
-    public const int CIN    = 0b00011;
-    public const int LDIA   = 0b00100;
-    public const int LDIB   = 0b00101;
-    public const int RDEXP  = 0b00110;
-    public const int WREXP  = 0b00111;
-    public const int STA    = 0b01000;
-    public const int STC    = 0b01001;
-    public const int ADD    = 0b01010;
-    public const int SUB    = 0b01011;
-    public const int MULT   = 0b01100;
-    public const int DIV    = 0b01101;
-    public const int JMP    = 0b01110;
-    public const int JMPZ   = 0b01111;
-    public const int JMPC   = 0b10000;
-    public const int LDAIN  = 0b10001;
-    public const int STAOUT = 0b10010;
-    public const int LDLGE  = 0b10011;
-    public const int STLGE  = 0b10100;
-    public const int SWP    = 0b10101;
-    public const int SWPC   = 0b10110;
-    public const int HLT    = 0b10111;
-    public const int OUT    = 0b11000;
 
     private readonly int _microInstructionId = BitRange(Raw, 11, 5);
     private readonly int _data = BitRange(Raw, 0, 11);

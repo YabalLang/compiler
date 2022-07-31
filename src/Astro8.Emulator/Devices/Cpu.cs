@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
+using Astro8.Instructions;
 
-namespace Astro8;
+namespace Astro8.Devices;
 
 public class Cpu
 {
@@ -17,6 +18,11 @@ public class Cpu
     {
         _memory = memory;
         _microInstructions = microInstructions ?? MicroInstruction.DefaultInstructions;
+    }
+
+    public Cpu(Memory memory, IReadOnlyList<Instruction> instructions)
+        : this(memory, MicroInstruction.Parse(instructions))
+    {
     }
 
     public bool Running => !_halt;

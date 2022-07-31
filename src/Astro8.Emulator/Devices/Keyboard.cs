@@ -1,4 +1,4 @@
-﻿namespace Astro8;
+﻿namespace Astro8.Devices;
 
 public static class Keyboard
 {

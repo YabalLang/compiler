@@ -1,12 +1,12 @@
-using Astro8;
+﻿using Astro8;
+using Astro8.Config;
+using Astro8.Devices;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
-_ = Instruction.Default;
-
 var config = Config.Load();
 
-using var screen = new Screen(
+using var screen = new SdlScreen(
     config.Screen.Width,
     config.Screen.Height,
     config.Screen.Scale

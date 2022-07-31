@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace Astro8;
+namespace Astro8.Instructions;
 
 public record Instruction(
     int Id,

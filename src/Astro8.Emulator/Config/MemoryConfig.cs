@@ -1,4 +1,4 @@
-﻿namespace Astro8;
+﻿namespace Astro8.Config;
 
 public class MemoryConfig
 {

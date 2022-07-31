@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Astro8.Instructions;
 
 namespace Astro8.Tests;
 

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Astro8.Blazor</title>
+    <base href="/" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="Astro8.Blazor.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">Loading...</div>
+    <canvas id="canvas"></canvas>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script>
+        window.init = function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const imageData = ctx.createImageData(1, 1);
+            const image = imageData.data;
+            image[3] = 255;
+
+            window.setPixel = function(data) {
+                for (let i = 0; i < data.length; i += 5) {
+                    image[0] = data[i + 2];
+                    image[1] = data[i + 3];
+                    image[2] = data[i + 4];
+                    ctx.putImageData(imageData, data[i], data[i + 1]);
+                }
+            }
+        };
+    </script>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>
