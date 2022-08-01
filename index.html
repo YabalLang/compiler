@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <canvas id="canvas" width="64" height="64"></canvas>
+
+        <style>
+
+            #canvas {
+                width: 576px;
+                height: 576px;
+                image-rendering: pixelated;
+                image-rendering: -moz-crisp-edges;
+                image-rendering: crisp-edges;
+            }
+
+        </style>
+
+        <script>
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const worker = new Worker('worker.js', {type: 'module'});
+
+            const imageData = ctx.createImageData(1, 1);
+            const data = imageData.data;
+
+            worker.addEventListener("message", function(msg) {
+                if (msg.data === 'ready') {
+                    fetch('/snek.txt').then(function(response) {
+                        return response.arrayBuffer();
+                    }).then(function(buffer) {
+                        worker.postMessage(buffer, [buffer]);
+                    });
+                } else {
+                    const [x, y, r, g, b] = msg.data;
+                    data[0] = r;
+                    data[1] = g;
+                    data[2] = b;
+                    data[3] = 255;
+                    ctx.putImageData(imageData, x, y);
+                }
+            });
+
+            // export { run, asmLibraryArg, Module }
+        </script>
+    </body>
+</html>
