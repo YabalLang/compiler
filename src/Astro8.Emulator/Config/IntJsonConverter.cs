@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Astro8.Config;
+namespace Astro8;
 
 public class IntJsonConverter : JsonConverter<int>
 {

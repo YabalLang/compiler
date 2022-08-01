@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Astro8.Config;
+﻿namespace Astro8;
 
 public class MemoryDeviceConfig
 {
-    [Required] public string Type { get; set; } = null!;
+    public int Screen { get; set; } = 0xEFFF;
 
-    [Required] public int Address { get; set; }
+    public int Character { get; set; } = 0x3FFE;
+
+    public int Program { get; set; } = 0x0000;
 }

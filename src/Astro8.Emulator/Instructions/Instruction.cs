@@ -30,7 +30,6 @@ public record Instruction(
 
         var name = nameSpan.Trim().ToString();
         var microInstructions = new MicroInstruction[microInstructionLength];
-        var span = microInstructions.AsSpan();
 
         foreach(var microInstructionLine in definition.Split('&'))
         {
@@ -88,7 +87,7 @@ public record Instruction(
                 {
                     if (flags.HasFlag(i))
                     {
-                        span[offset + i] |= microInstruction;
+                        microInstructions[offset + i] |= microInstruction;
                         definedOffsets[offset + i] = true;
                     }
                 }
@@ -104,7 +103,7 @@ public record Instruction(
             {
                 if (!definedOffsets[i])
                 {
-                    span[i] = parentMicroInstructions[i];
+                    microInstructions[i] = parentMicroInstructions[i];
                 }
             }
         }
@@ -165,5 +164,11 @@ public record Instruction(
         "out( 2=ra,dw & 3=ei", // Output to decimal display and LCD screen
     };
 
-    public static IReadOnlyList<Instruction> Default { get; set; } = Parse(DefaultInstructions);
+    private static IReadOnlyList<Instruction>? _default;
+
+    public static IReadOnlyList<Instruction> Default
+    {
+        get => _default ??= Parse(DefaultInstructions);
+        set => _default = value;
+    }
 }

@@ -305,17 +305,19 @@ public readonly record struct MicroInstruction
 
     public static MicroInstruction operator |(MicroInstruction a, MicroInstruction b) => new(a.Value | b.Value);
 
-    public static MicroInstruction[] ParseFile(string fileName)
-    {
-        using var stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var reader = new StreamReader(stream);
-
-        return HexFile.Load(reader).Select(From).ToArray();
-    }
-
     public static MicroInstruction[] Parse(string content)
     {
-        return HexFile.Load(content).Select(From).ToArray();
+        var values = new int[2048];
+        HexFile.Load(content, values);
+
+        var instructions = new MicroInstruction[values.Length];
+
+        for (var i = 0; i < values.Length; i++)
+        {
+            instructions[i] = new MicroInstruction(values[i]);
+        }
+
+        return instructions;
     }
 
     public static MicroInstruction[] Parse(IReadOnlyList<Instruction> instructions, int length = 32)
@@ -354,5 +356,9 @@ public readonly record struct MicroInstruction
         return microInstructions;
     }
 
-    internal static MicroInstruction[] DefaultInstructions => _default ??= Parse(Instruction.Default);
+    internal static MicroInstruction[] Default
+    {
+        get => _default ??= Parse(Instruction.Default);
+        set => _default = value;
+    }
 }

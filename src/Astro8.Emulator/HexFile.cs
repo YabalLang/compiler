@@ -4,92 +4,84 @@ namespace Astro8;
 
 public static class HexFile
 {
-    public static IEnumerable<int> LoadFile(string path)
+    public static void LoadFile(string path, int[] data, int offset = 0)
     {
-        using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var reader = new StreamReader(stream);
-
-        foreach (var value in Load(reader))
-        {
-            yield return value;
-        }
+        Load(File.ReadAllText(path), data, offset);
     }
 
-    public static IEnumerable<int> Load(string str)
+    public static void Load(string str, int[] data, int offset = 0)
     {
-        using var reader = new StringReader(str);
+        var span = str.AsSpan();
+        var validated = false;
 
-        foreach (var value in Load(reader))
+        foreach (var rawLine in span.Split('\n'))
         {
-            yield return value;
-        }
-    }
+            var line = rawLine;
 
-    public static IEnumerable<int> Load(TextReader reader)
-    {
-        CheckHeader(reader);
+            if (line.Length == 0)
+            {
+                continue;
+            }
 
-        while (reader.ReadLine() is { } line)
-        {
-            var start = line.AsSpan().IndexOf(' ');
+            if (line[^1] == '\r')
+            {
+                line = line[..^1];
+            }
+
+            if (!validated)
+            {
+                validated = ValidateHeader(new string(line));
+                continue;
+            }
+
+            var start = line.IndexOf(' ');
 
             if (start == -1)
             {
-                continue;
+                return;
             }
 
             for (var i = start + 1; i < line.Length;)
             {
-                int result;
+                var value = line[i..];
+                var end = value.IndexOf(' ');
 
+                if (end == -1)
                 {
-                    var value = line.AsSpan()[i..];
-                    var end = value.IndexOf(' ');
-
-                    if (end == -1)
-                    {
-                        end = value.Length;
-                    }
-                    else
-                    {
-                        end += 1;
-                    }
-
-                    i += end;
-
-                    if (!int.TryParse(value[..end], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result))
-                    {
-                        continue;
-                    }
+                    end = value.Length;
+                }
+                else
+                {
+                    end += 1;
                 }
 
-                yield return result;
+                i += end;
+
+                if (int.TryParse(value[..end], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var instruction))
+                {
+                    data[offset++] = instruction;
+                }
             }
         }
     }
 
-    private static void CheckHeader(TextReader reader)
+    private static bool ValidateHeader(string? line)
     {
-        while (true)
+        if (line is null)
         {
-            var line = reader.ReadLine();
-
-            if (line is null)
-            {
-                throw new FileLoadException("Empty file provided");
-            }
-
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            if (line.Equals("v3.0 hex words addressed", StringComparison.OrdinalIgnoreCase))
-            {
-                break;
-            }
-
-            throw new FileLoadException("Invalid file format");
+            throw new FileLoadException("Empty file provided");
         }
+
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return false;
+        }
+
+        if (line.Equals("v3.0 hex words addressed", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        throw new FileLoadException("Invalid file format");
     }
 }

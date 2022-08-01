@@ -151,7 +151,7 @@ public class InstructionBuilder
         return this;
     }
 
-    public InstructionBuilder Nop() => Emit("NOP");
+    public InstructionBuilder Nop() => EmitRaw(0);
 
     public InstructionBuilder LoadA(PointerOrData address) => Emit("AIN", address);
 
@@ -217,23 +217,31 @@ public class InstructionBuilder
 
     public int[] ToArray()
     {
-        var labels = new Dictionary<InstructionPointer, int>();
-        var i = 0;
+        var labels = GetLabels(out var length);
+        var array = new int[length];
 
-        foreach (var either in _references)
+        FillArray(labels, array);
+
+        return array;
+    }
+
+    public int[] ToArray(int[] array)
+    {
+        var labels = GetLabels(out var length);
+
+        if (array.Length < length)
         {
-            if (either is { IsLeft: true })
-            {
-                labels[either.Left] = i;
-            }
-            else
-            {
-                i++;
-            }
+            throw new ArgumentException("Array is too small", nameof(array));
         }
 
-        var array = new int[i];
-        i = 0;
+        FillArray(labels, array);
+
+        return array;
+    }
+
+    private void FillArray(Dictionary<InstructionPointer, int> labels, int[] array)
+    {
+        var i = 0;
 
         foreach (var either in _references)
         {
@@ -276,8 +284,26 @@ public class InstructionBuilder
 
             i++;
         }
+    }
 
-        return array;
+    private Dictionary<InstructionPointer, int> GetLabels(out int i)
+    {
+        var labels = new Dictionary<InstructionPointer, int>();
+        i = 0;
+
+        foreach (var either in _references)
+        {
+            if (either is { IsLeft: true })
+            {
+                labels[either.Left] = i;
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        return labels;
     }
 
     public override string ToString()

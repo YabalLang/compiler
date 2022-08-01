@@ -1,21 +1,24 @@
 ﻿namespace Astro8.Devices;
 
-public class ArrayDevice : IMemoryDevice
+public class ArrayDevice : MemoryDevice
 {
     private readonly int[] _array;
 
-    public ArrayDevice(int[] array)
+    public ArrayDevice(int address, int[] array)
+        : base(address, array.Length)
     {
         _array = array;
     }
 
-    public int Length => _array.Length;
-
-    public void Initialize(Memory memory, Span<int> span, bool isState)
+    public override void Initialize(Span<int> span, bool isState)
     {
         if (!isState)
         {
             _array.AsSpan().CopyTo(span);
         }
+    }
+
+    public override void Write(int address, int value)
+    {
     }
 }

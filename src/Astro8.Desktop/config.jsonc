@@ -22,19 +22,10 @@
     "Size": "0xFFFF",
 
     // Mapping of device in memory.
-    "Devices": [
-      {
-        "Type": "Program",
-        "Address": "0x0000"
-      },
-      {
-        "Type": "Character",
-        "Address": "0x3FFE"
-      },
-      {
-        "Type": "Screen",
-        "Address": "0xEFFF"
-      }
-    ]
+    "Devices": {
+        "Program": "0x0000",
+        "Character": "0x3FFE",
+        "Screen": "0xEFFF"
+    }
   }
 }

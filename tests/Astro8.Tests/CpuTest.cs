@@ -1,16 +1,30 @@
 using Astro8.Devices;
 using Astro8.Instructions;
+using Moq;
 using Xunit.Abstractions;
 
 namespace Astro8.Tests;
 
 public class CpuTest
 {
-    private ITestOutputHelper _output;
+    private readonly ITestOutputHelper _output;
 
     public CpuTest(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    private Cpu<Handler> Create(InstructionBuilder builder)
+    {
+        _output.WriteLine(builder.ToString());
+
+        var mock = Mock.Of<Handler>();
+        var cpu = CpuBuilder.Create(mock)
+            .WithMemory()
+            .WithProgram(builder)
+            .Create();
+
+        return cpu;
     }
 
     [Theory]
@@ -34,16 +48,12 @@ public class CpuTest
     {
         var builder = new Assembler();
         builder.Mov(target, value);
-        var bytes = builder.ToArray();
 
-        var memory = new Memory(bytes);
-        var cpu = new Cpu(memory)
-        {
-            A = 1,
-            B = 2,
-            C = 3
-        };
+        var cpu = Create(builder.InstructionBuilder);
 
+        cpu.A = 1;
+        cpu.B = 2;
+        cpu.C = 3;
         cpu.Run();
 
         Assert.Equal((a, b, c), (cpu.A, cpu.B, cpu.C));
@@ -56,15 +66,12 @@ public class CpuTest
     [InlineData("DIV", 1, 2)]
     public void Instruction_Calculations(string instruction, int a, int b)
     {
-        var instructions = new InstructionBuilder()
+        var builder = new InstructionBuilder()
             .SetA(2)
             .SetB(2)
-            .Emit(instruction)
-            .ToArray();
+            .Emit(instruction);
 
-        var memory = new Memory(instructions);
-        var cpu = new Cpu(memory);
-
+        var cpu = Create(builder);
         cpu.Run();
 
         Assert.Equal((a, b, 0), (cpu.A, cpu.B, cpu.C));
@@ -73,17 +80,14 @@ public class CpuTest
     [Fact]
     public void InstructionBuilder_Jump()
     {
-        var instructions = new InstructionBuilder()
+        var builder = new InstructionBuilder()
             .CreateLabel(out var label)
             .Jump(label)
             .SetA(10)
             .Mark(label)
-            .SetB(10)
-            .ToArray();
+            .SetB(10);
 
-        var memory = new Memory(instructions);
-        var cpu = new Cpu(memory);
-
+        var cpu = Create(builder);
         cpu.Run();
 
         Assert.Equal((0, 10, 0), (cpu.A, cpu.B, cpu.C));
@@ -101,11 +105,7 @@ public class CpuTest
             .EmitRaw(int.MaxValue)
             .Mark(end);
 
-        _output.WriteLine(builder.ToString());
-
-        var memory = new Memory(builder.ToArray());
-        var cpu = new Cpu(memory);
-
+        var cpu = Create(builder);
         cpu.Run();
 
         Assert.Equal((int.MaxValue, 0, 0), (cpu.A, cpu.B, cpu.C));

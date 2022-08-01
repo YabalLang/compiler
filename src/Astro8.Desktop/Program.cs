@@ -1,61 +1,34 @@
 ﻿using Astro8;
-using Astro8.Config;
 using Astro8.Devices;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
-var config = Config.Load();
+var config = ConfigContext.Load();
 
-using var screen = new SdlScreen(
+using var handler = new DesktopHandler(
     config.Screen.Width,
     config.Screen.Height,
     config.Screen.Scale
 );
 
-if (!screen.Init())
+if (!handler.Init())
 {
     Console.WriteLine("Failed to initialize SDL2.");
     return 1;
 }
 
-var characterScreen = new CharacterDevice(screen);
+var cpu = CpuBuilder.Create(handler, config)
+    .WithScreen()
+    .WithCharacter()
+    .WithMemory()
+    .WithProgramFile()
+    .Create();
 
-var instructions = HexFile.LoadFile(config.Program.Path)
-    .Take(0x3FFE)
-    .ToArray();
-
-var program = new ArrayDevice(instructions);
-
-var memory = new Memory(config.Memory.Size);
-
-if (config.Memory.Devices is null)
-{
-    memory.Map(0x0000, program);
-    memory.Map(0x3FFE, characterScreen);
-    memory.Map(0xEFFF, screen);
-}
-else
-{
-    foreach (var deviceConfig in config.Memory.Devices)
-    {
-        IMemoryDevice device = deviceConfig.Type.ToLowerInvariant() switch
-        {
-            "program" => program,
-            "character" => characterScreen,
-            "screen" => screen,
-            _ => throw new Exception($"Unknown device type: {deviceConfig.Type}")
-        };
-
-        memory.Map(deviceConfig.Address, device);
-    }
-}
-
-var cpu = new Cpu(memory);
 cpu.RunThread(config.Cpu.TickSpeed);
 
 while (cpu.Running)
 {
-    screen.Update();
+    handler.Update();
 
     if (SDL_PollEvent(out var e) != 1)
     {

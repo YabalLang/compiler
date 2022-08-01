@@ -5,7 +5,7 @@ using static SDL2.SDL.SDL_WindowFlags;
 using static SDL2.SDL.SDL_RendererFlags;
 using static SDL2.SDL.SDL_TextureAccess;
 
-public class SdlScreen : Screen, IDisposable
+public class DesktopHandler : Handler, IDisposable
 {
     private readonly object _lock = new();
     private readonly uint[] _textureData;
@@ -15,12 +15,17 @@ public class SdlScreen : Screen, IDisposable
     private IntPtr _texture;
     private bool _dirty;
 
-    public SdlScreen(int width = 64, int height = 64, int pixelScale = 9)
-        : base(width, height)
+    public DesktopHandler(int width = 64, int height = 64, int pixelScale = 9)
     {
+        Width = width;
+        Height = height;
         _textureData = new uint[width * height];
         _pixelScale = pixelScale;
     }
+
+    public int Width { get; }
+
+    public int Height { get; }
 
     public bool Init()
     {
@@ -133,7 +138,7 @@ public class SdlScreen : Screen, IDisposable
         }
     }
 
-    protected override void SetPixel(int address, ScreenColor color)
+    public override void SetPixel(int address, ScreenColor color)
     {
         if (address < 0 || address >= _textureData.Length)
         {
@@ -161,7 +166,7 @@ public class SdlScreen : Screen, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    ~SdlScreen()
+    ~DesktopHandler()
     {
         ReleaseUnmanagedResources();
     }

@@ -1,4 +1,4 @@
-﻿namespace Astro8.Config;
+﻿namespace Astro8;
 
 public class ScreenConfig
 {

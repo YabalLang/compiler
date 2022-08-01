@@ -3,10 +3,11 @@ using Astro8.Instructions;
 
 namespace Astro8.Devices;
 
-public class Cpu
+public class Cpu<THandler>
+    where THandler : Handler
 {
     private readonly MicroInstruction[] _microInstructions;
-    private readonly Memory _memory;
+    private readonly CpuMemory<THandler> _memory;
     private readonly int[] _flags = { 0, 0, 0 };
     private int _bus;
     private int _memoryIndex;
@@ -14,13 +15,13 @@ public class Cpu
     private int _instructionReg;
     private bool _halt;
 
-    public Cpu(Memory memory, MicroInstruction[]? microInstructions = null)
+    public Cpu(CpuMemory<THandler> memory, MicroInstruction[] microInstructions)
     {
         _memory = memory;
-        _microInstructions = microInstructions ?? MicroInstruction.DefaultInstructions;
+        _microInstructions = microInstructions;
     }
 
-    public Cpu(Memory memory, IReadOnlyList<Instruction> instructions)
+    public Cpu(CpuMemory<THandler> memory, IReadOnlyList<Instruction> instructions)
         : this(memory, MicroInstruction.Parse(instructions))
     {
     }
@@ -70,8 +71,11 @@ public class Cpu
     {
         if (_halt)
         {
+            Console.WriteLine("Halt");
             return false;
         }
+
+        var data = _memory.Data;
 
         for (var step = 0; step < 16; step++)
         {
@@ -79,19 +83,20 @@ public class Cpu
             {
                 _memoryIndex = _programCounter;
 
-                if (_memoryIndex >= _memory.Length)
+                if (_memoryIndex >= data.Length)
                 {
                     _halt = true;
                     return false;
                 }
 
-                _instructionReg = _memory[_memoryIndex];
+                _instructionReg = data[_memoryIndex];
                 _programCounter += 1;
                 step = 1;
                 continue;
             }
 
             var instruction = InstructionReference.From(_instructionReg);
+
             var offset = (instruction.MicroInstructionId * 64) + (step * 4) + (_flags[0] * 2) + _flags[1];
             var microInstruction = _microInstructions[offset];
 
@@ -123,7 +128,6 @@ public class Cpu
             else if (microInstruction.IsRE)
             {
                 _bus = ExpansionPort;
-                ExpansionPort = 0;
             }
 
             // Ungrouped
