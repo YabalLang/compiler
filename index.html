@@ -1,35 +1,117 @@
 <!DOCTYPE html>
 <html>
-    <body>
-        <canvas id="canvas" width="64" height="64"></canvas>
+    <htmL>
+        <meta charset="UTF-8">
+        <title>Astro-8 Emulator</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
 
         <style>
+            :root {
+                --scale: 9;
+            }
+
+            @media (max-width: 768px) {
+                :root {
+                    --scale: 7;
+                }
+            }
+
+            @media (max-width: 576px) {
+                :root {
+                    --scale: 5;
+                }
+            }
+
+            @media (max-width: 360px) {
+                :root {
+                    --scale: 3;
+                }
+            }
 
             #canvas {
-                width: 576px;
-                height: 576px;
+                width: calc(64px * var(--scale));
+                height: calc(64px * var(--scale));
                 image-rendering: pixelated;
                 image-rendering: -moz-crisp-edges;
                 image-rendering: crisp-edges;
             }
 
+            html, body {
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+            }
+
+            body {
+                font-family: 'Roboto', sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: url('img/background.jpg') no-repeat center center fixed;
+                background-size: cover;
+            }
+
+            .screen {
+                display: flex;
+                box-sizing: border-box;
+                box-shadow:0 10px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+                background: black;
+            }
+
+            .examples {
+                margin-bottom: 1em;
+            }
+
+            .button {
+                margin: 0.3em;
+                background: rgba(0, 0, 0, 0.5);
+                padding: 0.5em 1em;
+                display: inline-block;
+                border-radius: 10px;
+                text-decoration: none;
+                color: white;
+                transition: background .3s;
+            }
+
+            .button:hover {
+                background: rgba(0, 0, 0, 0.8);
+            }
+
         </style>
+    </htmL>
+    <body>
+        <div class="examples">
+            <a href="#" data-file="programs/pong.txt" class="button">Pong</a>
+            <a href="#" data-file="programs/snek.txt" class="button">Snake</a>
+        </div>
+        <div class="screen">
+            <canvas id="canvas" width="64" height="64"></canvas></div>
+        </div>
 
         <script>
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            const worker = new Worker('worker.js', {type: 'module'});
+            const worker = new Worker('worker.js');
 
             const imageData = ctx.createImageData(1, 1);
             const data = imageData.data;
 
+            function load(fileName) {
+                fetch(fileName).then(function(response) {
+                    return response.arrayBuffer();
+                }).then(function(buffer) {
+                    worker.postMessage(['program', buffer], [buffer]);
+                });
+            }
+
             worker.addEventListener("message", function(msg) {
                 if (msg.data === 'ready') {
-                    fetch('snek.txt').then(function(response) {
-                        return response.arrayBuffer();
-                    }).then(function(buffer) {
-                        worker.postMessage(buffer, [buffer]);
-                    });
+                    
                 } else {
                     const [x, y, r, g, b] = msg.data;
                     data[0] = r;
@@ -40,7 +122,114 @@
                 }
             });
 
-            // export { run, asmLibraryArg, Module }
+            const keyMapping = {
+                Space: 0,
+                F1: 1,
+                F2: 2,
+                NumpadAdd: 3,
+                NumpadSubtract: 4,
+                NumpadMultiply: 5,
+                NumpadDivide: 6,
+                F3: 7,
+                '_': 8,
+                ArrowLeft: 9,
+                ArrowRight: 10,
+                ArrowUp: 71,
+                ArrowDown: 72,
+                '|': 13,
+                KeyA: 13,
+                KeyB: 14,
+                KeyC: 15,
+                KeyD: 16,
+                KeyE: 17,
+                KeyF: 18,
+                KeyG: 19,
+                KeyH: 20,
+                KeyI: 21,
+                KeyJ: 22,
+                KeyK: 23,
+                KeyL: 24,
+                KeyM: 25,
+                KeyN: 26,
+                KeyO: 27,
+                KeyP: 28,
+                KeyQ: 29,
+                KeyR: 30,
+                KeyS: 31,
+                KeyT: 32,
+                KeyU: 33,
+                KeyV: 34,
+                KeyW: 35,
+                KeyX: 36,
+                KeyY: 37,
+                KeyZ: 38,
+                '0': 39,
+                '1': 40,
+                '2': 41,
+                '3': 42,
+                '4': 43,
+                '5': 44,
+                '6': 45,
+                '7': 46,
+                '8': 47,
+                '9': 48,
+                Backspace: 70
+            }
+
+            let lastKey;
+
+            window.addEventListener('keydown', function(e) {
+                lastKey = e.key;
+
+                let code = keyMapping[e.key] ?? keyMapping[e.code] ?? 168;
+                e.preventDefault();
+                worker.postMessage(['key', code]);
+            });
+
+            window.addEventListener('keyup', function(e) {
+                if (lastKey !== e.key) {
+                    return
+                }
+
+                worker.postMessage(['key', 168]);
+            });
+
+            document.querySelectorAll('.button').forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    load(button.dataset.file);
+                });
+            });
+
+            function allowDrop(ev) {
+                ev.preventDefault();
+            }
+
+            function drop(ev) {
+                ev.preventDefault();
+                var data = ev.dataTransfer.getData("text");
+                ev.target.appendChild(document.getElementById(data));
+            }
+
+            document.body.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy"
+            });
+
+            document.body.addEventListener('drop', (e) => {
+                e.preventDefault();
+
+                const file = e.dataTransfer.files[0];
+
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const buffer = e.target.result
+                        worker.postMessage(['program', buffer], [buffer]);
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            });
         </script>
     </body>
 </html>
