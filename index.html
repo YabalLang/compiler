@@ -25,7 +25,7 @@
 
             worker.addEventListener("message", function(msg) {
                 if (msg.data === 'ready') {
-                    fetch('/snek.txt').then(function(response) {
+                    fetch('snek.txt').then(function(response) {
                         return response.arrayBuffer();
                     }).then(function(buffer) {
                         worker.postMessage(buffer, [buffer]);
