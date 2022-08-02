@@ -14,6 +14,7 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
     private readonly Screen<THandler> _screen;
     private readonly int _width;
     private readonly int _height;
+    private readonly int[] _values;
     private readonly bool[] _rom;
 
     public CharacterDevice(int address, Screen<THandler> screen, string? data = null)
@@ -22,6 +23,7 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
         _screen = screen;
         _width = screen.Width / RenderWidth;
         _height = screen.Height / RenderWidth;
+        _values = new int[(_width + 1) * (_height + 1)];
 
         data ??= Default;
 
@@ -45,6 +47,13 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
 
     public override void Write(int address, int value)
     {
+        if (_values[address] == value)
+        {
+            return;
+        }
+
+        _values[address] = value;
+
         var characterOffset = value * FontSize;
         var screenX = address % _width * RenderWidth;
         var screenY = address / _height * RenderHeight;
