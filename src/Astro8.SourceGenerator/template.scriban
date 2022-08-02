@@ -34,128 +34,128 @@ public partial class Cpu<THandler>
     {
     {{- for step in instruction.Steps }}
         // Step {{ step.Id }}{{ if step.HasFlags }}
-        if (context.FlagA == {{ step.FlagA }} && context.FlagB == {{ step.FlagB }}){{ end }}
+        if (context.Cpu.FlagA == {{ step.FlagA }} && context.Cpu.FlagB == {{ step.FlagB }}){{ end }}
         {
         {{- if step.MicroInstruction.IsRA }}
             // RA
-            context.Bus = context.A;
+            context.Cpu.Bus = context.Cpu.A;
         {{- else if step.MicroInstruction.IsRB }}
             // RB
-            context.Bus = context.B;
+            context.Cpu.Bus = context.Cpu.B;
         {{- else if step.MicroInstruction.IsRC }}
             // RC
-            context.Bus = context.C;
+            context.Cpu.Bus = context.Cpu.C;
         {{- else if step.MicroInstruction.IsRM }}
             // RM
-            context.Bus = context.Get(context.MemoryIndex);
+            context.Cpu.Bus = context.Get(context.Cpu.MemoryIndex);
         {{- else if step.MicroInstruction.IsIR }}
             // IR
-            context.Bus = context.Instruction.Data;
+            context.Cpu.Bus = context.Instruction.Data;
         {{- else if step.MicroInstruction.IsCR }}
             // CR
-            context.Bus = context.ProgramCounter;
+            context.Cpu.Bus = context.Cpu.ProgramCounter;
         {{- else if step.MicroInstruction.IsRE }}
             // RE
-            context.Bus = ExpansionPort;
+            context.Cpu.Bus = ExpansionPort;
         {{- end -}}
 
         {{- if step.MicroInstruction.IsEO }}
         {{- if step.MicroInstruction.IsSU }}
             // SU
-            context.Bus = context.A - context.B;
-            context.FlagA = context.Bus == 0;
+            context.Cpu.Bus = context.Cpu.A - context.Cpu.B;
+            context.Cpu.FlagA = context.Cpu.Bus == 0;
 
-            if (context.Bus < 0)
+            if (context.Cpu.Bus < 0)
             {
-                context.Bus = 65534 + context.Bus;
-                context.FlagB = false;
+                context.Cpu.Bus = 65534 + context.Cpu.Bus;
+                context.Cpu.FlagB = false;
             }
             else
             {
-                context.FlagB = true;
+                context.Cpu.FlagB = true;
             }
         {{- else if step.MicroInstruction.IsMU }}
             // MU
-            context.Bus = context.A * context.B;
-            context.FlagA = context.Bus == 0;
+            context.Cpu.Bus = context.Cpu.A * context.Cpu.B;
+            context.Cpu.FlagA = context.Cpu.Bus == 0;
 
-            if (context.Bus >= 65534)
+            if (context.Cpu.Bus >= 65534)
             {
-                context.Bus -= 65534;
-                context.FlagB = true;
+                context.Cpu.Bus -= 65534;
+                context.Cpu.FlagB = true;
             }
             else
             {
-                context.FlagB = false;
+                context.Cpu.FlagB = false;
             }
         {{- else if step.MicroInstruction.IsDI }}
             // DI
-            if (context.B != 0)
+            if (context.Cpu.B != 0)
             {
-                context.Bus = context.A / context.B;
-                context.FlagA = context.Bus == 0;
+                context.Cpu.Bus = context.Cpu.A / context.Cpu.B;
+                context.Cpu.FlagA = context.Cpu.Bus == 0;
             }
             else
             {
-                context.FlagA = false;
-                context.Bus = 0;
+                context.Cpu.FlagA = false;
+                context.Cpu.Bus = 0;
             }
 
-            if (context.Bus >= 65534)
+            if (context.Cpu.Bus >= 65534)
             {
-                context.Bus -= 65534;
-                context.FlagB = true;
+                context.Cpu.Bus -= 65534;
+                context.Cpu.FlagB = true;
             }
             else
             {
-                context.FlagB = false;
+                context.Cpu.FlagB = false;
             }
         {{- else }}
             // ADD
-            context.Bus = context.A + context.B;
-            context.FlagA = context.Bus == 0;
+            context.Cpu.Bus = context.Cpu.A + context.Cpu.B;
+            context.Cpu.FlagA = context.Cpu.Bus == 0;
 
-            if (context.Bus >= 65534)
+            if (context.Cpu.Bus >= 65534)
             {
-                context.Bus -= 65534;
-                context.FlagB = true;
+                context.Cpu.Bus -= 65534;
+                context.Cpu.FlagB = true;
             }
             else
             {
-                context.FlagB = false;
+                context.Cpu.FlagB = false;
             }
         {{- end -}}
         {{- end -}}
 
         {{- if step.MicroInstruction.IsWA }}
             // WA
-            context.A = context.Bus;
+            context.Cpu.A = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsWB }}
             // WB
-            context.B = context.Bus;
+            context.Cpu.B = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsWC }}
             // WC
-            context.C = context.Bus;
+            context.Cpu.C = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsIW }}
             // IW
-            _instructionReg = context.Bus;
+            _instructionReg = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsWM }}
             // WM
-            context.Set(context.MemoryIndex, context.Bus);
+            context.Set(context.Cpu.MemoryIndex, context.Cpu.Bus);
         {{- else if step.MicroInstruction.IsJ }}
             // J
-            context.ProgramCounter = context.Bus;
+            context.Cpu.ProgramCounter = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsAW }}
             // AW
-            context.MemoryIndex = context.Bus;
+            context.Cpu.MemoryIndex = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsWE }}
             // WE
-            ExpansionPort = context.Bus;
+            ExpansionPort = context.Cpu.Bus;
         {{- end -}}
 
         {{- if step.MicroInstruction.IsCE }}
             // CE
-            context.ProgramCounter += 1;
+            context.Cpu.ProgramCounter += 1;
         {{- else if step.MicroInstruction.IsST }}
             // ST
             _halt = true;

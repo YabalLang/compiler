@@ -8,12 +8,8 @@ public sealed partial class Cpu<THandler> : IDisposable
     where THandler : Handler
 {
     private readonly CpuMemory<THandler> _memory;
-    private int _bus;
-    private int _memoryIndex;
-    private int _programCounter;
-    private bool _flagA;
-    private bool _flagB;
     private bool _halt;
+    private CpuContext _context;
 
     public Cpu(CpuMemory<THandler> memory)
     {
@@ -22,11 +18,23 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public bool Running => !_halt;
 
-    public int A { get; set; }
+    public int A
+    {
+        get => _context.A;
+        set => _context = _context with { A = value };
+    }
 
-    public int B { get; set; }
+    public int B
+    {
+        get => _context.A;
+        set => _context = _context with { B = value };
+    }
 
-    public int C { get; set; }
+    public int C
+    {
+        get => _context.A;
+        set => _context = _context with { C = value };
+    }
 
     public int ExpansionPort { get; set; }
 
@@ -88,38 +96,26 @@ public sealed partial class Cpu<THandler> : IDisposable
             );
 
             // Store current values on the stack
-            context.A = A;
-            context.B = B;
-            context.C = C;
-            context.FlagA = _flagA;
-            context.FlagB = _flagB;
-            context.Bus = _bus;
-            context.ProgramCounter = _programCounter;
+            context.Cpu = _context;
 
             for (var i = 0; (amount == 0 || i < amount) && !_halt; i++)
             {
-                context.MemoryIndex = context.ProgramCounter;
+                context.Cpu.MemoryIndex = context.Cpu.ProgramCounter;
 
-                if (context.MemoryIndex >= instructionLength)
+                if (context.Cpu.MemoryIndex >= instructionLength)
                 {
                     _halt = true;
                     break;
                 }
 
-                context.ProgramCounter += 1;
-                context.Instruction = *(instructionPointer + context.MemoryIndex);
+                context.Cpu.ProgramCounter += 1;
+                context.Instruction = *(instructionPointer + context.Cpu.MemoryIndex);
 
                 Step(ref context);
             }
 
             // Restore values from the stack
-            A = context.A;
-            B = context.B;
-            C = context.C;
-            _flagA = context.FlagA;
-            _flagB = context.FlagB;
-            _bus = context.Bus;
-            _programCounter = context.ProgramCounter;
+            _context = context.Cpu;
         }
     }
 
@@ -130,13 +126,9 @@ public sealed partial class Cpu<THandler> : IDisposable
         writer.Write(B);
         writer.Write(C);
         writer.Write(ExpansionPort);
-        writer.Write(_bus);
-        writer.Write(_memoryIndex);
-        writer.Write(_programCounter);
-        writer.Write(_flagA);
-        writer.Write(_flagB);
         writer.Write(_halt);
         _memory.Save(writer);
+        _context.Save(writer);
         writer.Flush();
     }
 
@@ -147,13 +139,9 @@ public sealed partial class Cpu<THandler> : IDisposable
         B = reader.ReadInt32();
         C = reader.ReadInt32();
         ExpansionPort = reader.ReadInt32();
-        _bus = reader.ReadInt32();
-        _memoryIndex = reader.ReadInt32();
-        _programCounter = reader.ReadInt32();
-        _flagA = reader.ReadBoolean();
-        _flagB = reader.ReadBoolean();
         _halt = reader.ReadBoolean();
         _memory.Load(reader);
+        _context = CpuContext.Load(reader);
     }
 
     private unsafe ref struct StepContext
@@ -175,14 +163,7 @@ public sealed partial class Cpu<THandler> : IDisposable
             _instructionLength = instructionLength;
         }
 
-        public int A;
-        public int B;
-        public int C;
-        public int Bus;
-        public bool FlagA;
-        public bool FlagB;
-        public int MemoryIndex;
-        public int ProgramCounter;
+        public CpuContext Cpu;
         public InstructionReference Instruction;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
