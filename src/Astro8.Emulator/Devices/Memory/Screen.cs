@@ -1,11 +1,6 @@
 ﻿namespace Astro8.Devices;
 
-public abstract class Handler
-{
-    public abstract void SetPixel(int address, ScreenColor color);
-}
-
-public class Screen<THandler> : MemoryDevice
+public sealed class Screen<THandler> : MemoryDevice
     where THandler : Handler
 {
     private readonly THandler _handler;

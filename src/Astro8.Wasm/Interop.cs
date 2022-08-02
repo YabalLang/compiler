@@ -13,14 +13,12 @@ public static class Interop
     [UnmanagedCallersOnly(EntryPoint = "Compile")]
     public static unsafe void Compile(byte* bytes, int byteLength)
     {
+        _cpu?.Halt();
         _cpu = null;
-
-        Console.WriteLine("Instructions length: " + Instruction.Default.Count);
 
         var code = Encoding.UTF8.GetString(bytes, byteLength);
         var data = new int[0xFFFF];
         HexFile.Load(code, data);
-        Console.WriteLine(data[0]);
 
         _cpu = CpuBuilder.Create<WasmHandler>()
             .WithMemory(data)
@@ -46,5 +44,4 @@ public static class Interop
 
     [DllImport("NativeLib")]
     public static extern unsafe void UpdatePixel(int x, int y, int r, int g, int b);
-
 }

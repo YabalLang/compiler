@@ -16,569 +16,564 @@ namespace Astro8.Devices;
 /// </summary>
 public partial class Cpu<THandler>
 {
-    private void Step(StepContext context)
+    private void Step(ref StepContext context)
     {
-        switch (context.Instruction.MicroInstructionId)
+        switch (context.Instruction.Id)
         {
         
             case 0:
-                FETCH(context);
+                FETCH(ref context);
                 break;
         
             case 1:
-                AIN(context);
+                AIN(ref context);
                 break;
         
             case 2:
-                BIN(context);
+                BIN(ref context);
                 break;
         
             case 3:
-                CIN(context);
+                CIN(ref context);
                 break;
         
             case 4:
-                LDIA(context);
+                LDIA(ref context);
                 break;
         
             case 5:
-                LDIB(context);
+                LDIB(ref context);
                 break;
         
             case 6:
-                RDEXP(context);
+                RDEXP(ref context);
                 break;
         
             case 7:
-                WREXP(context);
+                WREXP(ref context);
                 break;
         
             case 8:
-                STA(context);
+                STA(ref context);
                 break;
         
             case 9:
-                STC(context);
+                STC(ref context);
                 break;
         
             case 10:
-                ADD(context);
+                ADD(ref context);
                 break;
         
             case 11:
-                SUB(context);
+                SUB(ref context);
                 break;
         
             case 12:
-                MULT(context);
+                MULT(ref context);
                 break;
         
             case 13:
-                DIV(context);
+                DIV(ref context);
                 break;
         
             case 14:
-                JMP(context);
+                JMP(ref context);
                 break;
         
             case 15:
-                JMPZ(context);
+                JMPZ(ref context);
                 break;
         
             case 16:
-                JMPC(context);
+                JMPC(ref context);
                 break;
         
             case 17:
-                LDAIN(context);
+                LDAIN(ref context);
                 break;
         
             case 18:
-                STAOUT(context);
+                STAOUT(ref context);
                 break;
         
             case 19:
-                LDLGE(context);
+                LDLGE(ref context);
                 break;
         
             case 20:
-                STLGE(context);
+                STLGE(ref context);
                 break;
         
             case 21:
-                SWP(context);
+                SWP(ref context);
                 break;
         
             case 22:
-                SWPC(context);
+                SWPC(ref context);
                 break;
         
             case 23:
-                HLT(context);
+                HLT(ref context);
                 break;
         
             case 24:
-                OUT(context);
+                OUT(ref context);
                 break;
         
         }
     }
 
-    private void FETCH(StepContext context)
+    private void FETCH(ref StepContext context)
     {
     }
 
-    private void AIN(StepContext context)
+    private void AIN(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void BIN(StepContext context)
+    private void BIN(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // WB
-            B = _bus;
+            context.B = context.Bus;
         }
     }
 
-    private void CIN(StepContext context)
+    private void CIN(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // WC
-            C = _bus;
+            context.C = context.Bus;
         }
     }
 
-    private void LDIA(StepContext context)
+    private void LDIA(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void LDIB(StepContext context)
+    private void LDIB(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // WB
-            B = _bus;
+            context.B = context.Bus;
         }
     }
 
-    private void RDEXP(StepContext context)
+    private void RDEXP(ref StepContext context)
     {
         // Step 2
         {
             // RE
-            _bus = ExpansionPort;
+            context.Bus = context.ExpansionPort;
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void WREXP(StepContext context)
+    private void WREXP(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // WE
-            ExpansionPort = _bus;
+            context.ExpansionPort = context.Bus;
         }
     }
 
-    private void STA(StepContext context)
+    private void STA(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // WM
-            context.Set(_memoryIndex, _bus);
+            context.Set(_memoryIndex, context.Bus);
         }
     }
 
-    private void STC(StepContext context)
+    private void STC(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RC
-            _bus = C;
+            context.Bus = context.C;
             // WM
-            context.Set(_memoryIndex, _bus);
+            context.Set(_memoryIndex, context.Bus);
         }
     }
 
-    private void ADD(StepContext context)
+    private void ADD(ref StepContext context)
     {
         // Step 2
         {
             // ADD
-            _bus = A + B;
-            _flagA = _bus == 0;
+            context.Bus = context.A + context.B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void SUB(StepContext context)
+    private void SUB(ref StepContext context)
     {
         // Step 2
         {
             // SU
-            _bus = A - B;
-            _flagA = _bus == 0;
+            context.Bus = A - B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus < 0)
+            if (context.Bus < 0)
             {
-                _bus = 65535 + _bus;
-                _flagB = false;
+                context.Bus = 65535 + context.Bus;
+                context.FlagB = false;
             }
             else
             {
-                _flagB = true;
+                context.FlagB = true;
             }
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void MULT(StepContext context)
+    private void MULT(ref StepContext context)
     {
         // Step 2
         {
             // MU
-            _bus = A * B;
-            _flagA = _bus == 0;
+            context.Bus = context.A * context.B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void DIV(StepContext context)
+    private void DIV(ref StepContext context)
     {
         // Step 2
         {
             // DI
-            if (B != 0)
+            if (context.B != 0)
             {
-                if (A / B == 0)
-                {
-                    _flagA = true;
-                }
-
-                _bus = A / B;
-                _flagA = _bus == 0;
+                context.Bus = context.A / context.B;
+                context.FlagA = context.Bus == 0;
             }
             else
             {
-                _flagA = false;
-                _bus = 0;
+                context.FlagA = false;
+                context.Bus = 0;
             }
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void JMP(StepContext context)
+    private void JMP(ref StepContext context)
     {
         // Step 2
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         }
     }
 
-    private void JMPZ(StepContext context)
+    private void JMPZ(ref StepContext context)
     {
         // Step 2
-        if (_flagA == false && _flagB == false)
+        if (context.FlagA == false && context.FlagB == false)
         {
             // EI
             return;
         }
         // Step 2
-        if (_flagA == false && _flagB == true)
+        if (context.FlagA == false && context.FlagB == true)
         {
             // EI
             return;
         }
         // Step 2
-        if (_flagA == true && _flagB == false)
+        if (context.FlagA == true && context.FlagB == false)
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         }
         // Step 2
-        if (_flagA == true && _flagB == true)
+        if (context.FlagA == true && context.FlagB == true)
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         }
     }
 
-    private void JMPC(StepContext context)
+    private void JMPC(ref StepContext context)
     {
         // Step 2
-        if (_flagA == false && _flagB == false)
+        if (context.FlagA == false && context.FlagB == false)
         {
             // EI
             return;
         }
         // Step 2
-        if (_flagA == false && _flagB == true)
+        if (context.FlagA == false && context.FlagB == true)
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         }
         // Step 2
-        if (_flagA == true && _flagB == false)
+        if (context.FlagA == true && context.FlagB == false)
         {
             // EI
             return;
         }
         // Step 2
-        if (_flagA == true && _flagB == true)
+        if (context.FlagA == true && context.FlagB == true)
         {
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         }
     }
 
-    private void LDAIN(StepContext context)
+    private void LDAIN(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
     }
 
-    private void STAOUT(StepContext context)
+    private void STAOUT(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RB
-            _bus = B;
+            context.Bus = context.B;
             // WM
-            context.Set(_memoryIndex, _bus);
+            context.Set(_memoryIndex, context.Bus);
         }
     }
 
-    private void LDLGE(StepContext context)
+    private void LDLGE(ref StepContext context)
     {
         // Step 2
         {
             // CR
-            _bus = _programCounter;
+            context.Bus = _programCounter;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 4
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // WA
-            A = _bus;
+            context.A = context.Bus;
             // CE
             _programCounter += 1;
         }
     }
 
-    private void STLGE(StepContext context)
+    private void STLGE(ref StepContext context)
     {
         // Step 2
         {
             // CR
-            _bus = _programCounter;
+            context.Bus = _programCounter;
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         }
         // Step 4
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // WM
-            context.Set(_memoryIndex, _bus);
+            context.Set(_memoryIndex, context.Bus);
             // CE
             _programCounter += 1;
         }
     }
 
-    private void SWP(StepContext context)
+    private void SWP(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // WC
-            C = _bus;
+            context.C = context.Bus;
         }
         // Step 3
         {
             // RB
-            _bus = B;
+            context.Bus = context.B;
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
         // Step 4
         {
             // RC
-            _bus = C;
+            context.Bus = context.C;
             // WB
-            B = _bus;
+            context.B = context.Bus;
         }
     }
 
-    private void SWPC(StepContext context)
+    private void SWPC(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
             // WB
-            B = _bus;
+            context.B = context.Bus;
         }
         // Step 3
         {
             // RC
-            _bus = C;
+            context.Bus = context.C;
             // WA
-            A = _bus;
+            context.A = context.Bus;
         }
         // Step 4
         {
             // RB
-            _bus = B;
+            context.Bus = context.B;
             // WC
-            C = _bus;
+            context.C = context.Bus;
         }
     }
 
-    private void HLT(StepContext context)
+    private void HLT(ref StepContext context)
     {
         // Step 2
         {
@@ -587,12 +582,12 @@ public partial class Cpu<THandler>
         }
     }
 
-    private void OUT(StepContext context)
+    private void OUT(ref StepContext context)
     {
         // Step 2
         {
             // RA
-            _bus = A;
+            context.Bus = context.A;
         }
     }
 

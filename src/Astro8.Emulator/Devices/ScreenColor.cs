@@ -15,7 +15,7 @@ public readonly record struct ScreenColor(int Value)
 
     public int A => 255;
 
-    public int ARGB =>  (R << 24 | G << 16 | B << 8 | A);
+    public int ARGB => (R << 24 | G << 16 | B << 8 | A);
 
     public static implicit operator ScreenColor(int value) => new(value);
 }

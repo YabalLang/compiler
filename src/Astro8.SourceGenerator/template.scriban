@@ -15,144 +15,139 @@ namespace Astro8.Devices;
 /// </summary>
 public partial class Cpu<THandler>
 {
-    private void Step(StepContext context)
+    private void Step(ref StepContext context)
     {
         switch (context.Instruction.Id)
         {
         {{ for instruction in Instructions }}
             case {{ instruction.Id }}:
-                {{ instruction.Name }}(context);
+                {{ instruction.Name }}(ref context);
                 break;
         {{ end }}
         }
     }
 {{ for instruction in Instructions }}
-    private void {{ instruction.Name }}(StepContext context)
+    private void {{ instruction.Name }}(ref StepContext context)
     {
     {{- for step in instruction.Steps }}
         // Step {{ step.Id }}{{ if step.HasFlags }}
-        if (_flagA == {{ step.FlagA }} && _flagB == {{ step.FlagB }}){{ end }}
+        if (context.FlagA == {{ step.FlagA }} && context.FlagB == {{ step.FlagB }}){{ end }}
         {
         {{- if step.MicroInstruction.IsRA }}
             // RA
-            _bus = A;
+            context.Bus = context.A;
         {{- else if step.MicroInstruction.IsRB }}
             // RB
-            _bus = B;
+            context.Bus = context.B;
         {{- else if step.MicroInstruction.IsRC }}
             // RC
-            _bus = C;
+            context.Bus = context.C;
         {{- else if step.MicroInstruction.IsRM }}
             // RM
-            _bus = context.Memory[_memoryIndex];
+            context.Bus = context.Get(_memoryIndex);
         {{- else if step.MicroInstruction.IsIR }}
             // IR
-            _bus = context.Instruction.Data;
+            context.Bus = context.Instruction.Data;
         {{- else if step.MicroInstruction.IsCR }}
             // CR
-            _bus = _programCounter;
+            context.Bus = _programCounter;
         {{- else if step.MicroInstruction.IsRE }}
             // RE
-            _bus = ExpansionPort;
+            context.Bus = ExpansionPort;
         {{- end -}}
 
         {{- if step.MicroInstruction.IsEO }}
         {{- if step.MicroInstruction.IsSU }}
             // SU
-            _bus = A - B;
-            _flagA = _bus == 0;
+            context.Bus = context.A - context.B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus < 0)
+            if (context.Bus < 0)
             {
-                _bus = 65535 + _bus;
-                _flagB = false;
+                context.Bus = 65535 + context.Bus;
+                context.FlagB = false;
             }
             else
             {
-                _flagB = true;
+                context.FlagB = true;
             }
         {{- else if step.MicroInstruction.IsMU }}
             // MU
-            _bus = A * B;
-            _flagA = _bus == 0;
+            context.Bus = context.A * context.B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
         {{- else if step.MicroInstruction.IsDI }}
             // DI
-            if (B != 0)
+            if (context.B != 0)
             {
-                if (A / B == 0)
-                {
-                    _flagA = true;
-                }
-
-                _bus = A / B;
-                _flagA = _bus == 0;
+                context.Bus = context.A / context.B;
+                context.FlagA = context.Bus == 0;
             }
             else
             {
-                _flagA = false;
-                _bus = 0;
+                context.FlagA = false;
+                context.Bus = 0;
             }
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
         {{- else }}
             // ADD
-            _bus = A + B;
-            _flagA = _bus == 0;
+            context.Bus = context.A + context.B;
+            context.FlagA = context.Bus == 0;
 
-            if (_bus >= 65535)
+            if (context.Bus >= 65535)
             {
-                _bus -= 65535;
-                _flagB = true;
+                context.Bus -= 65535;
+                context.FlagB = true;
             }
             else
             {
-                _flagB = false;
+                context.FlagB = false;
             }
         {{- end -}}
         {{- end -}}
 
         {{- if step.MicroInstruction.IsWA }}
             // WA
-            A = _bus;
+            context.A = context.Bus;
         {{- else if step.MicroInstruction.IsWB }}
             // WB
-            B = _bus;
+            context.B = context.Bus;
         {{- else if step.MicroInstruction.IsWC }}
             // WC
-            C = _bus;
+            context.C = context.Bus;
         {{- else if step.MicroInstruction.IsIW }}
             // IW
-            _instructionReg = _bus;
+            _instructionReg = context.Bus;
         {{- else if step.MicroInstruction.IsWM }}
             // WM
-            context.Set(_memoryIndex, _bus);
+            context.Set(_memoryIndex, context.Bus);
         {{- else if step.MicroInstruction.IsJ }}
             // J
-            _programCounter = _bus;
+            _programCounter = context.Bus;
         {{- else if step.MicroInstruction.IsAW }}
             // AW
-            _memoryIndex = _bus;
+            _memoryIndex = context.Bus;
         {{- else if step.MicroInstruction.IsWE }}
             // WE
-            ExpansionPort = _bus;
+            ExpansionPort = context.Bus;
         {{- end -}}
 
         {{- if step.MicroInstruction.IsCE }}

@@ -11,18 +11,11 @@ public class CpuBuilder<THandler>
     private Screen<THandler>? _screen;
     private CharacterDevice<THandler>? _character;
     private CpuMemory<THandler>? _memory;
-    private MicroInstruction[]? _microInstructions;
 
     public CpuBuilder(THandler handler, Config config)
     {
         _handler = handler;
         _config = config;
-    }
-
-    public CpuBuilder<THandler> WithInstructions(MicroInstruction[] microInstructions)
-    {
-        _microInstructions = microInstructions;
-        return this;
     }
 
     public CpuBuilder<THandler> WithMemory(int? size = null)

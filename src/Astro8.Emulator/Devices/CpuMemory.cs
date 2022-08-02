@@ -2,7 +2,7 @@
 
 namespace Astro8.Devices;
 
-public class CpuMemory<THandler>
+public sealed class CpuMemory<THandler>
     where THandler : Handler
 {
     private Screen<THandler>? _screen;

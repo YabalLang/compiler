@@ -1,6 +1,6 @@
 ﻿namespace Astro8.Devices;
 
-public class CharacterDevice<THandler> : MemoryDevice
+public sealed class CharacterDevice<THandler> : MemoryDevice
     where THandler : Handler
 {
     private const int FontWidth = 8;

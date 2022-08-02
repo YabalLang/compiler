@@ -1,9 +1,10 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Astro8.Instructions;
 
 namespace Astro8.Devices;
 
-public partial class Cpu<THandler>
+public sealed partial class Cpu<THandler> : IDisposable
     where THandler : Handler
 {
     private readonly CpuMemory<THandler> _memory;
@@ -49,39 +50,57 @@ public partial class Cpu<THandler>
         _halt = true;
     }
 
-    public bool Step(int amount = 1)
+    public unsafe void Step(int amount = 1)
     {
         if (_halt)
         {
-            return false;
+            return;
         }
 
-        var instructions = _memory.Instruction.AsSpan();
-        var memory = _memory.Data.AsSpan();
+        var instructionLength = _memory.Instruction.Length;
 
-        for (var i = 0; (amount == 0 || i < amount) && !_halt; i++)
+        fixed (int* dataPointer = _memory.Data)
+        fixed (InstructionReference* instructionPointer = _memory.Instruction)
         {
-            _memoryIndex = _programCounter;
-
-            if (_memoryIndex >= instructions.Length)
-            {
-                _halt = true;
-                return false;
-            }
-
-            _programCounter += 1;
-
             var context = new StepContext(
-                instructions[_memoryIndex],
-                memory,
-                instructions,
-                _memory
+                _memory,
+                dataPointer,
+                instructionPointer,
+                instructionLength
             );
 
-            Step(context);
-        }
+            // Store current values on the stack
+            context.A = A;
+            context.B = B;
+            context.C = C;
+            context.FlagA = _flagA;
+            context.FlagB = _flagB;
+            context.Bus = _bus;
 
-        return true;
+            for (var i = 0; (amount == 0 || i < amount) && !_halt; i++)
+            {
+                _memoryIndex = _programCounter;
+
+                if (_memoryIndex >= instructionLength)
+                {
+                    _halt = true;
+                    break;
+                }
+
+                _programCounter += 1;
+                context.Instruction = *(instructionPointer + _memoryIndex);
+
+                Step(ref context);
+            }
+
+            // Restore values from the stack
+            A = context.A;
+            B = context.B;
+            C = context.C;
+            _flagA = context.FlagA;
+            _flagB = context.FlagB;
+            _bus = context.Bus;
+        }
     }
 
     public void Save(Stream stream)
@@ -117,36 +136,54 @@ public partial class Cpu<THandler>
         _memory.Load(reader);
     }
 
-    private readonly ref struct StepContext
+    private unsafe ref struct StepContext
     {
-        private readonly Span<InstructionReference> _instructions;
         private readonly CpuMemory<THandler> _cpuMemory;
+        private readonly int* _memoryPointer;
+        private readonly InstructionReference* _instructionPointer;
+        private readonly int _instructionLength;
 
         public StepContext(
-            InstructionReference instruction,
-            Span<int> memory,
-            Span<InstructionReference> instructions,
-            CpuMemory<THandler> cpuMemory)
+            CpuMemory<THandler> cpuMemory,
+            int* memoryPointer,
+            InstructionReference* instructionPointer,
+            int instructionLength)
         {
-            Instruction = instruction;
-            Memory = memory;
-            _instructions = instructions;
             _cpuMemory = cpuMemory;
+            _memoryPointer = memoryPointer;
+            _instructionPointer = instructionPointer;
+            _instructionLength = instructionLength;
         }
 
-        public InstructionReference Instruction { get; }
+        public int A;
+        public int B;
+        public int C;
+        public int Bus;
+        public bool FlagA;
+        public bool FlagB;
+        public InstructionReference Instruction;
 
-        public Span<int> Memory { get; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Get(int id)
+        {
+            return *(_memoryPointer + id);
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(int address, int value)
         {
-            Memory[address] = value;
+            *(_memoryPointer + address) = value;
             _cpuMemory.OnChange(address, value);
 
-            if (address < _instructions.Length)
+            if (address < _instructionLength)
             {
-                _instructions[address] = new InstructionReference(value);
+                *(_instructionPointer + address) = new InstructionReference(value);
             }
         }
+    }
+
+    public void Dispose()
+    {
+        Halt();
     }
 }
