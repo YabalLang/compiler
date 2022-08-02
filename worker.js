@@ -3,12 +3,16 @@ var Module = {}
 let compile, step, setExpansionPort;
 
 Module.instantiateWasm = async (info, receiveInstance) => {
-    info.env.UpdatePixel = (x, y, r, g, b) => {
-        self.postMessage([x, y, r, g, b]);
+    info.env.UpdatePixel = (address, color) => {
+        self.postMessage([address, color]);
     };
 
-    const response = await fetch('./Astro8.wasm', { credentials: 'same-origin' })
+    console.time('Loading WASM file');
+    const response = await fetch('./Astro8.wasm', {
+        credentials: 'same-origin'
+    })
     var result = await WebAssembly.instantiateStreaming(response, info);
+    console.timeEnd('Loading WASM file');
 
     receiveInstance(result.instance);
 };
@@ -49,9 +53,11 @@ self.onmessage = function handleMessageFromMain(msg) {
     const [code, parameter] = msg.data;
 
     if (code === 'program') {
+        console.time('Compiling program');
         const array = new Uint8Array(parameter);
         const runCode = Module.cwrap('Compile', null, ['array', 'number']);
         runCode(array, array.length);
+        console.timeEnd('Compiling program');
     } else if (code === 'key') {
         setExpansionPort(parameter);
     }

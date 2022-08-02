@@ -88,6 +88,7 @@
         <div class="examples">
             <a href="#" data-file="programs/pong.txt" class="button">Pong</a>
             <a href="#" data-file="programs/snek.txt" class="button">Snake</a>
+            <a href="#" data-file="programs/platformer.txt" class="button">Platformer</a>
         </div>
         <div class="screen">
             <canvas id="canvas" width="64" height="64"></canvas></div>
@@ -109,15 +110,26 @@
                 });
             }
 
+            function bitRange(value, offset, n)
+            {
+                value >>= offset;
+                var mask = (1 << n) - 1;
+                return value & mask;
+            }
+
             worker.addEventListener("message", function(msg) {
                 if (msg.data === 'ready') {
                     
                 } else {
-                    const [x, y, r, g, b] = msg.data;
-                    data[0] = r;
-                    data[1] = g;
-                    data[2] = b;
+                    const [address, color] = msg.data;
+                    const x = address % 64;
+                    const y = Math.floor(address / 64);
+
+                    data[0] = bitRange(color, 10, 5) * 8;
+                    data[1] = bitRange(color, 5, 5) * 8;
+                    data[2] = bitRange(color, 0, 5) * 8;
                     data[3] = 255;
+
                     ctx.putImageData(imageData, x, y);
                 }
             });
