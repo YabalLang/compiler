@@ -43,5 +43,5 @@ public static class Interop
     }
 
     [DllImport("NativeLib")]
-    public static extern unsafe void UpdatePixel(int x, int y, int r, int g, int b);
+    public static extern unsafe void UpdatePixel(int address, int color);
 }
