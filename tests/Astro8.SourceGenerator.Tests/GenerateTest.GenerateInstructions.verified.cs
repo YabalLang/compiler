@@ -7,6 +7,7 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
+using System.Runtime.CompilerServices;
 using Astro8.Instructions;
 
 namespace Astro8.Devices;
@@ -16,6 +17,7 @@ namespace Astro8.Devices;
 /// </summary>
 public partial class Cpu<THandler>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Step(ref StepContext context)
     {
         switch (context.Instruction.Id)
@@ -72,36 +74,44 @@ public partial class Cpu<THandler>
                 JMPC(ref context);
                 break;
             case 17:
-                LDAIN(ref context);
+                JREG(ref context);
                 break;
             case 18:
-                STAOUT(ref context);
+                LDAIN(ref context);
                 break;
             case 19:
-                LDLGE(ref context);
+                STAOUT(ref context);
                 break;
             case 20:
-                STLGE(ref context);
+                LDLGE(ref context);
                 break;
             case 21:
-                SWP(ref context);
+                STLGE(ref context);
                 break;
             case 22:
-                SWPC(ref context);
+                LDW(ref context);
                 break;
             case 23:
-                HLT(ref context);
+                SWP(ref context);
                 break;
             case 24:
+                SWPC(ref context);
+                break;
+            case 25:
+                HLT(ref context);
+                break;
+            case 26:
                 OUT(ref context);
                 break;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void FETCH(ref StepContext context)
     {
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AIN(ref StepContext context)
     {
         // Step 2
@@ -109,17 +119,18 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // WA
             context.A = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BIN(ref StepContext context)
     {
         // Step 2
@@ -127,17 +138,18 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // WB
             context.B = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CIN(ref StepContext context)
     {
         // Step 2
@@ -145,17 +157,18 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // WC
             context.C = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LDIA(ref StepContext context)
     {
         // Step 2
@@ -167,6 +180,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LDIB(ref StepContext context)
     {
         // Step 2
@@ -178,6 +192,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RDEXP(ref StepContext context)
     {
         // Step 2
@@ -189,6 +204,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WREXP(ref StepContext context)
     {
         // Step 2
@@ -200,6 +216,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void STA(ref StepContext context)
     {
         // Step 2
@@ -207,17 +224,18 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RA
             context.Bus = context.A;
             // WM
-            context.Set(_memoryIndex, context.Bus);
+            context.Set(context.MemoryIndex, context.Bus);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void STC(ref StepContext context)
     {
         // Step 2
@@ -225,17 +243,18 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.Instruction.Data;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RC
             context.Bus = context.C;
             // WM
-            context.Set(_memoryIndex, context.Bus);
+            context.Set(context.MemoryIndex, context.Bus);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ADD(ref StepContext context)
     {
         // Step 2
@@ -258,6 +277,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void SUB(ref StepContext context)
     {
         // Step 2
@@ -280,6 +300,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void MULT(ref StepContext context)
     {
         // Step 2
@@ -302,6 +323,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DIV(ref StepContext context)
     {
         // Step 2
@@ -332,81 +354,116 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void JMP(ref StepContext context)
     {
         // Step 2
         {
-            // IR
-            context.Bus = context.Instruction.Data;
+            // CR
+            context.Bus = context.ProgramCounter;
+            // AW
+            context.MemoryIndex = context.Bus;
+        }
+        // Step 3
+        {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void JMPZ(ref StepContext context)
     {
         // Step 2
+        {
+            // CR
+            context.Bus = context.ProgramCounter;
+            // AW
+            context.MemoryIndex = context.Bus;
+        }
+        // Step 3
+        {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
+            // CE
+            context.ProgramCounter += 1;
+        }
+        // Step 4
         if (context.FlagA == false && context.FlagB == false)
         {
-            // EI
-            return;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == false && context.FlagB == true)
         {
-            // EI
-            return;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == true && context.FlagB == false)
         {
-            // IR
-            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == true && context.FlagB == true)
         {
-            // IR
-            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void JMPC(ref StepContext context)
     {
         // Step 2
+        {
+            // CR
+            context.Bus = context.ProgramCounter;
+            // AW
+            context.MemoryIndex = context.Bus;
+        }
+        // Step 3
+        {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
+            // CE
+            context.ProgramCounter += 1;
+        }
+        // Step 4
         if (context.FlagA == false && context.FlagB == false)
         {
-            // EI
-            return;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == false && context.FlagB == true)
         {
-            // IR
-            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == true && context.FlagB == false)
         {
-            // EI
-            return;
         }
-        // Step 2
+        // Step 4
         if (context.FlagA == true && context.FlagB == true)
         {
-            // IR
-            context.Bus = context.Instruction.Data;
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void JREG(ref StepContext context)
+    {
+        // Step 2
+        {
+            // RA
+            context.Bus = context.A;
+            // J
+            context.ProgramCounter = context.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LDAIN(ref StepContext context)
     {
         // Step 2
@@ -414,17 +471,18 @@ public partial class Cpu<THandler>
             // RA
             context.Bus = context.A;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // WA
             context.A = context.Bus;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void STAOUT(ref StepContext context)
     {
         // Step 2
@@ -432,71 +490,95 @@ public partial class Cpu<THandler>
             // RA
             context.Bus = context.A;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RB
             context.Bus = context.B;
             // WM
-            context.Set(_memoryIndex, context.Bus);
+            context.Set(context.MemoryIndex, context.Bus);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LDLGE(ref StepContext context)
     {
         // Step 2
         {
             // CR
-            context.Bus = _programCounter;
+            context.Bus = context.ProgramCounter;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
+            // CE
+            context.ProgramCounter += 1;
         }
         // Step 4
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // WA
             context.A = context.Bus;
-            // CE
-            _programCounter += 1;
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void STLGE(ref StepContext context)
     {
         // Step 2
         {
             // CR
-            context.Bus = _programCounter;
+            context.Bus = context.ProgramCounter;
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         }
         // Step 3
         {
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
+            // CE
+            context.ProgramCounter += 1;
         }
         // Step 4
         {
             // RA
             context.Bus = context.A;
             // WM
-            context.Set(_memoryIndex, context.Bus);
-            // CE
-            _programCounter += 1;
+            context.Set(context.MemoryIndex, context.Bus);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void LDW(ref StepContext context)
+    {
+        // Step 2
+        {
+            // CR
+            context.Bus = context.ProgramCounter;
+            // AW
+            context.MemoryIndex = context.Bus;
+        }
+        // Step 3
+        {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
+            // WA
+            context.A = context.Bus;
+            // CE
+            context.ProgramCounter += 1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void SWP(ref StepContext context)
     {
         // Step 2
@@ -522,6 +604,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void SWPC(ref StepContext context)
     {
         // Step 2
@@ -547,6 +630,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void HLT(ref StepContext context)
     {
         // Step 2
@@ -556,6 +640,7 @@ public partial class Cpu<THandler>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void OUT(ref StepContext context)
     {
         // Step 2

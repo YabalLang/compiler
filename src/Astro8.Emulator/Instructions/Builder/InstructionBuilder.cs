@@ -17,7 +17,7 @@ public class InstructionBuilder
         _instructions = (instructions ?? Instruction.Default).ToDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    private record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label)
+    private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label)
     {
         public override string? ToString()
         {
@@ -56,12 +56,17 @@ public class InstructionBuilder
 
     public InstructionPointer CreatePointer()
     {
+        if (_references.Count == 0)
+        {
+            throw new InvalidOperationException("No instructions have been added");
+        }
+
         if (_references.Count > 1 && _references[_references.Count - 2] is {Left: { } pointer})
         {
             return pointer;
         }
 
-        pointer = new InstructionPointer(this, $"pointer {_pointerCount++}");
+        pointer = new InstructionPointer(this, $"Pointer {_pointerCount++}");
         _references.Insert(_references.Count - 1, pointer);
         return pointer;
     }
@@ -181,17 +186,25 @@ public class InstructionBuilder
 
     public InstructionBuilder Div() => Emit("DIV");
 
-    public InstructionBuilder Jump(PointerOrData counter) => Emit("JMP", counter);
+    public InstructionBuilder Jump(PointerOrData counter)
+    {
+        Emit("JMP");
+        return EmitRaw(counter);
+    }
 
-    public InstructionBuilder Jump(InstructionPointer counter) => Emit("JMP", counter);
+    public InstructionBuilder JumpIfAZero(PointerOrData counter)
+    {
+        Emit("JMPZ");
+        return EmitRaw(counter);
+    }
 
-    public InstructionBuilder JumpIfAZero(PointerOrData counter) => Emit("JMPZ", counter);
+    public InstructionBuilder JumpIfCarryBit(PointerOrData counter)
+    {
+        Emit("JMPC");
+        return EmitRaw(counter);
+    }
 
-    public InstructionBuilder JumpIfAZero(InstructionPointer counter) => Emit("JMPZ", counter);
-
-    public InstructionBuilder JumpIfCarryBit(PointerOrData counter) => Emit("JMPC", counter);
-
-    public InstructionBuilder JumpIfCarryBit(InstructionPointer counter) => Emit("JMPC", counter);
+    public InstructionBuilder JumpToA() => Emit("JREG");
 
     public InstructionBuilder LoadA() => Emit("LDAIN");
 
@@ -297,7 +310,9 @@ public class InstructionBuilder
         {
             if (either is { IsLeft: true })
             {
-                labels[either.Left] = i;
+                var label = either.Left;
+                labels[label] = i;
+                label.Value = i;
             }
             else
             {

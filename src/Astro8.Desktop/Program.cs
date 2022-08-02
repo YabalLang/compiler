@@ -71,6 +71,10 @@ while (cpu.Running)
                 break;
         }
     }
+    else if (e.type is SDL_KEYUP)
+    {
+        cpu.ExpansionPort = 168;
+    }
 }
 
 return 0;

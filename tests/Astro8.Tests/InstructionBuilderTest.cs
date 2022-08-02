@@ -5,11 +5,11 @@ using Xunit.Abstractions;
 
 namespace Astro8.Tests;
 
-public class CpuTest
+public class InstructionBuilderTest
 {
     private readonly ITestOutputHelper _output;
 
-    public CpuTest(ITestOutputHelper output)
+    public InstructionBuilderTest(ITestOutputHelper output)
     {
         _output = output;
     }
@@ -28,45 +28,13 @@ public class CpuTest
     }
 
     [Theory]
-    // A
-    [InlineData("a", "b", 2, 2, 3)]
-    [InlineData("a", "c", 3, 2, 3)]
-    [InlineData("a", "4", 4, 2, 3)]
-    [InlineData("a", "4000", 4000, 2, 3)]
-
-    // B
-    [InlineData("b", "a", 1, 1, 3)]
-    [InlineData("b", "c", 1, 3, 3)]
-    [InlineData("b", "4", 1, 4, 3)]
-    [InlineData("b", "4000", 1, 4000, 3)]
-
-    // C
-    [InlineData("c", "a", 1, 2, 1)]
-    [InlineData("c", "b", 1, 2, 2)]
-
-    public void Instruction_Mov(string target, string value, int a, int b, int c)
-    {
-        var builder = new Assembler();
-        builder.Mov(target, value);
-
-        var cpu = Create(builder.InstructionBuilder);
-
-        cpu.A = 1;
-        cpu.B = 2;
-        cpu.C = 3;
-        cpu.Run();
-
-        Assert.Equal((a, b, c), (cpu.A, cpu.B, cpu.C));
-    }
-
-    [Theory]
     [InlineData("ADD", 4, 2)]
     [InlineData("SUB", 0, 2)]
     [InlineData("MULT", 4, 2)]
     [InlineData("DIV", 1, 2)]
     public void Instruction_Calculations(string instruction, int a, int b)
     {
-        var builder = new InstructionBuilder()
+        var builder = new Instructions.InstructionBuilder()
             .SetA(2)
             .SetB(2)
             .Emit(instruction);
@@ -80,7 +48,7 @@ public class CpuTest
     [Fact]
     public void InstructionBuilder_Jump()
     {
-        var builder = new InstructionBuilder()
+        var builder = new Instructions.InstructionBuilder()
             .CreateLabel(out var label)
             .Jump(label)
             .SetA(10)
@@ -96,7 +64,7 @@ public class CpuTest
     [Fact]
     public void InstructionBuilder_LDLGE()
     {
-        var builder = new InstructionBuilder()
+        var builder = new Instructions.InstructionBuilder()
             .CreateLabel("end", out var end)
             .CreateLabel("data", out var data)
             .LoadA_Large(data)
@@ -109,5 +77,49 @@ public class CpuTest
         cpu.Run();
 
         Assert.Equal((int.MaxValue, 0, 0), (cpu.A, cpu.B, cpu.C));
+    }
+
+    [Fact]
+    public void InstructionBuilder_JREG()
+    {
+        var builder = new Instructions.InstructionBuilder()
+            .CreateLabel(out var label)
+            .SetA(label)
+            .JumpToA()
+            .SetB(10)
+            .Mark(label);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal((label.Value, 0, 0), (cpu.A, cpu.B, cpu.C));
+    }
+
+    [Fact]
+    public void InstructionBuilder_ReusePointer()
+    {
+        new Instructions.InstructionBuilder()
+            .EmitRaw(0)
+            .CreatePointer(out var pointerA)
+            .CreatePointer(out var pointerB)
+            .ToArray();
+
+        Assert.Equal(pointerA, pointerB);
+        Assert.Equal(0, pointerA.Value);
+    }
+
+    [Fact]
+    public void InstructionBuilder_NewPointer()
+    {
+        new Instructions.InstructionBuilder()
+            .EmitRaw(0)
+            .CreatePointer(out var pointerA)
+            .EmitRaw(0)
+            .CreatePointer(out var pointerB)
+            .ToArray();
+
+        Assert.NotEqual(pointerA, pointerB);
+        Assert.Equal(0, pointerA.Value);
+        Assert.Equal(1, pointerB.Value);
     }
 }

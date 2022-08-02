@@ -1,9 +1,13 @@
-﻿namespace Astro8.Devices;
+﻿using System.Threading.Channels;
+
+namespace Astro8.Devices;
 
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_WindowFlags;
 using static SDL2.SDL.SDL_RendererFlags;
 using static SDL2.SDL.SDL_TextureAccess;
+
+public record struct SetPixel(int Address, ScreenColor Color);
 
 public class DesktopHandler : Handler, IDisposable
 {
@@ -13,7 +17,9 @@ public class DesktopHandler : Handler, IDisposable
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _texture;
-    private bool _dirty;
+    private readonly Channel<SetPixel> _channel;
+    private readonly ChannelReader<SetPixel> _reader;
+    private readonly ChannelWriter<SetPixel> _writer;
 
     public DesktopHandler(int width = 64, int height = 64, int pixelScale = 9)
     {
@@ -21,6 +27,9 @@ public class DesktopHandler : Handler, IDisposable
         Height = height;
         _textureData = new uint[width * height];
         _pixelScale = pixelScale;
+        _channel = Channel.CreateUnbounded<SetPixel>();
+        _reader = _channel.Reader;
+        _writer = _channel.Writer;
     }
 
     public int Width { get; }
@@ -81,10 +90,7 @@ public class DesktopHandler : Handler, IDisposable
 
     public void Update()
     {
-        if (_dirty)
-        {
-            UpdatePixels();
-        }
+        UpdatePixels();
     }
 
     private void UpdateTexture()
@@ -97,18 +103,35 @@ public class DesktopHandler : Handler, IDisposable
     {
         int result;
 
-        lock (_lock)
+        fixed (uint* p = _textureData)
         {
-            fixed (uint* p = _textureData)
+            var changed = false;
+
+            while (_reader.TryRead(out var pixel))
             {
-                result = SDL_UpdateTexture
-                (
-                    _texture,
-                    default,
-                    (IntPtr) p,
-                    Width * sizeof(uint)
-                );
+                var argb = (uint)pixel.Color.ARGB;
+
+                if (*(p + pixel.Address) == argb)
+                {
+                    continue;
+                }
+
+                *(p + pixel.Address) = argb;
+                changed = true;
             }
+
+            if (!changed)
+            {
+                return;
+            }
+
+            result = SDL_UpdateTexture
+            (
+                _texture,
+                default,
+                (IntPtr) p,
+                Width * sizeof(uint)
+            );
         }
 
         if (result != 0)
@@ -116,7 +139,6 @@ public class DesktopHandler : Handler, IDisposable
             throw new Exception("SDL_UpdateTexture failed");
         }
 
-        _dirty = false;
         UpdateTexture();
     }
 
@@ -145,18 +167,9 @@ public class DesktopHandler : Handler, IDisposable
             return;
         }
 
-        var argb = (uint) color.ARGB;
-
-        if (_textureData[address] == argb)
-        {
-            return;
-        }
-
-        lock (_lock)
-        {
-            _textureData[address] = argb;
-            _dirty = true;
-        }
+        _writer.TryWrite(
+            new SetPixel(address, color)
+        );
     }
 
     public void Dispose()

@@ -146,7 +146,7 @@ public record Instruction(
     }
 
     private static readonly string[] DefaultInstructions = {
-        "fetch( 0=aw,cr & 1=rm,iw,ce & 2=ei", // Fetch
+        "fetch( 0=cr,aw & 1=rm,iw,ce & 2=ei", // Fetch
         "ain( 2=aw,ir & 3=wa,rm & 4=ei", // LoadA
         "bin( 2=aw,ir & 3=wb,rm & 4=ei", // LoadB
         "cin( 2=aw,ir & 3=wc,rm & 4=ei", // LoadC
@@ -160,13 +160,15 @@ public record Instruction(
         "sub( 2=wa,eo,su,fl & 3=ei", // Subtract
         "mult( 2=wa,eo,mu,fl & 3=ei", // Multiply
         "div( 2=wa,eo,di,fl & 3=ei", // Divide
-        "jmp( 2=ir,j & 3=ei", // Jump <addr>
-        "jmpz( 2=ir,j | zeroflag & 3=ei", // Jump if zero <addr>
-        "jmpc( 2=ir,j | carryflag & 3=ei", // Jump if carry <addr>
+        "jmp( 2=cr,aw & 3=rm,j & 4=ei", // Jump to address following instruction
+        "jmpz( 2=cr,aw & 3=ce,rm & 4=j | zeroflag & 5=ei", // Jump if zero to address following instruction
+        "jmpc( 2=cr,aw & 3=ce,rm & 4=j | carryflag & 5=ei", // Jump if carry to address following instruction
+        "jreg( 2=ra,j & 3=ei", // Jump to the address stored in Reg A
         "ldain( 2=ra,aw & 3=wa,rm & 4=ei", // Use reg A as memory address, then copy value from memory into A
         "staout( 2=ra,aw & 3=rb,wm & 4=ei", // Use reg A as memory address, then copy value from B into memory
-        "ldlge( 2=cr,aw & 3=rm,aw & 4=rm,wa,ce & 5=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
-        "stlge( 2=cr,aw & 3=rm,aw & 4=ra,wm,ce & 5=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
+        "ldlge( 2=cr,aw & 3=ce,rm,aw & 4=rm,wa & 5=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
+        "stlge( 2=cr,aw & 3=ce,rm,aw & 4=ra,wm & 5=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
+        "ldw( 2=cr,aw & 3=ce,rm,wa & 4=ei", // Load value directly after counter, and advance counter by 2
         "swp( 2=ra,wc & 3=wa,rb & 4=rc,wb & 5=ei", // Swap register A and register B (this will overwrite the contents of register C, using it as a temporary swap area)
         "swpc( 2=ra,wb & 3=wa,rc & 4=rb,wc & 5=ei", // Swap register A and register C (this will overwrite the contents of register B, using it as a temporary swap area)
         "hlt( 2=st & 3=ei", // Stop the computer clock

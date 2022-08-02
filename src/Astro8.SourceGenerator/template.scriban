@@ -6,6 +6,7 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
+using System.Runtime.CompilerServices;
 using Astro8.Instructions;
 
 namespace Astro8.Devices;
@@ -15,6 +16,7 @@ namespace Astro8.Devices;
 /// </summary>
 public partial class Cpu<THandler>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Step(ref StepContext context)
     {
         switch (context.Instruction.Id)
@@ -27,6 +29,7 @@ public partial class Cpu<THandler>
         }
     }
 {{ for instruction in Instructions }}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void {{ instruction.Name }}(ref StepContext context)
     {
     {{- for step in instruction.Steps }}
