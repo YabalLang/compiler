@@ -11,7 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="..\Astro8.Emulator\Instructions\**\*.cs" LinkBase="Instructions" />
+        <Compile Include="..\Astro8.Core\**\*.cs" Exclude="..\Astro8.Core\obj\**\*.cs" LinkBase="Core" />
     </ItemGroup>
 
     <ItemGroup>
@@ -31,8 +31,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="template.scriban" />
-      <EmbeddedResource Include="template.scriban" />
+        <None Remove="template.scriban" />
+        <EmbeddedResource Include="template.scriban" />
     </ItemGroup>
 
     <PropertyGroup>

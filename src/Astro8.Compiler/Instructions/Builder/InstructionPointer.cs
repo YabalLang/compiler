@@ -15,7 +15,7 @@ public class InstructionPointer
 
     public int Value
     {
-        get => _value ?? throw new InvalidOperationException($"No value has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.ToArray)} is called before accessing the value");
+        get => _value ?? throw new InvalidOperationException($"No value has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
         set => _value = value;
     }
 

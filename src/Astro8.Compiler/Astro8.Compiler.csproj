@@ -4,14 +4,11 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Astro8</RootNamespace>
-        <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Astro8.Core\Astro8.Core.csproj" />
-      <ProjectReference Include="..\Astro8.SourceGenerator\Astro8.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
 </Project>

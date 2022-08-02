@@ -1,12 +1,14 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using PointerOrData = Astro8.Either<Astro8.Instructions.InstructionPointer, int>;
 
 namespace Astro8.Instructions;
 
 [SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
-public class InstructionBuilder
+public class InstructionBuilder : ICollection<int>
 {
+    private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
     private readonly Dictionary<string, Instruction> _instructions;
 
     private int _pointerCount;
@@ -45,9 +47,17 @@ public class InstructionBuilder
         }
     }
 
-    private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
+    void ICollection<int>.Add(int item) => throw new NotSupportedException();
+
+    void ICollection<int>.Clear() => throw new NotSupportedException();
+
+    bool ICollection<int>.Contains(int item) => _references.Any(i => i.Right.Instruction?.Raw == item);
+
+    bool ICollection<int>.Remove(int item) => throw new NotSupportedException();
 
     public int Count => _references.Count;
+
+    bool ICollection<int>.IsReadOnly => true;
 
     public InstructionLabel CreateLabel(string? name = null)
     {
@@ -262,7 +272,7 @@ public class InstructionBuilder
 
     public int[] ToArray()
     {
-        var labels = GetLabels(out var length);
+        var labels = GetLabels(0, out var length);
         var array = new int[length];
 
         FillArray(labels, array);
@@ -270,24 +280,20 @@ public class InstructionBuilder
         return array;
     }
 
-    public int[] ToArray(int[] array)
+    public void CopyTo(int[] array, int offset)
     {
-        var labels = GetLabels(out var length);
+        var labels = GetLabels(offset, out var length);
 
-        if (array.Length < length)
+        if (array.Length < offset + length)
         {
             throw new ArgumentException("Array is too small", nameof(array));
         }
 
         FillArray(labels, array);
-
-        return array;
     }
 
-    private void FillArray(Dictionary<InstructionPointer, int> labels, int[] array)
+    private void FillArray(Dictionary<InstructionPointer, int> labels, int[] array, int i = 0)
     {
-        var i = 0;
-
         foreach (var either in _references)
         {
             if (either is { IsLeft: true })
@@ -331,10 +337,11 @@ public class InstructionBuilder
         }
     }
 
-    private Dictionary<InstructionPointer, int> GetLabels(out int i)
+    private Dictionary<InstructionPointer, int> GetLabels(int i, out int length)
     {
         var labels = new Dictionary<InstructionPointer, int>();
-        i = 0;
+
+        length = 0;
 
         foreach (var either in _references)
         {
@@ -347,6 +354,7 @@ public class InstructionBuilder
             else
             {
                 i++;
+                length++;
             }
         }
 
@@ -435,5 +443,18 @@ public class InstructionBuilder
         }
 
         return sb.ToString();
+    }
+
+    IEnumerator<int> IEnumerable<int>.GetEnumerator()
+    {
+        return _references
+            .Where(either => either is { IsRight: true, Right.Instruction: not null })
+            .Select(either => either.Right.Instruction!.Value.Raw)
+            .GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable<int>)this).GetEnumerator();
     }
 }

@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\Astro8.Compiler\Astro8.Compiler.csproj" />
       <ProjectReference Include="..\..\src\Astro8.Emulator\Astro8.Emulator.csproj" />
     </ItemGroup>
 

@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using VerifyTests;
 using VerifyXunit;
 
 namespace Astro8.SourceGenerator.Tests;
@@ -11,6 +12,8 @@ public class GenerateTest
     [Fact]
     public Task GenerateInstructions()
     {
+        VerifySourceGenerators.Enable();
+
         var compilation = CSharpCompilation.Create("name");
         var generator = new InstructionGenerator();
 

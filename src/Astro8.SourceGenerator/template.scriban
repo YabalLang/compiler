@@ -17,7 +17,7 @@ namespace Astro8.Devices;
 public partial class Cpu<THandler>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Step(ref StepContext context)
+    private partial void Step(ref StepContext context)
     {
         switch (context.Instruction.Id)
         {

@@ -16,6 +16,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astro8.SourceGenerator", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astro8.SourceGenerator.Tests", "tests\Astro8.SourceGenerator.Tests\Astro8.SourceGenerator.Tests.csproj", "{911CE9CB-E401-434F-A731-E7EDADDD6C4B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astro8.Compiler", "src\Astro8.Compiler\Astro8.Compiler.csproj", "{AD686E7D-64F3-4951-812B-4F3CFB93A34C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Astro8.Core", "src\Astro8.Core\Astro8.Core.csproj", "{ADA7C878-9EDF-49D4-A62D-0EE18D727441}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +50,14 @@ Global
 		{911CE9CB-E401-434F-A731-E7EDADDD6C4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{911CE9CB-E401-434F-A731-E7EDADDD6C4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{911CE9CB-E401-434F-A731-E7EDADDD6C4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD686E7D-64F3-4951-812B-4F3CFB93A34C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD686E7D-64F3-4951-812B-4F3CFB93A34C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD686E7D-64F3-4951-812B-4F3CFB93A34C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD686E7D-64F3-4951-812B-4F3CFB93A34C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADA7C878-9EDF-49D4-A62D-0EE18D727441}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADA7C878-9EDF-49D4-A62D-0EE18D727441}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADA7C878-9EDF-49D4-A62D-0EE18D727441}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADA7C878-9EDF-49D4-A62D-0EE18D727441}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5617C984-89D2-46BE-B340-30B2D29FF295} = {F463BD99-66FA-4F4F-8B0B-4B3B0FEE415F}

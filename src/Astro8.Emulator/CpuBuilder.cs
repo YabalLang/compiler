@@ -24,14 +24,15 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithProgram(InstructionBuilder builder)
+    public CpuBuilder<THandler> WithProgram<TCollection>(TCollection builder)
+        where TCollection : ICollection<int>
     {
         if (_memory == null)
         {
             throw new InvalidOperationException("Memory must be configured before program");
         }
 
-        builder.ToArray(_memory.Data);
+        builder.CopyTo(_memory.Data, 0);
         _memory.UpdateInstructions();
 
         return this;
