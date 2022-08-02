@@ -4,7 +4,9 @@ public class Assembler
 {
     private readonly InstructionPointer _tempA;
     private readonly InstructionPointer _tempB;
-    private readonly InstructionPointer _tempC;
+
+    private readonly Dictionary<int, InstructionPointer> _values = new();
+    private readonly int _valueOffset;
 
     public Assembler()
     {
@@ -14,11 +16,23 @@ public class Assembler
         InstructionBuilder.Jump(label);
         _tempA = InstructionBuilder.Nop().CreatePointer();
         _tempB = InstructionBuilder.Nop().CreatePointer();
-        _tempC = InstructionBuilder.Nop().CreatePointer();
+        _valueOffset = InstructionBuilder.Count;
         label.Mark();
     }
 
     public InstructionBuilder InstructionBuilder { get; }
+
+    public InstructionPointer CreateValuePointer(int value)
+    {
+        if (_values.TryGetValue(value, out var pointer))
+        {
+            return pointer;
+        }
+
+        pointer = InstructionBuilder.EmitRawAt(_valueOffset, value);
+        _values[value] = pointer;
+        return pointer;
+    }
 
     public void Add(string line)
     {
@@ -43,16 +57,16 @@ public class Assembler
             else if (value == "b")
             {
                 // You can't store B directly to memory, so we have to swap values around.
-                InstructionBuilder.StoreC(_tempC);
+                InstructionBuilder.StoreC(_tempB);
                 InstructionBuilder.SwapA_B();
                 InstructionBuilder.StoreA(_tempA);
                 InstructionBuilder.LoadB(_tempA);
-                InstructionBuilder.LoadC(_tempC);
+                InstructionBuilder.LoadC(_tempB);
             }
             else if (value == "c")
             {
-                InstructionBuilder.StoreC(_tempC);
-                InstructionBuilder.LoadA(_tempC);
+                InstructionBuilder.StoreC(_tempA);
+                InstructionBuilder.LoadA(_tempA);
             }
             else if (int.TryParse(value, out var valueInt))
             {
@@ -62,21 +76,7 @@ public class Assembler
                 }
                 else
                 {
-                    InstructionBuilder.SetA(_tempB);
-                    InstructionBuilder.StoreB_ToAddressUsingA();
-                    InstructionBuilder.SetA(valueInt / InstructionReference.MaxDataLength);
-                    InstructionBuilder.SetB(InstructionReference.MaxDataLength);
-                    InstructionBuilder.Mult();
-
-                    var reminder = valueInt % InstructionReference.MaxDataLength;
-
-                    if (reminder > 0)
-                    {
-                        InstructionBuilder.SetA(valueInt % InstructionReference.MaxDataLength);
-                        InstructionBuilder.Add();
-                    }
-
-                    InstructionBuilder.LoadB(_tempB);
+                    InstructionBuilder.LoadA(CreateValuePointer(valueInt));
                 }
             }
             else
@@ -108,22 +108,7 @@ public class Assembler
                 }
                 else
                 {
-                    InstructionBuilder.StoreA(_tempA);
-                    InstructionBuilder.SetA(valueInt / InstructionReference.MaxDataLength);
-                    InstructionBuilder.SetB(InstructionReference.MaxDataLength);
-                    InstructionBuilder.Mult();
-
-                    var reminder = valueInt % InstructionReference.MaxDataLength;
-
-                    if (reminder > 0)
-                    {
-                        InstructionBuilder.SetA(valueInt % InstructionReference.MaxDataLength);
-                        InstructionBuilder.Add();
-                    }
-
-                    InstructionBuilder.StoreA(_tempB);
-                    InstructionBuilder.LoadA(_tempA);
-                    InstructionBuilder.LoadB(_tempB);
+                    InstructionBuilder.LoadB(CreateValuePointer(valueInt));
                 }
             }
             else
@@ -149,6 +134,17 @@ public class Assembler
             else if (value == "b")
             {
                 InstructionBuilder.Nop();
+            }
+            else if (int.TryParse(value, out var valueInt))
+            {
+                if (valueInt < InstructionReference.MaxDataLength)
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    InstructionBuilder.LoadC(CreateValuePointer(valueInt));
+                }
             }
             else
             {

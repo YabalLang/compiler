@@ -17,7 +17,7 @@ public class InstructionBuilder
         _instructions = (instructions ?? Instruction.Default).ToDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
     }
 
-    private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label)
+    private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label, bool IsRaw = false)
     {
         public override string? ToString()
         {
@@ -28,7 +28,17 @@ public class InstructionBuilder
 
             if (Label is null)
             {
+                if (IsRaw)
+                {
+                    return Instruction?.Raw.ToString();
+                }
+
                 return Instruction?.ToString();
+            }
+
+            if (IsRaw)
+            {
+                return $"{Instruction?.Raw} @{Label.Name}";
             }
 
             return $"{Instruction} @{Label.Name}";
@@ -37,9 +47,11 @@ public class InstructionBuilder
 
     private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
 
+    public int Count => _references.Count;
+
     public InstructionLabel CreateLabel(string? name = null)
     {
-        return new InstructionLabel(this, name ?? $"Label {_labelCount++}");
+        return new InstructionLabel(this, name ?? $"L{_labelCount++}");
     }
 
     public InstructionBuilder CreateLabel(string name, out InstructionLabel label)
@@ -54,20 +66,22 @@ public class InstructionBuilder
         return this;
     }
 
-    public InstructionPointer CreatePointer()
+    public InstructionPointer CreatePointer(int? index = null)
     {
         if (_references.Count == 0)
         {
             throw new InvalidOperationException("No instructions have been added");
         }
 
-        if (_references.Count > 1 && _references[_references.Count - 2] is {Left: { } pointer})
+        index ??= _references.Count - 1;
+
+        if (_references.Count > 1 && _references[index.Value - 1] is {Left: { } pointer})
         {
             return pointer;
         }
 
-        pointer = new InstructionPointer(this, $"Pointer {_pointerCount++}");
-        _references.Insert(_references.Count - 1, pointer);
+        pointer = new InstructionPointer(this, $"P{_pointerCount++}");
+        _references.Insert(index.Value, pointer);
         return pointer;
     }
 
@@ -148,14 +162,20 @@ public class InstructionBuilder
     {
         if (value.IsRight)
         {
-            _references.Add(new InstructionItem(new InstructionReference(value.Right), null));
+            _references.Add(new InstructionItem(new InstructionReference(value.Right), null, true));
         }
         else
         {
-            _references.Add(new InstructionItem(null, value.Left));
+            _references.Add(new InstructionItem(null, value.Left, true));
         }
 
         return this;
+    }
+
+    public InstructionPointer EmitRawAt(int index, int value)
+    {
+        _references.Insert(index, new InstructionItem(new InstructionReference(value), null, true));
+        return CreatePointer(index);
     }
 
     public InstructionBuilder Nop() => EmitRaw(0);
@@ -265,7 +285,7 @@ public class InstructionBuilder
                 continue;
             }
 
-            var (instruction, label) = either.Right;
+            var (instruction, label, _) = either.Right;
 
             if (!instruction.HasValue)
             {
@@ -327,14 +347,45 @@ public class InstructionBuilder
     {
         var sb = new StringBuilder();
 
-        for (var i = 0; i < _references.Count; i++)
+        var prefix = "";
+        var newLine = false;
+
+        foreach (var reference in _references)
         {
-            if (i > 0)
+            if (newLine)
             {
                 sb.AppendLine();
             }
+            else
+            {
+                newLine = true;
+            }
 
-            sb.Append(_references[i].ToString());
+            if (prefix.Length > 0)
+            {
+                sb.Append(prefix);
+            }
+
+            if (reference is { IsLeft: true, Left: { } left })
+            {
+                if (left is InstructionLabel label)
+                {
+                    sb.Append(label.Name);
+                    sb.Append(':');
+                    prefix = "  ";
+                }
+                else
+                {
+                    sb.Append('[');
+                    sb.Append(left.Name);
+                    sb.Append("] ");
+                    newLine = false;
+                }
+
+                continue;
+            }
+
+            sb.Append(reference.ToString());
         }
 
         return sb.ToString();

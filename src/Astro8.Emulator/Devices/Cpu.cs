@@ -26,13 +26,13 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public int B
     {
-        get => _context.A;
+        get => _context.B;
         set => _context = _context with { B = value };
     }
 
     public int C
     {
-        get => _context.A;
+        get => _context.C;
         set => _context = _context with { C = value };
     }
 
