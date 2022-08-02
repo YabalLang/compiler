@@ -68,11 +68,6 @@ public class InstructionBuilder
 
     public InstructionPointer CreatePointer(int? index = null)
     {
-        if (_references.Count == 0)
-        {
-            throw new InvalidOperationException("No instructions have been added");
-        }
-
         index ??= _references.Count - 1;
 
         if (_references.Count > 1 && _references[index.Value - 1] is {Left: { } pointer})
@@ -81,6 +76,12 @@ public class InstructionBuilder
         }
 
         pointer = new InstructionPointer(this, $"P{_pointerCount++}");
+
+        if (_references.Count == 0)
+        {
+            return pointer;
+        }
+
         _references.Insert(index.Value, pointer);
         return pointer;
     }
@@ -91,8 +92,17 @@ public class InstructionBuilder
         return this;
     }
 
-    public InstructionBuilder Mark(InstructionLabel pointer)
+    public InstructionBuilder Mark(InstructionPointer pointer)
     {
+        Either<InstructionPointer, InstructionItem> value = pointer;
+
+        var index = _references.IndexOf(value);
+
+        if (index != -1)
+        {
+            _references.RemoveAt(index);
+        }
+
         _references.Add(pointer);
         return this;
     }
@@ -349,6 +359,26 @@ public class InstructionBuilder
 
         var prefix = "";
         var newLine = false;
+        var addPrefix = true;
+        var index = 0;
+
+        void AddPrefix()
+        {
+            var length = index == 0 ? 1 : Math.Floor(Math.Log10(index) + 1);
+
+            for (var i = length; i < 3; i++)
+            {
+                sb.Append(' ');
+            }
+
+            sb.Append(index);
+            sb.Append(" | ");
+
+            if (prefix.Length > 0)
+            {
+                sb.Append(prefix);
+            }
+        }
 
         foreach (var reference in _references)
         {
@@ -361,31 +391,47 @@ public class InstructionBuilder
                 newLine = true;
             }
 
-            if (prefix.Length > 0)
-            {
-                sb.Append(prefix);
-            }
-
             if (reference is { IsLeft: true, Left: { } left })
             {
                 if (left is InstructionLabel label)
                 {
+                    sb.Append("    | ");
                     sb.Append(label.Name);
                     sb.Append(':');
                     prefix = "  ";
                 }
                 else
                 {
+                    if (addPrefix)
+                    {
+                        AddPrefix();
+                    }
+                    else
+                    {
+                        sb.Append(' ');
+                    }
+
                     sb.Append('[');
                     sb.Append(left.Name);
                     sb.Append("] ");
                     newLine = false;
+                    addPrefix = false;
                 }
 
                 continue;
             }
 
+            if (addPrefix)
+            {
+                AddPrefix();
+            }
+            else
+            {
+                addPrefix = true;
+            }
+
             sb.Append(reference.ToString());
+            index++;
         }
 
         return sb.ToString();

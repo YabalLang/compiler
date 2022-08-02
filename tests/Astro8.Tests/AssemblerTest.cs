@@ -16,6 +16,7 @@ public class AssemblerTest
 
     private Cpu<Handler> Create(InstructionBuilder builder)
     {
+        _output.WriteLine("Instructions:");
         _output.WriteLine(builder.ToString());
 
         var mock = Mock.Of<Handler>();

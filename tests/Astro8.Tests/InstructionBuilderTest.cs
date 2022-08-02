@@ -16,6 +16,7 @@ public class InstructionBuilderTest
 
     private Cpu<Handler> Create(InstructionBuilder builder)
     {
+        _output.WriteLine("Instructions:");
         _output.WriteLine(builder.ToString());
 
         var mock = Mock.Of<Handler>();
@@ -34,7 +35,7 @@ public class InstructionBuilderTest
     [InlineData("DIV", 1, 2)]
     public void Instruction_Calculations(string instruction, int a, int b)
     {
-        var builder = new Instructions.InstructionBuilder()
+        var builder = new InstructionBuilder()
             .SetA(2)
             .SetB(2)
             .Emit(instruction);
@@ -48,7 +49,7 @@ public class InstructionBuilderTest
     [Fact]
     public void InstructionBuilder_Jump()
     {
-        var builder = new Instructions.InstructionBuilder()
+        var builder = new InstructionBuilder()
             .CreateLabel(out var label)
             .Jump(label)
             .SetA(10)
@@ -64,9 +65,9 @@ public class InstructionBuilderTest
     [Fact]
     public void InstructionBuilder_LDLGE()
     {
-        var builder = new Instructions.InstructionBuilder()
-            .CreateLabel("end", out var end)
-            .CreateLabel("data", out var data)
+        var builder = new InstructionBuilder()
+            .CreateLabel("END", out var end)
+            .CreatePointer(out var data)
             .LoadA_Large(data)
             .Jump(end)
             .Mark(data)
@@ -82,7 +83,7 @@ public class InstructionBuilderTest
     [Fact]
     public void InstructionBuilder_JREG()
     {
-        var builder = new Instructions.InstructionBuilder()
+        var builder = new InstructionBuilder()
             .CreateLabel(out var label)
             .SetA(label)
             .JumpToA()
@@ -98,7 +99,7 @@ public class InstructionBuilderTest
     [Fact]
     public void InstructionBuilder_ReusePointer()
     {
-        new Instructions.InstructionBuilder()
+        new InstructionBuilder()
             .EmitRaw(0)
             .CreatePointer(out var pointerA)
             .CreatePointer(out var pointerB)
@@ -111,7 +112,7 @@ public class InstructionBuilderTest
     [Fact]
     public void InstructionBuilder_NewPointer()
     {
-        new Instructions.InstructionBuilder()
+        new InstructionBuilder()
             .EmitRaw(0)
             .CreatePointer(out var pointerA)
             .EmitRaw(0)
