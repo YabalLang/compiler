@@ -39,10 +39,19 @@ public record Instruction(
                 throw new FormatException($"Expected index and micro instructions in instruction {name}");
             }
 
+#if NETSTANDARD2_0
+            var offsetStr = offsetSpan.Trim().ToString();
+
+            if (!int.TryParse(offsetStr, NumberStyles.None, CultureInfo.InvariantCulture, out var index))
+            {
+                throw new FormatException($"Invalid offset '{offsetStr}' in instruction {name}");
+            }
+#else
             if (!int.TryParse(offsetSpan.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var index))
             {
                 throw new FormatException($"Invalid offset '{offsetSpan}' in instruction {name}");
             }
+#endif
 
             var offset = index * FlagLength;
 
@@ -66,7 +75,7 @@ public record Instruction(
 
                     if (flagIndex == -1)
                     {
-                        throw new FormatException($"Invalid flag '{flagName}' in instruction {name}");
+                        throw new FormatException($"Invalid flag '{flagName.ToString()}' in instruction {name}");
                     }
 
                     flags[flagIndex] = flagValue;

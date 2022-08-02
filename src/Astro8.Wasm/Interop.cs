@@ -32,15 +32,7 @@ public static class Interop
     [UnmanagedCallersOnly(EntryPoint = "Step")]
     public static void Step(int amount)
     {
-        if (_cpu == null)
-        {
-            return;
-        }
-
-        for (var i = 0; i < amount; i++)
-        {
-            _cpu.Step();
-        }
+        _cpu?.Step(amount);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "SetExpansionPort")]

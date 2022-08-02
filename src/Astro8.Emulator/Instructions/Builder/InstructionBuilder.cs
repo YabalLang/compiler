@@ -1,8 +1,10 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using PointerOrData = Astro8.Either<Astro8.Instructions.InstructionPointer, int>;
 
 namespace Astro8.Instructions;
 
+[SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
 public class InstructionBuilder
 {
     private readonly Dictionary<string, Instruction> _instructions;
@@ -54,7 +56,7 @@ public class InstructionBuilder
 
     public InstructionPointer CreatePointer()
     {
-        if (_references.Count > 1 && _references[^2] is {Left: { } pointer})
+        if (_references.Count > 1 && _references[_references.Count - 2] is {Left: { } pointer})
         {
             return pointer;
         }

@@ -39,6 +39,7 @@ public class CpuBuilder<THandler>
         }
 
         builder.ToArray(_memory.Data);
+        _memory.UpdateInstructions();
 
         return this;
     }
@@ -55,6 +56,7 @@ public class CpuBuilder<THandler>
             _memory.Data,
             address ?? _config.Memory.Devices.Program
         );
+        _memory.UpdateInstructions();
 
         return this;
     }
@@ -85,8 +87,7 @@ public class CpuBuilder<THandler>
     public Cpu<THandler> Create()
     {
         var memory = _memory ?? new CpuMemory<THandler>();
-        var instructions = _microInstructions ?? MicroInstruction.Default;
-        var cpu = new Cpu<THandler>(memory, instructions);
+        var cpu = new Cpu<THandler>(memory);
 
         if (_screen != null)
         {

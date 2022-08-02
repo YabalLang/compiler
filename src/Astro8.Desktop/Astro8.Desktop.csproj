@@ -23,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
-        <None Update="native\win-x64\SDL2.dll">
+        <None Visible="False" Update="native\win-x64\SDL2.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>SDL2.dll</Link>
         </None>

@@ -1,7 +1,10 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Astro8;
 
+[SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
+[SuppressMessage("ReSharper", "ReplaceSliceWithRangeIndexer")]
 public static class HexFile
 {
     public static void LoadFile(string path, int[] data, int offset = 0)
@@ -23,14 +26,14 @@ public static class HexFile
                 continue;
             }
 
-            if (line[^1] == '\r')
+            if (line[line.Length - 1] == '\r')
             {
-                line = line[..^1];
+                line = line.Slice(0, line.Length - 1);
             }
 
             if (!validated)
             {
-                validated = ValidateHeader(new string(line));
+                validated = ValidateHeader(line);
                 continue;
             }
 
@@ -43,7 +46,7 @@ public static class HexFile
 
             for (var i = start + 1; i < line.Length;)
             {
-                var value = line[i..];
+                var value = line.Slice(i);
                 var end = value.IndexOf(' ');
 
                 if (end == -1)
@@ -57,7 +60,13 @@ public static class HexFile
 
                 i += end;
 
-                if (int.TryParse(value[..end], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var instruction))
+#if NETSTANDARD2_0
+                var intValue = value.Slice(0, end).ToString();
+#else
+                var intValue = value[..end];
+#endif
+
+                if (int.TryParse(intValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var instruction))
                 {
                     data[offset++] = instruction;
                 }
@@ -65,19 +74,16 @@ public static class HexFile
         }
     }
 
-    private static bool ValidateHeader(string? line)
+    private static bool ValidateHeader(ReadOnlySpan<char> line)
     {
-        if (line is null)
-        {
-            throw new FileLoadException("Empty file provided");
-        }
+        line = line.Trim();
 
-        if (string.IsNullOrWhiteSpace(line))
+        if (line.Length == 0)
         {
             return false;
         }
 
-        if (line.Equals("v3.0 hex words addressed", StringComparison.OrdinalIgnoreCase))
+        if (line.SequenceEqual("v3.0 hex words addressed".AsSpan()))
         {
             return true;
         }

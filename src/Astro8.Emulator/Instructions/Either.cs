@@ -42,9 +42,7 @@ public readonly struct Either<TLeft, TRight> : IEquatable<Either<TLeft, TRight>>
 
     public bool Equals(Either<TLeft, TRight> other)
     {
-        return IsRight == other.IsRight &&
-               EqualityComparer<TRight?>.Default.Equals(Right, other.Right) &&
-               EqualityComparer<TLeft?>.Default.Equals(Left, other.Left);
+        return IsRight == other.IsRight && EqualityComparer<TRight?>.Default.Equals(Right, other.Right) && EqualityComparer<TLeft?>.Default.Equals(Left, other.Left);
     }
 
     public override bool Equals(object? obj)
@@ -54,7 +52,13 @@ public readonly struct Either<TLeft, TRight> : IEquatable<Either<TLeft, TRight>>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(IsRight, Right, Left);
+        unchecked
+        {
+            var hashCode = IsRight.GetHashCode();
+            hashCode = (hashCode * 397) ^ EqualityComparer<TRight?>.Default.GetHashCode(Right);
+            hashCode = (hashCode * 397) ^ EqualityComparer<TLeft?>.Default.GetHashCode(Left);
+            return hashCode;
+        }
     }
 
     public static bool operator ==(Either<TLeft, TRight> left, Either<TLeft, TRight> right)

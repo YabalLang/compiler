@@ -1,4 +1,6 @@
-﻿namespace Astro8.Devices;
+﻿using Astro8.Instructions;
+
+namespace Astro8.Devices;
 
 public class CpuMemory<THandler>
     where THandler : Handler
@@ -14,6 +16,20 @@ public class CpuMemory<THandler>
     public CpuMemory(int[] data)
     {
         Data = data;
+        Instruction = new InstructionReference[0x3FFE];
+
+        UpdateInstructions();
+    }
+
+    public void UpdateInstructions()
+    {
+        var data = Data.AsSpan();
+        var instructions = Instruction.AsSpan();
+
+        for (var i = 0; i < Instruction.Length; i++)
+        {
+            instructions[i] = new InstructionReference(data[i]);
+        }
     }
 
     public CpuMemory(int size = 0xFFFF)
@@ -22,6 +38,8 @@ public class CpuMemory<THandler>
     }
 
     public int[] Data { get; }
+
+    public InstructionReference[] Instruction { get; }
 
     public void MapScreen(Screen<THandler> screen)
     {
@@ -51,16 +69,25 @@ public class CpuMemory<THandler>
                 return;
             }
 
-            if (address >= _screenStart && address < _screenEnd)
-            {
-                _screen?.Write(address - _screenStart, value);
-            }
-            else if (address >= _characterDeviceStart && address < _characterDeviceEnd)
-            {
-                _characterDevice?.Write(address - _characterDeviceStart, value);
-            }
-
             Data[address] = value;
+            OnChange(address, value);
+
+            if (address < Instruction.Length)
+            {
+                Instruction[address] = new InstructionReference(value);
+            }
+        }
+    }
+
+    public void OnChange(int address, int value)
+    {
+        if (address >= _screenStart && address < _screenEnd)
+        {
+            _screen?.Write(address - _screenStart, value);
+        }
+        else if (address >= _characterDeviceStart && address < _characterDeviceEnd)
+        {
+            _characterDevice?.Write(address - _characterDeviceStart, value);
         }
     }
 

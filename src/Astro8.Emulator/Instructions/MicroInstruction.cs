@@ -277,7 +277,11 @@ public readonly record struct MicroInstruction
         if (IsEI) Write(ref chars, ref offset, 'E', 'I');
         if (IsFL) Write(ref chars, ref offset, 'F', 'L');
 
+#if NETSTANDARD2_0
+        return new string(chars.Slice(0, offset).ToArray());
+#else
         return new string(chars[..offset]);
+#endif
     }
 
     private static void Write(ref Span<char> chars, ref int offset, char a, char b)

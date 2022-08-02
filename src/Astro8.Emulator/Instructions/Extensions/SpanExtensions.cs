@@ -76,9 +76,9 @@ public static class StringExtensions
         return false;
     }
 
-    public static LineSplitEnumerator Split(this ReadOnlySpan<char> span, char value)
+    public static SpanSplitEnumerator Split(this ReadOnlySpan<char> span, char value)
     {
-        return new LineSplitEnumerator(span, value);
+        return new SpanSplitEnumerator(span, value);
     }
 
     public static bool TrySplit(this ReadOnlySpan<char> span, char value, out ReadOnlySpan<char> left, out ReadOnlySpan<char> right)
@@ -97,23 +97,23 @@ public static class StringExtensions
         return true;
     }
 
-    public ref struct LineSplitEnumerator
+    public ref struct SpanSplitEnumerator
     {
-        private ReadOnlySpan<char> _str;
+        private ReadOnlySpan<char> _remaining;
         private readonly char _value;
 
-        public LineSplitEnumerator(ReadOnlySpan<char> str, char value)
+        public SpanSplitEnumerator(ReadOnlySpan<char> remaining, char value)
         {
-            _str = str;
+            _remaining = remaining;
             _value = value;
             Current = default;
         }
 
-        public LineSplitEnumerator GetEnumerator() => this;
+        public SpanSplitEnumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {
-            var span = _str;
+            var span = _remaining;
             if (span.Length == 0)
             {
                 return false;
@@ -123,13 +123,13 @@ public static class StringExtensions
 
             if (index == -1)
             {
-                _str = ReadOnlySpan<char>.Empty;
+                _remaining = ReadOnlySpan<char>.Empty;
                 Current = span;
                 return true;
             }
 
             Current = span.Slice(0, index);
-            _str = span.Slice(index + 1);
+            _remaining = span.Slice(index + 1);
             return true;
         }
 
