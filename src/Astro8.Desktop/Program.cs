@@ -24,7 +24,10 @@ var cpu = CpuBuilder.Create(handler, config)
     .WithProgramFile()
     .Create();
 
-cpu.RunThread(config.Cpu.TickSpeed);
+cpu.RunThread(
+    config.Cpu.CycleDuration,
+    config.Cpu.InstructionsPerCycle
+);
 
 while (cpu.Running)
 {

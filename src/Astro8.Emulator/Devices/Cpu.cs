@@ -30,16 +30,34 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public int ExpansionPort { get; set; }
 
-    public void Run()
+    public void Run(int cycleDuration = 0, int instructionsPerCycle = 1)
     {
-        Step(0);
+        if (cycleDuration > 0)
+        {
+            var sw = Stopwatch.StartNew();
+            while (!_halt)
+            {
+                Step(instructionsPerCycle);
+
+                while (sw.ElapsedTicks < cycleDuration)
+                {
+                    // Wait
+                }
+
+                sw.Restart();
+            }
+        }
+        else
+        {
+            Step(0);
+        }
     }
 
-    public void RunThread(int tickDuration = 10)
+    public void RunThread(int cycleDuration = 0, int instructionsPerCycle = 1)
     {
         var cpuThread = new Thread(() =>
         {
-            Step(0);
+            Run(cycleDuration, instructionsPerCycle);
         });
 
         cpuThread.Start();
@@ -76,19 +94,20 @@ public sealed partial class Cpu<THandler> : IDisposable
             context.FlagA = _flagA;
             context.FlagB = _flagB;
             context.Bus = _bus;
+            context.ProgramCounter = _programCounter;
 
             for (var i = 0; (amount == 0 || i < amount) && !_halt; i++)
             {
-                _memoryIndex = _programCounter;
+                context.MemoryIndex = context.ProgramCounter;
 
-                if (_memoryIndex >= instructionLength)
+                if (context.MemoryIndex >= instructionLength)
                 {
                     _halt = true;
                     break;
                 }
 
-                _programCounter += 1;
-                context.Instruction = *(instructionPointer + _memoryIndex);
+                context.ProgramCounter += 1;
+                context.Instruction = *(instructionPointer + context.MemoryIndex);
 
                 Step(ref context);
             }
@@ -100,6 +119,7 @@ public sealed partial class Cpu<THandler> : IDisposable
             _flagA = context.FlagA;
             _flagB = context.FlagB;
             _bus = context.Bus;
+            _programCounter = context.ProgramCounter;
         }
     }
 
@@ -161,6 +181,8 @@ public sealed partial class Cpu<THandler> : IDisposable
         public int Bus;
         public bool FlagA;
         public bool FlagB;
+        public int MemoryIndex;
+        public int ProgramCounter;
         public InstructionReference Instruction;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

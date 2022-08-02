@@ -55,8 +55,8 @@ public readonly struct Either<TLeft, TRight> : IEquatable<Either<TLeft, TRight>>
         unchecked
         {
             var hashCode = IsRight.GetHashCode();
-            hashCode = (hashCode * 397) ^ EqualityComparer<TRight?>.Default.GetHashCode(Right);
-            hashCode = (hashCode * 397) ^ EqualityComparer<TLeft?>.Default.GetHashCode(Left);
+            hashCode = (hashCode * 397) ^ (Right is null ? 0 : EqualityComparer<TRight?>.Default.GetHashCode(Right));
+            hashCode = (hashCode * 397) ^ (Left is null ? 0 : EqualityComparer<TLeft?>.Default.GetHashCode(Left));
             return hashCode;
         }
     }

@@ -20,107 +20,81 @@ public partial class Cpu<THandler>
     {
         switch (context.Instruction.Id)
         {
-        
             case 0:
                 FETCH(ref context);
                 break;
-        
             case 1:
                 AIN(ref context);
                 break;
-        
             case 2:
                 BIN(ref context);
                 break;
-        
             case 3:
                 CIN(ref context);
                 break;
-        
             case 4:
                 LDIA(ref context);
                 break;
-        
             case 5:
                 LDIB(ref context);
                 break;
-        
             case 6:
                 RDEXP(ref context);
                 break;
-        
             case 7:
                 WREXP(ref context);
                 break;
-        
             case 8:
                 STA(ref context);
                 break;
-        
             case 9:
                 STC(ref context);
                 break;
-        
             case 10:
                 ADD(ref context);
                 break;
-        
             case 11:
                 SUB(ref context);
                 break;
-        
             case 12:
                 MULT(ref context);
                 break;
-        
             case 13:
                 DIV(ref context);
                 break;
-        
             case 14:
                 JMP(ref context);
                 break;
-        
             case 15:
                 JMPZ(ref context);
                 break;
-        
             case 16:
                 JMPC(ref context);
                 break;
-        
             case 17:
                 LDAIN(ref context);
                 break;
-        
             case 18:
                 STAOUT(ref context);
                 break;
-        
             case 19:
                 LDLGE(ref context);
                 break;
-        
             case 20:
                 STLGE(ref context);
                 break;
-        
             case 21:
                 SWP(ref context);
                 break;
-        
             case 22:
                 SWPC(ref context);
                 break;
-        
             case 23:
                 HLT(ref context);
                 break;
-        
             case 24:
                 OUT(ref context);
                 break;
-        
         }
     }
 
@@ -209,7 +183,7 @@ public partial class Cpu<THandler>
         // Step 2
         {
             // RE
-            context.Bus = context.ExpansionPort;
+            context.Bus = ExpansionPort;
             // WA
             context.A = context.Bus;
         }
@@ -222,7 +196,7 @@ public partial class Cpu<THandler>
             // RA
             context.Bus = context.A;
             // WE
-            context.ExpansionPort = context.Bus;
+            ExpansionPort = context.Bus;
         }
     }
 
@@ -270,9 +244,9 @@ public partial class Cpu<THandler>
             context.Bus = context.A + context.B;
             context.FlagA = context.Bus == 0;
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else
@@ -289,12 +263,12 @@ public partial class Cpu<THandler>
         // Step 2
         {
             // SU
-            context.Bus = A - B;
+            context.Bus = context.A - context.B;
             context.FlagA = context.Bus == 0;
 
             if (context.Bus < 0)
             {
-                context.Bus = 65535 + context.Bus;
+                context.Bus = 65534 + context.Bus;
                 context.FlagB = false;
             }
             else
@@ -314,9 +288,9 @@ public partial class Cpu<THandler>
             context.Bus = context.A * context.B;
             context.FlagA = context.Bus == 0;
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else
@@ -344,9 +318,9 @@ public partial class Cpu<THandler>
                 context.Bus = 0;
             }
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else

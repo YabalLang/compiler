@@ -1,7 +1,12 @@
 ﻿{
   "Cpu": {
-    // Max tick speed of the CPU
-    "TickSpeed": 5
+    // Duration of one cycle in ticks.
+    // Lower values will result in faster execution.
+    "CycleDuration": 5,
+
+    // Amount of instructions that should be executed per cycle.
+    // Higher values will result in faster execution, since the CPU doesn't have to fetch the registers from the heap every time.
+    "InstructionsPerCycle": 10
   },
 
   "Program": {

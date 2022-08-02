@@ -19,11 +19,11 @@ public partial class Cpu<THandler>
     {
         switch (context.Instruction.Id)
         {
-        {{ for instruction in Instructions }}
+        {{- for instruction in Instructions }}
             case {{ instruction.Id }}:
                 {{ instruction.Name }}(ref context);
                 break;
-        {{ end }}
+        {{- end }}
         }
     }
 {{ for instruction in Instructions }}
@@ -44,13 +44,13 @@ public partial class Cpu<THandler>
             context.Bus = context.C;
         {{- else if step.MicroInstruction.IsRM }}
             // RM
-            context.Bus = context.Get(_memoryIndex);
+            context.Bus = context.Get(context.MemoryIndex);
         {{- else if step.MicroInstruction.IsIR }}
             // IR
             context.Bus = context.Instruction.Data;
         {{- else if step.MicroInstruction.IsCR }}
             // CR
-            context.Bus = _programCounter;
+            context.Bus = context.ProgramCounter;
         {{- else if step.MicroInstruction.IsRE }}
             // RE
             context.Bus = ExpansionPort;
@@ -64,7 +64,7 @@ public partial class Cpu<THandler>
 
             if (context.Bus < 0)
             {
-                context.Bus = 65535 + context.Bus;
+                context.Bus = 65534 + context.Bus;
                 context.FlagB = false;
             }
             else
@@ -76,9 +76,9 @@ public partial class Cpu<THandler>
             context.Bus = context.A * context.B;
             context.FlagA = context.Bus == 0;
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else
@@ -98,9 +98,9 @@ public partial class Cpu<THandler>
                 context.Bus = 0;
             }
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else
@@ -112,9 +112,9 @@ public partial class Cpu<THandler>
             context.Bus = context.A + context.B;
             context.FlagA = context.Bus == 0;
 
-            if (context.Bus >= 65535)
+            if (context.Bus >= 65534)
             {
-                context.Bus -= 65535;
+                context.Bus -= 65534;
                 context.FlagB = true;
             }
             else
@@ -138,13 +138,13 @@ public partial class Cpu<THandler>
             _instructionReg = context.Bus;
         {{- else if step.MicroInstruction.IsWM }}
             // WM
-            context.Set(_memoryIndex, context.Bus);
+            context.Set(context.MemoryIndex, context.Bus);
         {{- else if step.MicroInstruction.IsJ }}
             // J
-            _programCounter = context.Bus;
+            context.ProgramCounter = context.Bus;
         {{- else if step.MicroInstruction.IsAW }}
             // AW
-            _memoryIndex = context.Bus;
+            context.MemoryIndex = context.Bus;
         {{- else if step.MicroInstruction.IsWE }}
             // WE
             ExpansionPort = context.Bus;
@@ -152,7 +152,7 @@ public partial class Cpu<THandler>
 
         {{- if step.MicroInstruction.IsCE }}
             // CE
-            _programCounter += 1;
+            context.ProgramCounter += 1;
         {{- else if step.MicroInstruction.IsST }}
             // ST
             _halt = true;
