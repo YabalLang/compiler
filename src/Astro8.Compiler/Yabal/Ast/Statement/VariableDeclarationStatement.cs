@@ -5,6 +5,11 @@ namespace Astro8.Yabal.Ast;
 
 public record VariableDeclarationStatement(SourceRange Range, string Name, Expression? Value = null, LanguageType? Type = null) : Statement(Range)
 {
+    public override void BeforeBuild(YabalBuilder builder)
+    {
+        Value?.BeforeBuild(builder);
+    }
+
     public override void Build(YabalBuilder builder)
     {
         LanguageType? valueType = null;

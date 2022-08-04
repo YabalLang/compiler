@@ -2,9 +2,14 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record AssignStatement(SourceRange Range, string Name, Expression Value) : Statement(Range)
+public record AssignExpression(SourceRange Range, string Name, Expression Value) : Expression(Range)
 {
-    public override void Build(YabalBuilder builder)
+    public override void BeforeBuild(YabalBuilder builder)
+    {
+        Value.BeforeBuild(builder);
+    }
+
+    public override LanguageType BuildExpression(YabalBuilder builder)
     {
         if (!builder.TryGetVariable(Name, out var variable))
         {
@@ -19,5 +24,6 @@ public record AssignStatement(SourceRange Range, string Name, Expression Value) 
         }
 
         builder.StoreA(variable.Pointer);
+        return type;
     }
 }

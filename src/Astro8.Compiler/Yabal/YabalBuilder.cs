@@ -1,21 +1,24 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Antlr4.Runtime;
 using Astro8.Yabal;
+using Astro8.Yabal.Ast;
 using Astro8.Yabal.Visitor;
 
 namespace Astro8.Instructions;
 
 public class YabalBuilder : InstructionBuilderBase, IProgram
 {
+    private readonly YabalBuilder? _parent;
     private readonly InstructionBuilder _builder;
 
     private readonly Dictionary<int, InstructionPointer> _values = new();
     private readonly InstructionPointer _stackIndex;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
-    private readonly Stack<BlockStack> _blockStack = new();
-    private readonly List<InstructionPointer> _stack = new();
+    private readonly Stack<BlockStack> _blockStack;
+    private readonly List<InstructionPointer> _stack;
     private bool _hasCall;
+    private Dictionary<string, Function> _functions = new();
 
     public YabalBuilder()
     {
@@ -27,8 +30,25 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         Temp = _builder.CreatePointer(name: "Temp");
 
         _stackIndex = new InstructionPointer(name: "CallPointer");
+        _blockStack = new Stack<BlockStack>();
+        _stack = new List<InstructionPointer>();
 
         PushBlock();
+    }
+
+    public YabalBuilder(YabalBuilder parent)
+    {
+        _parent = parent;
+        _builder = new InstructionBuilder();
+
+        _callLabel = parent._callLabel;
+        _returnLabel = parent._returnLabel;
+
+        Temp = parent.Temp;
+
+        _stackIndex = parent._stackIndex;
+        _blockStack = parent._blockStack;
+        _stack = parent._stack;
     }
 
     public InstructionPointer GetLargeValue(int value)
@@ -79,6 +99,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
+        if (_parent != null)
+        {
+            return _parent.TryGetVariable(name, out variable);
+        }
+
         variable = default;
         return false;
     }
@@ -93,6 +118,32 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
+    public bool TryGetFunction(string name, [NotNullWhen(true)] out Function? function)
+    {
+        if (_functions.TryGetValue(name, out function))
+        {
+            return true;
+        }
+
+        if (_parent != null)
+        {
+            return _parent.TryGetFunction(name, out function);
+        }
+
+        function = default;
+        return false;
+    }
+
+    public Function GetFunction(string name)
+    {
+        if (!TryGetFunction(name, out var function))
+        {
+            throw new KeyNotFoundException($"Function '{name}' not found");
+        }
+
+        return function;
+    }
+
     public void CompileCode(string code)
     {
         var inputStream = new AntlrInputStream(code);
@@ -101,12 +152,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var commonTokenStream = new CommonTokenStream(lexer);
         var parser = new YabalParser(commonTokenStream)
         {
-            ErrorHandler = new BailErrorStrategy(),
+            // ErrorHandler = new BailErrorStrategy(),
         };
 
         var listener = new YabalVisitor();
         var program = listener.VisitProgram(parser.program());
 
+        program.BeforeBuild(this);
         program.Build(this);
     }
 
@@ -142,6 +194,39 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.JumpToA();
     }
 
+    public LanguageType[] Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null)
+    {
+        _hasCall = true;
+
+        var hasArguments = arguments is { Count: > 0 };
+        var argumentTypes = hasArguments ? new LanguageType[arguments!.Count] : Array.Empty<LanguageType>();
+        var returnAddress = _builder.CreateLabel();
+        var callAddress = _builder.CreateLabel();
+
+        _builder.SetA(hasArguments ? callAddress : address);
+        _builder.SwapA_C();
+        _builder.SetB(returnAddress);
+        _builder.Jump(_callLabel);
+
+        if (hasArguments)
+        {
+            _builder.Mark(callAddress);
+
+            for (var i = 0; i < arguments!.Count; i++)
+            {
+                var argument = arguments[i];
+                argumentTypes[i] = argument.BuildExpression(this);
+                _builder.StoreA(GetStackVariable(i));
+            }
+
+            _builder.Jump(address);
+        }
+
+        _builder.Mark(returnAddress);
+
+        return argumentTypes;
+    }
+
     private void CreateReturn(InstructionBuilderBase builder)
     {
         builder.Mark(_returnLabel);
@@ -168,24 +253,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.JumpToA();
     }
 
-    public void Call(PointerOrData address)
-    {
-        _hasCall = true;
-
-        var returnAddress = _builder.CreateLabel();
-
-        _builder.SetA(address);
-        _builder.SwapA_C();
-        _builder.SetB(returnAddress);
-        _builder.Jump(_callLabel);
-
-        _builder.Mark(returnAddress);
-    }
-
     public void Ret()
     {
         _hasCall = true;
-
         _builder.Jump(_returnLabel);
     }
 
@@ -253,7 +323,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             builder.Mark(_stackIndex);
             builder.EmitRaw(0xE000);
+        }
 
+        foreach (var (_, function) in _functions)
+        {
+            builder.Mark(function.Label);
+            builder.AddRange(function.Builder._builder);
+            builder.Jump(_returnLabel);
+        }
+
+        if (_hasCall)
+        {
             foreach (var pointer in _stack)
             {
                 builder.Mark(pointer);
@@ -268,5 +348,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         builder.AddRange(_builder);
         return builder;
+    }
+
+    public void DeclareFunction(Function statement)
+    {
+        _functions.Add(statement.Name, statement);
     }
 }

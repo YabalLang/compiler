@@ -43,6 +43,7 @@ expression
 	| expression Equals expression						            # EqualExpression
 	| expression And expression								        # AndExpression
 	| expression Or expression								        # OrExpression
+	| identifierName Assign expression                              # AssignExpression
 	| Throw expression												# ThrowExpression
 	| OpenBrace expression CloseBrace								# ExpressionExpression
     | string                                                        # StringExpression
@@ -66,20 +67,13 @@ underscore
 
 // Statements
 statement
-    : functionDeclaration
-    | variableDeclaration
+    : variableDeclaration
 	| returnStatement
-	| assignStatement
 	| forStatement
 	| ifStatement
 	| continueStatement
 	| breakStatement
-    | callStatement
 	| expressionStatement
-    ;
-
-callStatement
-    : identifierName OpenBrace expressionList CloseBrace
     ;
 
 continueStatement
@@ -122,14 +116,10 @@ expressionList
     ;
 
 blockStatement
-	: OpenCurly (statement (eos statement)*)? eos? CloseCurly
+	: OpenCurly (statement (eos statement)*)? CloseCurly
 	;
 
 // Function
-functionDeclaration
-    : returnType identifierName functionParameterList functionBody
-    ;
-
 functionBody
 	: blockStatement
 	| Arrow expression
@@ -137,12 +127,9 @@ functionBody
 
 // Variable
 variableDeclaration
-    : type identifierName (Assign expression)?
-    | Var identifierName Assign expression
-    ;
-
-assignStatement
-    : identifierName Assign expression
+    : type identifierName (Assign expression)?                      # DefaultVariableDeclaration
+    | Var identifierName Assign expression                          # AutoVariableDeclaration
+    | returnType identifierName functionParameterList functionBody  # FunctionDeclaration
     ;
 
 // Identifier

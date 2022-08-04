@@ -112,4 +112,32 @@ public class AssemblerTest
         var address = builder.GetVariable("a").Pointer.Address;
         Assert.Equal(expected, cpu.Memory[address]);
     }
+
+    [Fact]
+    public void Function()
+    {
+        const string code = """
+            var a = 0
+
+            void functionA(int amount) {
+                a += amount
+                functionB()
+            }
+
+            void functionB() {
+                a += 1
+            }
+
+            functionA(2)
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("a").Pointer.Address;
+        Assert.Equal(3, cpu.Memory[address]);
+    }
 }

@@ -34,10 +34,17 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     private new Statement VisitStatement(IParseTree context)
     {
-        return (Statement) Visit(context);
+        var result = (Statement)Visit(context);
+
+        if (result == null)
+        {
+            throw new InvalidOperationException($"{context.GetType().Name} is not supported.");
+        }
+
+        return result;
     }
 
-    private new Expression VisitExpression(IParseTree context)
+    private Expression VisitExpression(IParseTree context)
     {
         var result = (Expression)Visit(context);
 
@@ -57,13 +64,22 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    public override VariableDeclarationStatement VisitVariableDeclaration(YabalParser.VariableDeclarationContext context)
+    public override Node VisitDefaultVariableDeclaration(YabalParser.DefaultVariableDeclarationContext context)
     {
         return new VariableDeclarationStatement(
             context,
             context.identifierName().GetText(),
             context.expression() is {} expr ? VisitExpression(expr) : null,
-            context.type() is {} type ? TypeVisitor.Instance.Visit(type) : null
+            TypeVisitor.Instance.Visit(context.type())
+        );
+    }
+
+    public override Node VisitAutoVariableDeclaration(YabalParser.AutoVariableDeclarationContext context)
+    {
+        return new VariableDeclarationStatement(
+            context,
+            context.identifierName().GetText(),
+            VisitExpression(context.expression())
         );
     }
 
@@ -82,9 +98,9 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new BooleanExpression(context, false);
     }
 
-    public override AssignStatement VisitAssignStatement(YabalParser.AssignStatementContext context)
+    public override Node VisitAssignExpression(YabalParser.AssignExpressionContext context)
     {
-        return new AssignStatement(
+        return new AssignExpression(
             context,
             context.identifierName().GetText(),
             VisitExpression(context.expression())
@@ -114,7 +130,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new NotImplementedException();
         }
 
-        return new AssignStatement(
+        return new AssignExpression(
             context,
             identifierName.identifierName().GetText(),
             CreateBinary(context, expressions, @operator)
@@ -160,5 +176,38 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitIdentifierExpression(YabalParser.IdentifierExpressionContext context)
     {
         return new IdentifierExpression(context, context.identifierName().GetText());
+    }
+
+    public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
+    {
+        return new FunctionDeclarationStatement(
+            context,
+            context.identifierName().GetText(),
+            TypeVisitor.Instance.Visit(context.returnType()),
+            context.functionParameterList().functionParameter()
+                .Select(p => new FunctionParameter(
+                    p.identifierName().GetText(),
+                    TypeVisitor.Instance.Visit(p.type())
+                ))
+                .ToList(),
+            (BlockStatement) Visit(context.functionBody())
+        );
+    }
+
+    public override Node VisitCallExpression(YabalParser.CallExpressionContext context)
+    {
+        return new CallExpression(
+            context,
+            VisitExpression(context.expression()),
+            context.expressionList().expression().Select(VisitExpression).ToList()
+        );
+    }
+
+    public override Node VisitExpressionStatement(YabalParser.ExpressionStatementContext context)
+    {
+        return new ExpressionStatement(
+            context,
+            VisitExpression(context.expression())
+        );
     }
 }
