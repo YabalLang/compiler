@@ -5,10 +5,33 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Astro8</RootNamespace>
+        <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Astro8.Core\Astro8.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Antlr4" Version="4.6.6">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+        <Antlr4 Update="Yabal\YabalParser.g4">
+            <CustomToolNamespace>Astro8.Yabal</CustomToolNamespace>
+        </Antlr4>
+        <Antlr4 Update="Yabal\YabalLexer.g4">
+            <CustomToolNamespace>Astro8.Yabal</CustomToolNamespace>
+        </Antlr4>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Yabal\YabalLexer.g4" />
+        <Content Include="Yabal\YabalParser.g4" />
     </ItemGroup>
 
 </Project>

@@ -18,6 +18,8 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public bool Running => !_halt;
 
+    public CpuMemory<THandler> Memory => _memory;
+
     public int A
     {
         get => _context.A;

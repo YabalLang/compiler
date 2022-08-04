@@ -2,16 +2,13 @@
 
 public class InstructionLabel : InstructionPointer
 {
-    private readonly InstructionBuilder _builder;
-
     public InstructionLabel(InstructionBuilder builder, string? name)
-        : base(builder, name)
+        : base(name)
     {
-        _builder = builder;
     }
 
-    public void Mark()
+    public override string? ToString()
     {
-        _builder.Mark(this);
+        return $"{Name}:";
     }
 }

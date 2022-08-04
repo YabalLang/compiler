@@ -97,12 +97,6 @@ public partial class Cpu<THandler>
             case 24:
                 SWPC(ref context);
                 break;
-            case 25:
-                HLT(ref context);
-                break;
-            case 26:
-                OUT(ref context);
-                break;
         }
     }
 
@@ -627,26 +621,6 @@ public partial class Cpu<THandler>
             context.Cpu.Bus = context.Cpu.B;
             // WC
             context.Cpu.C = context.Cpu.Bus;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void HLT(ref StepContext context)
-    {
-        // Step 2
-        {
-            // ST
-            _halt = true;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OUT(ref StepContext context)
-    {
-        // Step 2
-        {
-            // RA
-            context.Cpu.Bus = context.Cpu.A;
         }
     }
 

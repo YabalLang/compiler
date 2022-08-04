@@ -2,25 +2,23 @@
 
 public class InstructionPointer
 {
-    private readonly InstructionBuilder _builder;
-    private int? _value;
+    private int? _address;
 
-    public InstructionPointer(InstructionBuilder builder, string? name)
+    public InstructionPointer(string? name)
     {
         Name = name;
-        _builder = builder;
     }
 
     public string? Name { get; }
 
-    public int Value
+    public int Address
     {
-        get => _value ?? throw new InvalidOperationException($"No value has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
-        set => _value = value;
+        get => _address ?? throw new InvalidOperationException($"No address has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
+        set => _address = value;
     }
 
     public override string? ToString()
     {
-        return $":{Name}";
+        return $"@{Name}";
     }
 }

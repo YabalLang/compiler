@@ -1,22 +1,57 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using PointerOrData = Astro8.Either<Astro8.Instructions.InstructionPointer, int>;
 
 namespace Astro8.Instructions;
 
 [SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
 public class InstructionBuilder : ICollection<int>
 {
+    public sealed class RegisterWatch : IDisposable
+    {
+        private readonly InstructionBuilder _builder;
+
+        public RegisterWatch(InstructionBuilder builder)
+        {
+            _builder = builder;
+        }
+
+        public bool A { get; set; }
+
+        public bool B { get; set; }
+
+        public bool C { get; set; }
+
+        public void Reset()
+        {
+            A = false;
+            B = false;
+            C = false;
+        }
+
+        public void Dispose()
+        {
+            _builder._watchStack.Pop();
+        }
+    }
+
     private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
     private readonly Dictionary<string, Instruction> _instructions;
 
     private int _pointerCount;
     private int _labelCount;
+    private Stack<RegisterWatch> _watchStack = new();
 
     public InstructionBuilder(IEnumerable<Instruction>? instructions = null)
     {
         _instructions = (instructions ?? Instruction.Default).ToDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public RegisterWatch WatchRegister()
+    {
+        var watch = new RegisterWatch(this);
+        _watchStack.Push(watch);
+        return watch;
     }
 
     private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label, bool IsRaw = false)
@@ -76,16 +111,11 @@ public class InstructionBuilder : ICollection<int>
         return this;
     }
 
-    public InstructionPointer CreatePointer(int? index = null)
+    public InstructionPointer CreatePointer(string? name = null, int? index = null)
     {
         index ??= _references.Count - 1;
 
-        if (_references.Count > 1 && _references[index.Value - 1] is {Left: { } pointer})
-        {
-            return pointer;
-        }
-
-        pointer = new InstructionPointer(this, $"P{_pointerCount++}");
+        var pointer = new InstructionPointer(name ?? $"P{_pointerCount++}");
 
         if (_references.Count == 0)
         {
@@ -134,7 +164,39 @@ public class InstructionBuilder : ICollection<int>
             throw new ArgumentOutOfRangeException(nameof(data));
         }
 
-        var value = new InstructionItem(InstructionReference.Create(GetIndex(name), data), null);
+        if (!_instructions.TryGetValue(name, out var instruction))
+        {
+            throw new ArgumentException($"Unknown instruction '{name}'", nameof(name));
+        }
+
+        // Update watchers
+        foreach (var microInstruction in instruction.MicroInstructions)
+        {
+            if (microInstruction.IsWA)
+            {
+                foreach (var watch in _watchStack)
+                {
+                    watch.A = true;
+                }
+            }
+            else if (microInstruction.IsWA)
+            {
+                foreach (var watch in _watchStack)
+                {
+                    watch.B = true;
+                }
+            }
+            else if (microInstruction.IsWC)
+            {
+                foreach (var watch in _watchStack)
+                {
+                    watch.C = true;
+                }
+            }
+        }
+
+        // Register
+        var value = new InstructionItem(InstructionReference.Create(instruction.Id, data), null);
 
         if (index.HasValue)
         {
@@ -195,7 +257,7 @@ public class InstructionBuilder : ICollection<int>
     public InstructionPointer EmitRawAt(int index, int value)
     {
         _references.Insert(index, new InstructionItem(new InstructionReference(value), null, true));
-        return CreatePointer(index);
+        return CreatePointer(index: index);
     }
 
     public InstructionBuilder Nop() => EmitRaw(0);
@@ -210,11 +272,11 @@ public class InstructionBuilder : ICollection<int>
 
     public InstructionBuilder SetB(PointerOrData value) => Emit("LDIB", value);
 
-    public InstructionBuilder MovExpansionToA() => Emit("RDEXP");
+    public InstructionBuilder MovExpansionToB() => Emit("RDEXP");
 
-    public InstructionBuilder MovAToExpansion() => Emit("WREXP");
+    public InstructionBuilder MovBToExpansion() => Emit("WREXP");
 
-    public InstructionBuilder StoreA(PointerOrData address) => Emit("STA", address);
+    public InstructionBuilder StoreA(PointerOrData address, int? index = null) => Emit("STA", address, index);
 
     public InstructionBuilder StoreC(PointerOrData address) => Emit("STC", address);
 
@@ -225,6 +287,8 @@ public class InstructionBuilder : ICollection<int>
     public InstructionBuilder Mult() => Emit("MULT");
 
     public InstructionBuilder Div() => Emit("DIV");
+
+    public InstructionBuilder CounterToA() => Emit("CTRA");
 
     public InstructionBuilder Jump(PointerOrData counter)
     {
@@ -246,18 +310,18 @@ public class InstructionBuilder : ICollection<int>
 
     public InstructionBuilder JumpToA() => Emit("JREG");
 
-    public InstructionBuilder LoadA() => Emit("LDAIN");
+    public InstructionBuilder LoadA_FromAddressUsingA() => Emit("LDAIN");
 
-    public InstructionBuilder StoreB_ToAddressUsingA() => Emit("STAOUT");
+    public InstructionBuilder StoreB_ToAddressInA() => Emit("STAOUT");
 
-    public InstructionBuilder StoreA_Large(int address)
+    public InstructionBuilder StoreA_Large(PointerOrData address)
     {
         Emit("STLGE");
         EmitRaw(address);
         return this;
     }
 
-    public InstructionBuilder LoadA_Large(InstructionPointer address)
+    public InstructionBuilder LoadA_Large(PointerOrData address)
     {
         Emit("LDLGE");
         EmitRaw(address);
@@ -267,8 +331,6 @@ public class InstructionBuilder : ICollection<int>
     public InstructionBuilder SwapA_B() => Emit("SWP");
 
     public InstructionBuilder SwapA_C() => Emit("SWPC");
-
-    public InstructionBuilder Halt() => Emit("HLT");
 
     public int[] ToArray()
     {
@@ -349,7 +411,7 @@ public class InstructionBuilder : ICollection<int>
             {
                 var label = either.Left;
                 labels[label] = i;
-                label.Value = i;
+                label.Address = i;
             }
             else
             {

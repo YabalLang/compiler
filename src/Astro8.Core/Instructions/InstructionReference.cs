@@ -5,7 +5,7 @@ namespace Astro8.Instructions;
 [StructLayout(LayoutKind.Explicit, Size = 12)]
 public readonly record struct InstructionReference
 {
-    public const int MaxInstructionId = 0b111111;
+    public const int MaxInstructionId = 63;
     public const int MaxDataLength = 2047;
 
     [FieldOffset(0)] private readonly int _id;

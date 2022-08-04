@@ -171,8 +171,6 @@ public record Instruction(
         "ldw( 2=cr,aw & 3=ce,rm,wa & 4=ei", // Load value directly after counter, and advance counter by 2
         "swp( 2=ra,wc & 3=wa,rb & 4=rc,wb & 5=ei", // Swap register A and register B (this will overwrite the contents of register C, using it as a temporary swap area)
         "swpc( 2=ra,wb & 3=wa,rc & 4=rb,wc & 5=ei", // Swap register A and register C (this will overwrite the contents of register B, using it as a temporary swap area)
-        "hlt( 2=st & 3=ei", // Stop the computer clock
-        "out( 2=ra,dw & 3=ei", // Output to decimal display and LCD screen
     };
 
     private static IReadOnlyList<Instruction>? _default;

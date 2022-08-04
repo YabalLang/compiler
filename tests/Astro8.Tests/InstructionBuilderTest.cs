@@ -33,7 +33,7 @@ public class InstructionBuilderTest
     [InlineData("SUB", 0, 2)]
     [InlineData("MULT", 4, 2)]
     [InlineData("DIV", 1, 2)]
-    public void Instruction_Calculations(string instruction, int a, int b)
+    public void Binary(string instruction, int a, int b)
     {
         var builder = new InstructionBuilder()
             .SetA(2)
@@ -47,7 +47,7 @@ public class InstructionBuilderTest
     }
 
     [Fact]
-    public void InstructionBuilder_Jump()
+    public void JMP()
     {
         var builder = new InstructionBuilder()
             .CreateLabel(out var label)
@@ -63,7 +63,7 @@ public class InstructionBuilderTest
     }
 
     [Fact]
-    public void InstructionBuilder_LDLGE()
+    public void LDLGE()
     {
         var builder = new InstructionBuilder()
             .CreateLabel("END", out var end)
@@ -81,7 +81,7 @@ public class InstructionBuilderTest
     }
 
     [Fact]
-    public void InstructionBuilder_JREG()
+    public void JREG()
     {
         var builder = new InstructionBuilder()
             .CreateLabel(out var label)
@@ -93,24 +93,11 @@ public class InstructionBuilderTest
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal((label.Value, 0, 0), (cpu.A, cpu.B, cpu.C));
+        Assert.Equal((label.Address, 0, 0), (cpu.A, cpu.B, cpu.C));
     }
 
     [Fact]
-    public void InstructionBuilder_ReusePointer()
-    {
-        new InstructionBuilder()
-            .EmitRaw(0)
-            .CreatePointer(out var pointerA)
-            .CreatePointer(out var pointerB)
-            .ToArray();
-
-        Assert.Equal(pointerA, pointerB);
-        Assert.Equal(0, pointerA.Value);
-    }
-
-    [Fact]
-    public void InstructionBuilder_NewPointer()
+    public void Pointer()
     {
         new InstructionBuilder()
             .EmitRaw(0)
@@ -120,7 +107,7 @@ public class InstructionBuilderTest
             .ToArray();
 
         Assert.NotEqual(pointerA, pointerB);
-        Assert.Equal(0, pointerA.Value);
-        Assert.Equal(1, pointerB.Value);
+        Assert.Equal(0, pointerA.Address);
+        Assert.Equal(1, pointerB.Address);
     }
 }
