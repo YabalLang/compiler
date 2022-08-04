@@ -24,8 +24,7 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithProgram<TCollection>(TCollection builder)
-        where TCollection : ICollection<int>
+    public CpuBuilder<THandler> WithProgram(IProgram builder)
     {
         if (_memory == null)
         {

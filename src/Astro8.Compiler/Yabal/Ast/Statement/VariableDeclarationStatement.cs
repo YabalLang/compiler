@@ -26,14 +26,13 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
                 break;
         }
 
-        var pointer = builder.Instruction
-            .EmitRaw(value)
-            .CreatePointer(Name);
+        builder.EmitRaw(value);
+        var pointer = builder.CreatePointer(Name);
 
         if (expression != null)
         {
             valueType = expression.BuildExpression(builder);
-            builder.Instruction.StoreA(pointer);
+            builder.StoreA(pointer);
         }
 
         if (valueType == null)

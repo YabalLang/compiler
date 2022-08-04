@@ -8,12 +8,12 @@ public record IntegerExpression(SourceRange Range, int Value) : Expression(Range
     {
         if (Value <= InstructionReference.MaxDataLength)
         {
-            builder.Instruction.SetA(Value);
+            builder.SetA(Value);
         }
         else
         {
-            var pointer = builder.CreateValuePointer(Value);
-            builder.Instruction.LoadA(pointer);
+            var pointer = builder.GetLargeValue(Value);
+            builder.LoadA(pointer);
         }
 
         return LanguageType.Integer;

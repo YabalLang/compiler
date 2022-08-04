@@ -17,12 +17,12 @@ public class AssemblerTest
     private Cpu<Handler> Create(YabalBuilder builder)
     {
         _output.WriteLine("Instructions:");
-        _output.WriteLine(builder.Instruction.ToString());
+        _output.WriteLine(builder.ToString());
 
         var mock = Mock.Of<Handler>();
         var cpu = CpuBuilder.Create(mock)
             .WithMemory()
-            .WithProgram(builder.Instruction)
+            .WithProgram(builder)
             .Create();
 
         return cpu;
@@ -33,22 +33,27 @@ public class AssemblerTest
     {
         var builder = new YabalBuilder();
 
-        var value = builder.Instruction.Nop().CreatePointer("Counter");
-        var function = builder.Instruction.CreateLabel("Function");
+        builder.Nop();
+        var value = builder.CreatePointer("Counter");
+        var function = builder.CreateLabel("Function");
+        var skipFunction = builder.CreateLabel("Main");
+        var stackVariable = builder.GetStackVariable(0);
+
+        builder.Jump(skipFunction);
 
         // Functions
-        builder.Instruction.Mark(function);
-        builder.Instruction.LoadA(value);
-        builder.Instruction.SetB(1);
-        builder.Instruction.Add();
-        builder.Instruction.StoreA(value);
+        builder.Mark(function);
+        builder.LoadA(value);
+        builder.SetB(1);
+        builder.Add();
+        builder.StoreA(value);
         builder.Ret();
 
         // Program
-        builder.MarkProgram();
+        builder.Mark(skipFunction);
 
-        builder.Instruction.SetA(1);
-        builder.Instruction.StoreA(builder.Stack[0]);
+        builder.SetA(1);
+        builder.StoreA(stackVariable);
 
         builder.Call(function);
         builder.Call(function);
@@ -58,7 +63,7 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(2, cpu.Memory[value.Address]);
-        Assert.Equal(1, cpu.Memory[builder.Stack[0].Address]);
+        Assert.Equal(1, cpu.Memory[stackVariable.Address]);
     }
 
     [Theory]

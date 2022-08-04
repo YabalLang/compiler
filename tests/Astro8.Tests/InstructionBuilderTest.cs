@@ -35,10 +35,10 @@ public class InstructionBuilderTest
     [InlineData("DIV", 1, 2)]
     public void Binary(string instruction, int a, int b)
     {
-        var builder = new InstructionBuilder()
-            .SetA(2)
-            .SetB(2)
-            .Emit(instruction);
+        var builder = new InstructionBuilder();
+        builder.SetA(2);
+            builder.SetB(2);
+            builder.Emit(instruction);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -49,12 +49,12 @@ public class InstructionBuilderTest
     [Fact]
     public void JMP()
     {
-        var builder = new InstructionBuilder()
-            .CreateLabel(out var label)
-            .Jump(label)
-            .SetA(10)
-            .Mark(label)
-            .SetB(10);
+        var builder = new InstructionBuilder();
+        builder.CreateLabel(out var label);
+        builder.Jump(label);
+        builder.SetA(10);
+        builder.Mark(label);
+        builder.SetB(10);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -65,14 +65,14 @@ public class InstructionBuilderTest
     [Fact]
     public void LDLGE()
     {
-        var builder = new InstructionBuilder()
-            .CreateLabel("END", out var end)
-            .CreatePointer(out var data)
-            .LoadA_Large(data)
-            .Jump(end)
-            .Mark(data)
-            .EmitRaw(int.MaxValue)
-            .Mark(end);
+        var builder = new InstructionBuilder();
+        builder.CreateLabel("END", out var end);
+        builder.CreatePointer(out var data);
+        builder.LoadA_Large(data);
+        builder.Jump(end);
+        builder.Mark(data);
+        builder.EmitRaw(int.MaxValue);
+        builder.Mark(end);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -83,12 +83,12 @@ public class InstructionBuilderTest
     [Fact]
     public void JREG()
     {
-        var builder = new InstructionBuilder()
-            .CreateLabel(out var label)
-            .SetA(label)
-            .JumpToA()
-            .SetB(10)
-            .Mark(label);
+        var builder = new InstructionBuilder();
+        builder.CreateLabel(out var label);
+        builder.SetA(label);
+        builder.JumpToA();
+        builder.SetB(10);
+        builder.Mark(label);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -99,12 +99,12 @@ public class InstructionBuilderTest
     [Fact]
     public void Pointer()
     {
-        new InstructionBuilder()
-            .EmitRaw(0)
-            .CreatePointer(out var pointerA)
-            .EmitRaw(0)
-            .CreatePointer(out var pointerB)
-            .ToArray();
+        var builder = new InstructionBuilder();
+        builder.EmitRaw(0);
+        builder.CreatePointer(out var pointerA);
+        builder.EmitRaw(0);
+        builder.CreatePointer(out var pointerB);
+        builder.ToArray();
 
         Assert.NotEqual(pointerA, pointerB);
         Assert.Equal(0, pointerA.Address);

@@ -11,7 +11,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
             throw new InvalidOperationException($"Variable {Name} not found");
         }
 
-        builder.Instruction.LoadA(variable.Pointer);
+        builder.LoadA(variable.Pointer);
 
         return variable.Type;
     }

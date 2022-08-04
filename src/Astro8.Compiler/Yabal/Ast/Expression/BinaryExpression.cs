@@ -9,39 +9,39 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         if (Right is IntegerExpression intExpression)
         {
             Left.Build(builder);
-            builder.Instruction.SetB(intExpression.Value);
+            builder.SetB(intExpression.Value);
         }
         else
         {
             Left.Build(builder);
-            var leftOffset = builder.Instruction.Count;
-            builder.Instruction.SwapA_B();
+            var leftOffset = builder.Count;
+            builder.SwapA_B();
 
-            using var watcher = builder.Instruction.WatchRegister();
+            using var watcher = builder.WatchRegister();
             Right.Build(builder);
 
             if (watcher.B)
             {
                 // Right changed the value in register B, so we need to store the left-side to a temporary variable
-                builder.Instruction.StoreA(builder.Temp, leftOffset);
-                builder.Instruction.LoadB(builder.Temp);
+                builder.StoreA(builder.Temp, leftOffset);
+                builder.LoadB(builder.Temp);
             }
         }
 
         switch (Operator)
         {
             case BinaryOperator.Add:
-                builder.Instruction.Add();
+                builder.Add();
                 break;
             case BinaryOperator.Subtract:
-                builder.Instruction.Sub();
+                builder.Sub();
                 break;
             case BinaryOperator.Multiply:
-                builder.Instruction.Mult();
+                builder.Mult();
                 break;
             case BinaryOperator.Divide:
-                builder.Instruction.SwapA_B();
-                builder.Instruction.Div();
+                builder.SwapA_B();
+                builder.Div();
                 break;
             default:
                 throw new NotSupportedException();

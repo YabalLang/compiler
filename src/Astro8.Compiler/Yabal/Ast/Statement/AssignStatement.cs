@@ -18,6 +18,6 @@ public record AssignStatement(SourceRange Range, string Name, Expression Value) 
             throw new InvalidOperationException("Type mismatch");
         }
 
-        builder.Instruction.StoreA(variable.Pointer);
+        builder.StoreA(variable.Pointer);
     }
 }

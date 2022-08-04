@@ -14,6 +14,8 @@ public class BlockStack
 
     public IReadOnlyDictionary<string, Variable> Variables => _variables;
 
+    public int StackOffset { get; set; }
+
     public void DeclareVariable(string name, Variable variable)
     {
         _variables[name] = variable;
