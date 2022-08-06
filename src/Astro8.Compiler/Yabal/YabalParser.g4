@@ -74,6 +74,26 @@ statement
 	| continueStatement
 	| breakStatement
 	| expressionStatement
+	| asmStatement
+    ;
+
+asmStatement
+    : Asm OpenCurly (asmStatementItem (eos asmStatementItem)*)? eos? CloseCurly
+    ;
+
+asmStatementItem
+    : asmIdentifier asmArgument?      # AsmInstruction
+    | asmIdentifier AsmColon          # AsmLabel
+    ;
+
+asmArgument
+    : AsmAddress asmIdentifier     # AsmAddress
+    | IntegerLiteral               # AsmInteger
+    | asmIdentifier                # AsmLabelReference
+    ;
+
+asmIdentifier
+    : Identifier
     ;
 
 continueStatement

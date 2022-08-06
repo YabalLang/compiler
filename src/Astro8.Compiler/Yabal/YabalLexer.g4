@@ -7,6 +7,7 @@ SemiColon			: ';';
 MultiLineComment	: '/*' .*? '*/' -> channel(HIDDEN);
 SingleLineComment	: '//' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
 
+Asm				    : 'asm' -> pushMode(ASM);
 Var                 : 'var';
 Void				: 'void';
 Int				    : 'int';
@@ -499,3 +500,20 @@ fragment SimpleEscapeSequence
 	| '\\t'
 	| '\\v'
 	;
+
+mode ASM;
+AsmWhiteSpaces			: WhiteSpaces -> channel(HIDDEN);
+AsmLineTerminator		: LineTerminator -> channel(HIDDEN);
+AsmSemiColon			: SemiColon -> type(SemiColon);
+
+AsmMultiLineComment	    : MultiLineComment -> channel(HIDDEN);
+AsmSingleLineComment	: SingleLineComment -> channel(HIDDEN);
+
+AsmOpenBrace			: OpenCurly -> type(OpenCurly);
+AsmCloseBrace			: CloseCurly -> type(CloseCurly), popMode;
+
+AsmIdentifier			: Identifier -> type(Identifier);
+AsmInteger				: IntegerLiteral -> type(IntegerLiteral);
+
+AsmAddress				: '@';
+AsmColon                : ':';

@@ -16,13 +16,13 @@ public partial class YabalParser
             return false;
         }
 
-        if (ahead.Type == LineTerminator)
+        if (ahead.Type is LineTerminator or AsmLineTerminator)
         {
             // There is definitely a line terminator ahead.
             return true;
         }
 
-        if (ahead.Type == WhiteSpaces)
+        if (ahead.Type is WhiteSpaces or AsmWhiteSpaces)
         {
             // Get the token ahead of the current whitespaces.
             possibleIndexEosToken = CurrentToken.TokenIndex - 2;
@@ -34,8 +34,8 @@ public partial class YabalParser
         int type = ahead.Type;
 
         // Check if the token is, or contains a line terminator.
-        return (type == MultiLineComment && (text.Contains("\r") || text.Contains("\n"))) ||
-               (type == LineTerminator);
+        return (type is MultiLineComment or AsmMultiLineComment && (text.Contains('\r') || text.Contains('\n'))) ||
+               (type is LineTerminator or AsmLineTerminator);
     }
 
     protected bool noNewLine()
@@ -46,7 +46,7 @@ public partial class YabalParser
 
         while (ahead.Channel == Lexer.Hidden)
         {
-            if (ahead.Type == LineTerminator)
+            if (ahead.Type is LineTerminator or AsmLineTerminator)
             {
                 // There is definitely a line terminator ahead.
                 return false;

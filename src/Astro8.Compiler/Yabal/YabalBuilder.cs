@@ -17,8 +17,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionLabel _returnLabel;
     private readonly Stack<BlockStack> _blockStack;
     private readonly List<InstructionPointer> _stack;
+    private readonly Dictionary<string, Function> _functions = new();
     private bool _hasCall;
-    private Dictionary<string, Function> _functions = new();
 
     public YabalBuilder()
     {
@@ -33,7 +33,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _blockStack = new Stack<BlockStack>();
         _stack = new List<InstructionPointer>();
 
-        PushBlock();
+        PushBlock(true);
     }
 
     public YabalBuilder(YabalBuilder parent)
@@ -79,9 +79,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public BlockStack Block => _blockStack.Peek();
 
+    private void PushBlock(bool isGlobal)
+    {
+        _blockStack.Push(new BlockStack
+        {
+            IsGlobal = isGlobal
+        });
+    }
+
     public void PushBlock()
     {
-        _blockStack.Push(new BlockStack());
+        PushBlock(false);
     }
 
     public void PopBlock()
@@ -319,21 +327,18 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.Mark(Temp);
         builder.EmitRaw(0);
 
-        if (_hasCall)
+        if (_hasCall || _functions.Count > 0)
         {
             builder.Mark(_stackIndex);
             builder.EmitRaw(0xE000);
-        }
 
-        foreach (var (_, function) in _functions)
-        {
-            builder.Mark(function.Label);
-            builder.AddRange(function.Builder._builder);
-            builder.Jump(_returnLabel);
-        }
+            foreach (var (_, function) in _functions)
+            {
+                builder.Mark(function.Label);
+                builder.AddRange(function.Builder._builder);
+                builder.Jump(_returnLabel);
+            }
 
-        if (_hasCall)
-        {
             foreach (var pointer in _stack)
             {
                 builder.Mark(pointer);

@@ -16,6 +16,8 @@ public class BlockStack
 
     public int StackOffset { get; set; }
 
+    public bool IsGlobal { get; set; }
+
     public void DeclareVariable(string name, Variable variable)
     {
         _variables[name] = variable;
@@ -209,5 +211,31 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(context.expression())
         );
+    }
+
+    public override Node VisitAsmStatement(YabalParser.AsmStatementContext context)
+    {
+        var instructions = new List<AsmInstruction>();
+        var items = context.asmStatementItem();
+
+        if (items != null)
+        {
+            foreach (var item in items)
+            {
+                if (item is YabalParser.AsmInstructionContext instruction)
+                {
+                    instructions.Add(new AsmInstruction(
+                        instruction.asmIdentifier().GetText(),
+                        instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
+                    ));
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+        }
+
+        return new AsmStatement(context, instructions);
     }
 }

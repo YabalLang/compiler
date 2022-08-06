@@ -125,7 +125,9 @@ public class AssemblerTest
             }
 
             void functionB() {
-                a += 1
+                var value = 1
+
+                a += value
             }
 
             functionA(2)
@@ -139,5 +141,33 @@ public class AssemblerTest
 
         var address = builder.GetVariable("a").Pointer.Address;
         Assert.Equal(3, cpu.Memory[address]);
+    }
+
+    [Fact]
+    public void InlineAsm()
+    {
+        const string code = """
+            var result = 0
+
+            void increment(int amount) {
+                asm {
+                    AIN @result
+                    BIN @amount
+                    ADD
+                    STA @result
+                }
+            }
+
+            increment(1)
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("result").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
     }
 }

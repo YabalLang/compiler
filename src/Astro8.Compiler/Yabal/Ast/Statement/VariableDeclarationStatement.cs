@@ -31,8 +31,19 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
                 break;
         }
 
-        builder.EmitRaw(value);
-        var pointer = builder.CreatePointer(Name);
+        var block = builder.Block;
+        InstructionPointer pointer;
+
+        if (block.IsGlobal)
+        {
+            builder.EmitRaw(value);
+            pointer = builder.CreatePointer(Name);
+        }
+        else
+        {
+            expression = Value;
+            pointer = builder.GetStackVariable(block.StackOffset++);
+        }
 
         if (expression != null)
         {
