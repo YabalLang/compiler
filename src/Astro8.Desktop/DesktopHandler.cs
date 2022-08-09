@@ -11,7 +11,6 @@ public record struct SetPixel(int Address, ScreenColor Color);
 
 public class DesktopHandler : Handler, IDisposable
 {
-    private readonly object _lock = new();
     private readonly uint[] _textureData;
     private readonly int _pixelScale;
     private IntPtr _window;
@@ -20,6 +19,7 @@ public class DesktopHandler : Handler, IDisposable
     private readonly Channel<SetPixel> _channel;
     private readonly ChannelReader<SetPixel> _reader;
     private readonly ChannelWriter<SetPixel> _writer;
+    private string? _pendingTitle;
 
     public DesktopHandler(int width = 64, int height = 64, int pixelScale = 9)
     {
@@ -91,6 +91,12 @@ public class DesktopHandler : Handler, IDisposable
     public void Update()
     {
         UpdatePixels();
+
+        if (_pendingTitle != null)
+        {
+            SDL_SetWindowTitle(_window, _pendingTitle);
+            _pendingTitle = null;
+        }
     }
 
     private void UpdateTexture()
@@ -170,6 +176,11 @@ public class DesktopHandler : Handler, IDisposable
         _writer.TryWrite(
             new SetPixel(address, color)
         );
+    }
+
+    public override void LogSpeed(int steps, string value)
+    {
+        _pendingTitle = $"C# Astro-8 Emulator | {value}";
     }
 
     public void Dispose()

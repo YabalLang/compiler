@@ -1,5 +1,6 @@
 ﻿using Astro8;
 using Astro8.Devices;
+using Astro8.Instructions;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
@@ -17,12 +18,23 @@ if (!handler.Init())
     return 1;
 }
 
-var cpu = CpuBuilder.Create(handler, config)
+var cpuBuilder = CpuBuilder.Create(handler, config)
     .WithScreen()
     .WithCharacter()
-    .WithMemory()
-    .WithProgramFile()
-    .Create();
+    .WithMemory();
+
+if (File.Exists("source.yabal"))
+{
+    var builder = new YabalBuilder();
+    builder.CompileCode(File.ReadAllText("source.yabal"));
+    cpuBuilder.WithProgram(builder);
+}
+else
+{
+    cpuBuilder.WithProgramFile();
+}
+
+var cpu = cpuBuilder.Create();
 
 cpu.RunThread(
     config.Cpu.CycleDuration,

@@ -44,7 +44,7 @@ public record FunctionDeclarationStatement(
         Debug.Assert(_function != null);
         var builder = _function.Builder;
 
-        builder.PushBlock();
+        builder.PushBlock(this);
 
         var block = builder.Block;
 

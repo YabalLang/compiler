@@ -80,7 +80,7 @@ public class CpuBuilder<THandler>
     public Cpu<THandler> Create()
     {
         var memory = _memory ?? new CpuMemory<THandler>();
-        var cpu = new Cpu<THandler>(memory);
+        var cpu = new Cpu<THandler>(memory, _handler);
 
         if (_screen != null)
         {

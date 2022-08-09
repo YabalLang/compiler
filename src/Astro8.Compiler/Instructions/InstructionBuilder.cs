@@ -58,7 +58,7 @@ public abstract class InstructionBuilderBase
         EmitRaw(counter);
     }
 
-    public void JumpIfAZero(PointerOrData counter)
+    public void JumpIfZero(PointerOrData counter)
     {
         Emit("JMPZ");
         EmitRaw(counter);

@@ -8,9 +8,9 @@ public record AsmInteger(int Value) : AsmArgument;
 
 public record AsmInstruction(string Name, AsmArgument? Argument);
 
-public record AsmStatement(SourceRange Range, List<AsmInstruction> Instructions) : Statement(Range)
+public record AsmExpression(SourceRange Range, List<AsmInstruction> Instructions) : Expression(Range)
 {
-    public override void Build(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder)
     {
         foreach (var (name, argument) in Instructions)
         {
@@ -49,5 +49,7 @@ public record AsmStatement(SourceRange Range, List<AsmInstruction> Instructions)
                     break;
             }
         }
+
+        return LanguageType.Integer;
     }
 }

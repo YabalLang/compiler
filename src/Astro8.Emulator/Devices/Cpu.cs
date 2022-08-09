@@ -7,14 +7,21 @@ namespace Astro8.Devices;
 public sealed partial class Cpu<THandler> : IDisposable
     where THandler : Handler
 {
+    private readonly Stopwatch _stopwatch;
     private readonly CpuMemory<THandler> _memory;
+    private readonly THandler _handler;
+    private int _steps;
     private bool _halt;
     private CpuContext _context;
 
-    public Cpu(CpuMemory<THandler> memory)
+    public Cpu(CpuMemory<THandler> memory, THandler handler)
     {
         _memory = memory;
+        _handler = handler;
+        _stopwatch = Stopwatch.StartNew();
     }
+
+    public long TotalSteps { get; set; }
 
     public bool Running => !_halt;
 
@@ -40,26 +47,19 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public int ExpansionPort { get; set; }
 
-    public void Run(int cycleDuration = 0, int instructionsPerCycle = 1)
+    public void Run(int cycleDuration = 5, int instructionsPerCycle = 100)
     {
-        if (cycleDuration > 0)
+        var sw = Stopwatch.StartNew();
+        while (!_halt)
         {
-            var sw = Stopwatch.StartNew();
-            while (!_halt)
+            Step(instructionsPerCycle);
+
+            while (sw.ElapsedTicks < cycleDuration)
             {
-                Step(instructionsPerCycle);
-
-                while (sw.ElapsedTicks < cycleDuration)
-                {
-                    // Wait
-                }
-
-                sw.Restart();
+                // Wait
             }
-        }
-        else
-        {
-            Step(0);
+
+            sw.Restart();
         }
     }
 
@@ -78,14 +78,15 @@ public sealed partial class Cpu<THandler> : IDisposable
         _halt = true;
     }
 
-    public unsafe void Step(int amount = 1)
+    public unsafe int? Step(int amount)
     {
         if (_halt)
         {
-            return;
+            return default;
         }
 
         var instructionLength = _memory.Instruction.Length;
+        var steps = 0;
 
         fixed (int* dataPointer = _memory.Data)
         fixed (InstructionReference* instructionPointer = _memory.Instruction)
@@ -100,7 +101,9 @@ public sealed partial class Cpu<THandler> : IDisposable
             // Store current values on the stack
             context.Cpu = _context;
 
-            for (var i = 0; (amount == 0 || i < amount) && !_halt; i++)
+            int i;
+
+            for (i = 0; i < amount && !_halt; i++)
             {
                 context.Cpu.MemoryIndex = context.Cpu.ProgramCounter;
 
@@ -114,11 +117,28 @@ public sealed partial class Cpu<THandler> : IDisposable
                 context.Instruction = *(instructionPointer + context.Cpu.MemoryIndex);
 
                 Step(ref context);
+
+                steps++;
             }
 
             // Restore values from the stack
             _context = context.Cpu;
         }
+
+        TotalSteps += steps;
+
+        if (_stopwatch.ElapsedMilliseconds <= 1000)
+        {
+            _steps += steps;
+            return default;
+        }
+
+        var stepsPerSecond = (float)steps / _stopwatch.ElapsedMilliseconds * 1000;
+        _handler.LogSpeed(steps, SimplifiedHertz(stepsPerSecond));
+        _steps = 0;
+        _stopwatch.Restart();
+
+        return steps;
     }
 
     /// <summary>
@@ -191,6 +211,23 @@ public sealed partial class Cpu<THandler> : IDisposable
                 *(_instructionPointer + address) = new InstructionReference(value);
             }
         }
+    }
+
+    private static string SimplifiedHertz(float input)
+    {
+        if (float.IsInfinity(input))
+        {
+            input = float.MaxValue;
+        }
+
+        if (input >= 1000000000.0) // GHz
+            return (Math.Floor(input / 100000000.0f) / 10.0f) + " GHz";
+        if (input >= 1000000.0) // MHz
+            return (Math.Floor(input / 100000.0f) / 10.0f) + " MHz";
+        if (input >= 1000.0) // KHz
+            return (Math.Floor(input / 100.0f) / 10.0f) + " KHz";
+
+        return (Math.Floor(input * 10.0f) / 10.0f) + " KHz";
     }
 
     public void Dispose()

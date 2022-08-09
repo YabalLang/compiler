@@ -19,4 +19,22 @@ public record BlockStatement(SourceRange Range, List<Statement> Statements) : St
             statement.Build(builder);
         }
     }
+
+    public IEnumerable<Statement> EnumerableAll()
+    {
+        foreach (var statement in Statements)
+        {
+            if (statement is BlockStatement blockStatement)
+            {
+                foreach (var inner in blockStatement.EnumerableAll())
+                {
+                    yield return inner;
+                }
+            }
+            else
+            {
+                yield return statement;
+            }
+        }
+    }
 }

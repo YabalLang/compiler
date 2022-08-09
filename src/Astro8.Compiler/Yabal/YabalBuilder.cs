@@ -11,7 +11,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly YabalBuilder? _parent;
     private readonly InstructionBuilder _builder;
 
-    private readonly Dictionary<int, InstructionPointer> _values = new();
+    private readonly Dictionary<int, InstructionPointer> _values;
     private readonly InstructionPointer _stackIndex;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
@@ -28,10 +28,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _returnLabel = _builder.CreateLabel("Return");
 
         Temp = _builder.CreatePointer(name: "Temp");
+        ReturnValue = _builder.CreatePointer(name: "ReturnValue");
 
         _stackIndex = new InstructionPointer(name: "CallPointer");
         _blockStack = new Stack<BlockStack>();
         _stack = new List<InstructionPointer>();
+        _values = new Dictionary<int, InstructionPointer>();
 
         PushBlock(true);
     }
@@ -45,10 +47,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _returnLabel = parent._returnLabel;
 
         Temp = parent.Temp;
+        ReturnValue = parent.ReturnValue;
 
         _stackIndex = parent._stackIndex;
         _blockStack = parent._blockStack;
         _stack = parent._stack;
+        _values = parent._values;
     }
 
     public InstructionPointer GetLargeValue(int value)
@@ -77,19 +81,22 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public InstructionPointer Temp { get; set; }
 
+    public InstructionPointer ReturnValue { get; set; }
+
     public BlockStack Block => _blockStack.Peek();
 
-    private void PushBlock(bool isGlobal)
+    private void PushBlock(bool isGlobal, FunctionDeclarationStatement? function = null)
     {
         _blockStack.Push(new BlockStack
         {
-            IsGlobal = isGlobal
+            IsGlobal = isGlobal,
+            Function = function
         });
     }
 
-    public void PushBlock()
+    public void PushBlock(FunctionDeclarationStatement function)
     {
-        PushBlock(false);
+        PushBlock(false, function);
     }
 
     public void PopBlock()
@@ -231,6 +238,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         _builder.Mark(returnAddress);
+        _builder.LoadA(ReturnValue);
 
         return argumentTypes;
     }
@@ -238,6 +246,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private void CreateReturn(InstructionBuilderBase builder)
     {
         builder.Mark(_returnLabel);
+
+        // Store return value
+        builder.StoreA(ReturnValue);
 
         // Decrement the stack pointer
         builder.LoadA(_stackIndex);
@@ -324,8 +335,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         builder.Jump(programLabel);
 
+        builder.Mark(ReturnValue);
+        builder.EmitRaw(0);
+
         builder.Mark(Temp);
         builder.EmitRaw(0);
+
+        foreach (var (value, pointer) in _values)
+        {
+            builder.Mark(pointer);
+            builder.EmitRaw(value);
+        }
 
         if (_hasCall || _functions.Count > 0)
         {

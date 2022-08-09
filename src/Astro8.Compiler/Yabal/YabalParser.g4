@@ -23,33 +23,35 @@ returnType
     ;
 
 expression
-	: Incr expression												# IncrementLeftExpression
-	| expression Incr												# IncrementRightExpression
-	| Decr expression												# DecrementLeftExpression
-	| expression Decr												# DecrementRightExpression
-	| expression inlineSwitch                                       # SwitchExpression
-	| expression {noNewLine()}? OpenBrace expressionList CloseBrace	# CallExpression
-	| expression NotEquals expression								# NotEqualExpression
-	| expression AddEqual expression								# PlusEqualExpression
-	| expression SubEqual expression								# SubEqualExpression
-	| expression MulEqual expression								# MulEqualExpression
-	| expression DivEqual expression								# DivEqualExpression
-    | expression (Div|Mul) expression								# DivMulBinaryExpression
-    | expression (Add|Sub) expression								# PlusSubBinaryExpression
-	| expression Less expression									# LessExpression
-	| expression LessEqual expression								# LessEqualExpression
-	| expression Greater expression									# GreaterExpression
-	| expression GreaterEqual expression							# GreaterEqualExpression
-	| expression Equals expression						            # EqualExpression
-	| expression And expression								        # AndExpression
-	| expression Or expression								        # OrExpression
-	| identifierName Assign expression                              # AssignExpression
-	| Throw expression												# ThrowExpression
-	| OpenBrace expression CloseBrace								# ExpressionExpression
-    | string                                                        # StringExpression
-	| integer                       								# IntegerExpression
-	| boolean                       								# BooleanExpression
-	| identifierName										        # IdentifierExpression
+	: Incr expression												    # IncrementLeftExpression
+	| expression Incr												    # IncrementRightExpression
+	| Decr expression												    # DecrementLeftExpression
+	| expression Decr												    # DecrementRightExpression
+	| expression inlineSwitch                                           # SwitchExpression
+	| expression {noNewLine()}? OpenBrace expressionList CloseBrace	    # CallExpression
+	| expression {noNewLine()}? OpenBracket expression CloseBracket	    # ArrayAccessExpression
+	| expression NotEquals expression								    # NotEqualExpression
+	| expression AddEqual expression								    # PlusEqualExpression
+	| expression SubEqual expression								    # SubEqualExpression
+	| expression MulEqual expression								    # MulEqualExpression
+	| expression DivEqual expression								    # DivEqualExpression
+    | expression (Div|Mul) expression								    # DivMulBinaryExpression
+    | expression (Add|Sub) expression								    # PlusSubBinaryExpression
+	| expression Less expression									    # LessExpression
+	| expression LessEqual expression								    # LessEqualExpression
+	| expression Greater expression									    # GreaterExpression
+	| expression GreaterEqual expression							    # GreaterEqualExpression
+	| expression Equals expression						                # EqualExpression
+	| expression And expression								            # AndExpression
+	| expression Or expression								            # OrExpression
+	| expression Assign expression                                      # AssignExpression
+	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
+	| Throw expression												    # ThrowExpression
+	| OpenBrace expression CloseBrace								    # ExpressionExpression
+    | string                                                            # StringExpression
+	| integer                       								    # IntegerExpression
+	| boolean                       								    # BooleanExpression
+	| identifierName										            # IdentifierExpression
     ;
 
 inlineSwitch
@@ -69,16 +71,16 @@ underscore
 statement
     : variableDeclaration
 	| returnStatement
+	| whileStatement
 	| forStatement
 	| ifStatement
 	| continueStatement
 	| breakStatement
 	| expressionStatement
-	| asmStatement
     ;
 
-asmStatement
-    : Asm OpenCurly (asmStatementItem (eos asmStatementItem)*)? eos? CloseCurly
+asmItems
+    : (asmStatementItem (eos asmStatementItem)*)? eos?
     ;
 
 asmStatementItem
@@ -112,9 +114,13 @@ expressionStatement
 	: expression
 	;
 
+whileStatement
+	: While OpenBrace expression CloseBrace blockStatement
+	;
+
 // If-statement
 ifStatement
-	: If OpenBrace expression CloseBrace blockStatement elseIfStatement* elseStatement? End
+	: If OpenBrace expression CloseBrace blockStatement elseIfStatement* elseStatement?
 	;
 
 elseIfStatement

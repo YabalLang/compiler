@@ -33,6 +33,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Astro8.Compiler\Astro8.Compiler.csproj" />
       <ProjectReference Include="..\Astro8.Emulator\Astro8.Emulator.csproj" />
     </ItemGroup>
 

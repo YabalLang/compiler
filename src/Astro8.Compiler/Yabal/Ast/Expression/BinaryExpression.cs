@@ -6,7 +6,104 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 {
     public override LanguageType BuildExpression(YabalBuilder builder)
     {
-        if (Right is IntegerExpression intExpression)
+        SetRegisters(builder);
+
+        switch (Operator)
+        {
+            case BinaryOperator.Add:
+                builder.Add();
+                break;
+            case BinaryOperator.Subtract:
+                builder.Sub();
+                break;
+            case BinaryOperator.Multiply:
+                builder.Mult();
+                break;
+            case BinaryOperator.Divide:
+                builder.SwapA_B();
+                builder.Div();
+                break;
+            case BinaryOperator.LessThan:
+            case BinaryOperator.Equal:
+            case BinaryOperator.NotEqual:
+            case BinaryOperator.GreaterThan:
+            case BinaryOperator.GreaterThanOrEqual:
+            case BinaryOperator.LessThanOrEqual:
+            {
+                var trueLabel = builder.CreateLabel();
+                var falseLabel = builder.CreateLabel();
+                var skipLabel = builder.CreateLabel();
+                CreateComparison(builder, trueLabel, falseLabel);
+
+                builder.Mark(falseLabel);
+                builder.SetA(0);
+                builder.Jump(skipLabel);
+
+                builder.Mark(trueLabel);
+                builder.SetA(1);
+
+                builder.Mark(skipLabel);
+
+                return LanguageType.Boolean;
+            }
+            default:
+                throw new NotSupportedException();
+        }
+
+        return LanguageType.Integer;
+    }
+
+    public void CreateComparison(YabalBuilder builder, InstructionLabel trueLabel, InstructionLabel falseLabel)
+    {
+        SetRegisters(builder);
+
+        switch (Operator)
+        {
+            case BinaryOperator.Add:
+            case BinaryOperator.Subtract:
+            case BinaryOperator.Multiply:
+            case BinaryOperator.Divide:
+                throw new NotSupportedException();
+            case BinaryOperator.GreaterThan:
+                builder.Sub();
+                builder.JumpIfCarryBit(trueLabel);
+                builder.Jump(falseLabel);
+                break;
+            case BinaryOperator.GreaterThanOrEqual:
+                builder.Sub();
+                builder.JumpIfZero(trueLabel);
+                builder.JumpIfCarryBit(trueLabel);
+                builder.Jump(falseLabel);
+                break;
+            case BinaryOperator.LessThan:
+                builder.Sub();
+                builder.JumpIfCarryBit(falseLabel);
+                builder.Jump(trueLabel);
+                break;
+            case BinaryOperator.LessThanOrEqual:
+                builder.Sub();
+                builder.JumpIfZero(trueLabel);
+                builder.JumpIfCarryBit(falseLabel);
+                builder.Jump(trueLabel);
+                break;
+            case BinaryOperator.Equal:
+                builder.Sub();
+                builder.JumpIfZero(trueLabel);
+                builder.Jump(falseLabel);
+                break;
+            case BinaryOperator.NotEqual:
+                builder.Sub();
+                builder.JumpIfZero(falseLabel);
+                builder.Jump(trueLabel);
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+    }
+
+    private void SetRegisters(YabalBuilder builder)
+    {
+        if (Right is IntegerExpression { IsSmall: true } intExpression)
         {
             Left.Build(builder);
             builder.SetB(intExpression.Value);
@@ -27,27 +124,6 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 builder.LoadB(builder.Temp);
             }
         }
-
-        switch (Operator)
-        {
-            case BinaryOperator.Add:
-                builder.Add();
-                break;
-            case BinaryOperator.Subtract:
-                builder.Sub();
-                break;
-            case BinaryOperator.Multiply:
-                builder.Mult();
-                break;
-            case BinaryOperator.Divide:
-                builder.SwapA_B();
-                builder.Div();
-                break;
-            default:
-                throw new NotSupportedException();
-        }
-
-        return LanguageType.Integer;
     }
 
     public override Expression Optimize()

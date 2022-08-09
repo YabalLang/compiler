@@ -5,5 +5,11 @@ public enum BinaryOperator
     Add,
     Subtract,
     Multiply,
-    Divide
+    Divide,
+    Equal,
+    NotEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    LessThan,
+    LessThanOrEqual,
 }

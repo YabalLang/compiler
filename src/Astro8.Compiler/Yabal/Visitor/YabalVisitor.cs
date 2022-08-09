@@ -18,6 +18,8 @@ public class BlockStack
 
     public bool IsGlobal { get; set; }
 
+    public FunctionDeclarationStatement? Function { get; set; }
+
     public void DeclareVariable(string name, Variable variable)
     {
         _variables[name] = variable;
@@ -34,16 +36,14 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    private new Statement VisitStatement(IParseTree context)
+    private new Statement VisitStatement(ParserRuleContext context)
     {
-        var result = (Statement)Visit(context);
-
-        if (result == null)
+        return Visit(context) switch
         {
-            throw new InvalidOperationException($"{context.GetType().Name} is not supported.");
-        }
-
-        return result;
+            Statement statement => statement,
+            Expression expression => new ExpressionStatement(context, expression),
+            _ => throw new InvalidOperationException($"{context.GetType().Name} is not supported.")
+        };
     }
 
     private Expression VisitExpression(IParseTree context)
@@ -104,8 +104,8 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new AssignExpression(
             context,
-            context.identifierName().GetText(),
-            VisitExpression(context.expression())
+            VisitExpression(context.expression()[0]),
+            VisitExpression(context.expression()[1])
         );
     }
 
@@ -127,14 +127,9 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         YabalParser.ExpressionContext[] expressions,
         BinaryOperator @operator)
     {
-        if (expressions[0] is not YabalParser.IdentifierExpressionContext identifierName)
-        {
-            throw new NotImplementedException();
-        }
-
         return new AssignExpression(
             context,
-            identifierName.identifierName().GetText(),
+            VisitExpression(expressions[0]),
             CreateBinary(context, expressions, @operator)
         );
     }
@@ -213,10 +208,10 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    public override Node VisitAsmStatement(YabalParser.AsmStatementContext context)
+    public override Node VisitAsmExpression(YabalParser.AsmExpressionContext context)
     {
         var instructions = new List<AsmInstruction>();
-        var items = context.asmStatementItem();
+        var items = context.asmItems().asmStatementItem();
 
         if (items != null)
         {
@@ -236,6 +231,63 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             }
         }
 
-        return new AsmStatement(context, instructions);
+        return new AsmExpression(context, instructions);
+    }
+
+    public override Node VisitArrayAccessExpression(YabalParser.ArrayAccessExpressionContext context)
+    {
+        return new ArrayAccessExpression(
+            context,
+            VisitExpression(context.expression()[0]),
+            VisitExpression(context.expression()[1])
+        );
+    }
+
+    public override Node VisitReturnStatement(YabalParser.ReturnStatementContext context)
+    {
+        return new ReturnStatement(
+            context,
+            VisitExpression(context.expression())
+        );
+    }
+
+
+    public override Node VisitWhileStatement(YabalParser.WhileStatementContext context)
+    {
+        return new WhileStatement(
+            context,
+            VisitExpression(context.expression()),
+            VisitBlockStatement(context.blockStatement())
+        );
+    }
+
+    public override Node VisitNotEqualExpression(YabalParser.NotEqualExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.NotEqual);
+    }
+
+    public override Node VisitLessExpression(YabalParser.LessExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.LessThan);
+    }
+
+    public override Node VisitLessEqualExpression(YabalParser.LessEqualExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.LessThanOrEqual);
+    }
+
+    public override Node VisitGreaterExpression(YabalParser.GreaterExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.GreaterThan);
+    }
+
+    public override Node VisitGreaterEqualExpression(YabalParser.GreaterEqualExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.GreaterThanOrEqual);
+    }
+
+    public override Node VisitEqualExpression(YabalParser.EqualExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.Equal);
     }
 }

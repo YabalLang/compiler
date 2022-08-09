@@ -12,24 +12,46 @@ public class IntJsonConverter : JsonConverter<int>
         {
             var stringValue = reader.GetString()!.AsSpan();
 
-            if (stringValue.Length > 2 && stringValue[0] == '0' && (stringValue[1] is 'X' or 'x'))
+            if (!stringValue.Contains('_'))
             {
-                return int.Parse(stringValue[2..], NumberStyles.HexNumber);
+                return ParseInt(stringValue);
             }
 
-            if (stringValue.Length > 2 && stringValue[0] == '0' && (stringValue[1] is 'B' or 'b'))
+            Span<char> value = stackalloc char[stringValue.Length];
+
+            var offset = 0;
+            foreach (var c in stringValue)
             {
-                return Convert.ToInt32(stringValue[2..].ToString(), 2);
+                if (c != '_')
+                {
+                    value[offset++] = c;
+                }
             }
 
-            return int.Parse(stringValue);
+            return ParseInt(value);
         }
-        else if (reader.TokenType == JsonTokenType.Number)
+
+        if (reader.TokenType == JsonTokenType.Number)
         {
             return reader.GetInt32();
         }
 
         throw new JsonException();
+    }
+
+    private static int ParseInt(ReadOnlySpan<char> span)
+    {
+        if (span.Length > 2 && span[0] == '0' && (span[1] is 'X' or 'x'))
+        {
+            return int.Parse(span[2..], NumberStyles.HexNumber);
+        }
+
+        if (span.Length > 2 && span[0] == '0' && (span[1] is 'B' or 'b'))
+        {
+            return Convert.ToInt32(span[2..].ToString(), 2);
+        }
+
+        return int.Parse(span);
     }
 
     public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)

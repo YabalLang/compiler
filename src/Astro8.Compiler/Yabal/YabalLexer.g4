@@ -54,6 +54,7 @@ Arrow               : '=>';
 If					: 'if';
 Else				: 'else';
 Switch              : 'switch';
+While               : 'while';
 
 Identifier			: IdentifierStart IdentifierPart*;
 
