@@ -199,10 +199,10 @@ public class AssemblerTest
     }
 
     [Theory]
-    [InlineData(">", 10, -1, 0, 10)]
-    [InlineData("<", 10, -1, 0, 0)]
-    [InlineData(">=", 10, -1, 0, 10)]
-    [InlineData("<=", 10, -1, 0, -1)]
+    [InlineData(">", 10, -1, 0, 0)]
+    [InlineData("<", 10, -1, 0, 10)]
+    [InlineData(">=", 10, -1, 0, -1)]
+    [InlineData("<=", 10, -1, 0, 10)]
 
     [InlineData(">", 0, 1, 10, 0)]
     [InlineData("<", 0, 1, 10, 10)]
@@ -254,5 +254,62 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(0, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
+    }
+
+    [Fact]
+    public void ArraySetter()
+    {
+        const string code = $$"""
+            int[] create_array(int address) {
+                return asm {
+                    AIN @address
+                }
+            }
+
+            int get_value() {
+                return 0
+            }
+
+            var array = create_array(4095)
+            array[get_value()] = 1
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4095]);
+    }
+
+
+    [Theory]
+    [InlineData(10, ">", 0, 1)]
+    [InlineData(9, ">", 0, 1)]
+    [InlineData(10, "<", 0, 0)]
+    public void Compare(int left, string type, int right, int expected)
+    {
+        var code = $$"""
+            var left = {{ left }}
+            var right = {{ right }}
+            var optimized = {{ left }} {{ type }} {{ right }}
+            var fast = left {{ type }} {{ right }}
+            var slow = left {{ type }} right
+            """;
+
+        _output.WriteLine("Code:");
+        _output.WriteLine(code);
+        _output.WriteLine("");
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("optimized").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("fast").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("slow").Pointer.Address]);
     }
 }

@@ -32,17 +32,17 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 var trueLabel = builder.CreateLabel();
                 var falseLabel = builder.CreateLabel();
-                var skipLabel = builder.CreateLabel();
+                var end = builder.CreateLabel();
                 CreateComparison(builder, trueLabel, falseLabel);
 
-                builder.Mark(falseLabel);
-                builder.SetA(0);
-                builder.Jump(skipLabel);
-
                 builder.Mark(trueLabel);
+                builder.SetA(0);
+                builder.Jump(end);
+
+                builder.Mark(falseLabel);
                 builder.SetA(1);
 
-                builder.Mark(skipLabel);
+                builder.Mark(end);
 
                 return LanguageType.Boolean;
             }
@@ -53,7 +53,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         return LanguageType.Integer;
     }
 
-    public void CreateComparison(YabalBuilder builder, InstructionLabel trueLabel, InstructionLabel falseLabel)
+    public void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel)
     {
         SetRegisters(builder);
 
@@ -66,6 +66,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 throw new NotSupportedException();
             case BinaryOperator.GreaterThan:
                 builder.Sub();
+                builder.JumpIfZero(falseLabel);
                 builder.JumpIfCarryBit(trueLabel);
                 builder.Jump(falseLabel);
                 break;
@@ -77,6 +78,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 break;
             case BinaryOperator.LessThan:
                 builder.Sub();
+                builder.JumpIfZero(falseLabel);
                 builder.JumpIfCarryBit(falseLabel);
                 builder.Jump(trueLabel);
                 break;
@@ -123,6 +125,8 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 builder.StoreA(builder.Temp, leftOffset);
                 builder.LoadB(builder.Temp);
             }
+
+            builder.SwapA_B();
         }
     }
 
@@ -134,16 +138,20 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         if (left is IntegerExpression { Value: var leftInt } &&
             right is IntegerExpression { Value: var rightInt })
         {
-            return new IntegerExpression(
-                Range,
-                Operator switch
-                {
-                    BinaryOperator.Add => leftInt + rightInt,
-                    BinaryOperator.Subtract => leftInt - rightInt,
-                    BinaryOperator.Multiply => leftInt * rightInt,
-                    BinaryOperator.Divide => leftInt / rightInt,
-                    _ => throw new NotSupportedException()
-                });
+            return Operator switch
+            {
+                BinaryOperator.Add => new IntegerExpression(Range, leftInt + rightInt),
+                BinaryOperator.Subtract => new IntegerExpression(Range, leftInt - rightInt),
+                BinaryOperator.Multiply => new IntegerExpression(Range, leftInt * rightInt),
+                BinaryOperator.Divide => new IntegerExpression(Range, leftInt / rightInt),
+                BinaryOperator.Equal => new BooleanExpression(Range, leftInt == rightInt),
+                BinaryOperator.NotEqual => new BooleanExpression(Range, leftInt != rightInt),
+                BinaryOperator.GreaterThan => new BooleanExpression(Range, leftInt > rightInt),
+                BinaryOperator.GreaterThanOrEqual => new BooleanExpression(Range, leftInt >= rightInt),
+                BinaryOperator.LessThan => new BooleanExpression(Range, leftInt < rightInt),
+                BinaryOperator.LessThanOrEqual => new BooleanExpression(Range, leftInt == rightInt),
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         return new BinaryExpression(Range, Operator, left, right);

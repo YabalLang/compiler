@@ -133,7 +133,7 @@ elseStatement
 
 // For-statement
 forStatement
-	: For OpenBrace expression SemiColon expression SemiColon expression CloseBrace blockStatement
+	: For OpenBrace statement SemiColon statement SemiColon expression CloseBrace blockStatement
 	;
 
 // Utils
@@ -142,7 +142,7 @@ expressionList
     ;
 
 blockStatement
-	: OpenCurly (statement (eos statement)*)? CloseCurly
+	: OpenCurly (statement (eos statement)*)? eos? CloseCurly
 	;
 
 // Function

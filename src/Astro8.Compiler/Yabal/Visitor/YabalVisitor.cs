@@ -290,4 +290,37 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return CreateBinary(context, context.expression(), BinaryOperator.Equal);
     }
+
+    public override Node VisitIfStatement(YabalParser.IfStatementContext context)
+    {
+        Expression test;
+        Statement? elseStatement = null;
+
+        if (context.elseStatement() != null)
+        {
+            elseStatement = VisitStatement(context.elseStatement().blockStatement());
+        }
+
+        if (context.elseIfStatement() != null)
+        {
+            foreach (var elseIf in context.elseIfStatement())
+            {
+                test = VisitExpression(elseIf.expression());
+
+                elseStatement = new IfStatement(
+                    elseIf,
+                    test,
+                    (BlockStatement) Visit(elseIf.blockStatement()),
+                    elseStatement);
+            }
+        }
+
+        test = VisitExpression(context.expression());
+
+        return new IfStatement(
+            context,
+            test,
+            (BlockStatement) Visit(context.blockStatement()),
+            elseStatement);
+    }
 }

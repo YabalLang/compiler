@@ -14,6 +14,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
     public LanguageType StoreAddressInA(YabalBuilder builder)
     {
         var type = Array.BuildExpression(builder);
+        var arrayOffset = builder.Count;
 
         if (type.StaticType != StaticType.Array || type.ElementType == null)
         {
@@ -34,7 +35,6 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             using var watcher = builder.WatchRegister();
             var keyType = Key.BuildExpression(builder);
-            var valueOffset = builder.Count;
 
             if (keyType.StaticType != StaticType.Integer)
             {
@@ -43,7 +43,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             if (watcher.B)
             {
-                builder.StoreA(builder.Temp, valueOffset);
+                builder.StoreA(builder.Temp, arrayOffset);
                 builder.LoadB(builder.Temp);
             }
 

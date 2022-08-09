@@ -236,19 +236,9 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         Add(pointer);
     }
 
-    private int GetIndex(string name)
+    public override void Emit(string name, PointerOrData data = default, int? index = null)
     {
-        if (!_instructions.TryGetValue(name, out var instruction))
-        {
-            throw new ArgumentException($"Unknown instruction '{name}'", nameof(name));
-        }
-
-        return instruction.Id;
-    }
-
-    public void Emit(string name, int data, int? index = null)
-    {
-        if (data > InstructionReference.MaxDataLength)
+        if (data.IsRight && data.Right > InstructionReference.MaxDataLength)
         {
             throw new ArgumentOutOfRangeException(nameof(data));
         }
@@ -261,21 +251,23 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         // Update watchers
         foreach (var microInstruction in instruction.MicroInstructions)
         {
-            if (microInstruction.IsWA)
+            if (microInstruction.IsWA || microInstruction.IsJ)
             {
                 foreach (var watch in _watchStack)
                 {
                     watch.A = true;
                 }
             }
-            else if (microInstruction.IsWA)
+
+            if (microInstruction.IsWB || microInstruction.IsJ)
             {
                 foreach (var watch in _watchStack)
                 {
                     watch.B = true;
                 }
             }
-            else if (microInstruction.IsWC)
+
+            if (microInstruction.IsWC || microInstruction.IsJ)
             {
                 foreach (var watch in _watchStack)
                 {
@@ -285,7 +277,9 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         }
 
         // Register
-        var value = new InstructionItem(InstructionReference.Create(instruction.Id, data), null);
+        var value = data.IsRight
+            ? new InstructionItem(InstructionReference.Create(instruction.Id, data.Right), null)
+            : new InstructionItem(InstructionReference.Create(instruction.Id), data.Left);
 
         if (index.HasValue)
         {
@@ -294,32 +288,6 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         else
         {
             Add(value);
-        }
-    }
-
-    public void Emit(string name, InstructionPointer pointer, int? index = null)
-    {
-        var value = new InstructionItem(InstructionReference.Create(GetIndex(name)), pointer);
-
-        if (index.HasValue)
-        {
-            _references.Insert(index.Value, value);
-        }
-        else
-        {
-            Add(value);
-        }
-    }
-
-    public override void Emit(string name, PointerOrData either = default, int? index = null)
-    {
-        if (either.IsRight)
-        {
-            Emit(name, either.Right, index);
-        }
-        else
-        {
-            Emit(name, either.Left, index);
         }
     }
 
