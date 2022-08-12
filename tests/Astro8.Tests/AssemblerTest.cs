@@ -283,12 +283,20 @@ public class AssemblerTest
         Assert.Equal(1, cpu.Memory[4095]);
     }
 
-
     [Theory]
     [InlineData(10, ">", 0, 1)]
     [InlineData(9, ">", 0, 1)]
     [InlineData(10, "<", 0, 0)]
-    public void Compare(int left, string type, int right, int expected)
+    [InlineData(0, "<", 0, 0)]
+    [InlineData("true", "&&", "true", 1)]
+    [InlineData("true", "&&", "false", 0)]
+    [InlineData("false", "&&", "false", 0)]
+    [InlineData("false", "&&", "true", 0)]
+    [InlineData("true", "||", "true", 1)]
+    [InlineData("true", "||", "false", 1)]
+    [InlineData("false", "||", "false", 0)]
+    [InlineData("false", "||", "true", 1)]
+    public void Compare(object left, string type, object right, int expected)
     {
         var code = $$"""
             var left = {{ left }}
@@ -311,5 +319,57 @@ public class AssemblerTest
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("optimized").Pointer.Address]);
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("fast").Pointer.Address]);
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("slow").Pointer.Address]);
+    }
+
+    [Fact]
+    public void For()
+    {
+        const string code = $$"""
+            var value = 0
+
+            for (; value < 10; value++) {
+                value += 1
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(10, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void If(int step)
+    {
+        var code = $$"""
+            var result = 0
+            var value = {{step}}
+
+            if (value == 1) {
+                result = 1
+            } else if (value == 2) {
+                result = 2
+            } else {
+                result = 3
+            }
+            """;
+
+        _output.WriteLine("Code:");
+        _output.WriteLine(code);
+        _output.WriteLine("");
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(step, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }
 }

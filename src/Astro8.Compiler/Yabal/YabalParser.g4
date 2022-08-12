@@ -49,6 +49,7 @@ expression
 	| Throw expression												    # ThrowExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
+    | char                                                              # CharExpression
 	| integer                       								    # IntegerExpression
 	| boolean                       								    # BooleanExpression
 	| identifierName										            # IdentifierExpression
@@ -133,8 +134,12 @@ elseStatement
 
 // For-statement
 forStatement
-	: For OpenBrace statement SemiColon statement SemiColon expression CloseBrace blockStatement
+	: For OpenBrace forInit? SemiColon expression SemiColon statement? CloseBrace blockStatement
 	;
+
+forInit
+    : statement
+    ;
 
 // Utils
 expressionList
@@ -194,4 +199,13 @@ string
 stringPart
 	: StringValue
 	| StringEscape
+	;
+
+char
+    : CharStart charValue CharEnd
+    ;
+
+charValue
+	: CharEscape
+	| CharValue
 	;

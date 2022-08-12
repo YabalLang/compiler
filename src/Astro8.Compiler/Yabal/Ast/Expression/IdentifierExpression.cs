@@ -4,11 +4,16 @@ namespace Astro8.Yabal.Ast;
 
 public record IdentifierExpression(SourceRange Range, string Name) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        if (!builder.TryGetVariable(Name, out var variable))
+        return LoadValue(builder, Name);
+    }
+
+    public static LanguageType LoadValue(YabalBuilder builder, string name)
+    {
+        if (!builder.TryGetVariable(name, out var variable))
         {
-            throw new InvalidOperationException($"Variable {Name} not found");
+            throw new InvalidOperationException($"Variable {name} not found");
         }
 
         builder.LoadA(variable.Pointer);

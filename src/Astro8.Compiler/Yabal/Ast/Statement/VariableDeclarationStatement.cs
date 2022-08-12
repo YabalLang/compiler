@@ -12,42 +12,24 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
 
     public override void Build(YabalBuilder builder)
     {
-        LanguageType? valueType = null;
-        Expression? expression = null;
-        var value = 0;
-
-        switch (Value)
-        {
-            case IntegerExpression { Value: var intValue }:
-                value = intValue;
-                valueType = LanguageType.Integer;
-                break;
-            case BooleanExpression { Value: var boolExpression }:
-                value = boolExpression ? 1 : 0;
-                valueType = LanguageType.Boolean;
-                break;
-            default:
-                expression = Value;
-                break;
-        }
-
         var block = builder.Block;
         InstructionPointer pointer;
 
         if (block.IsGlobal)
         {
-            builder.EmitRaw(value);
+            builder.EmitRaw(0);
             pointer = builder.CreatePointer(Name);
         }
         else
         {
-            expression = Value;
             pointer = builder.GetStackVariable(block.StackOffset++);
         }
 
-        if (expression != null)
+        LanguageType? valueType = null;
+
+        if (Value != null)
         {
-            valueType = expression.BuildExpression(builder);
+            valueType = Value.BuildExpression(builder, false);
             builder.StoreA(pointer);
         }
 

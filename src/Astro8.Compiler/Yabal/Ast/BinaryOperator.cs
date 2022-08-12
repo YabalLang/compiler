@@ -12,4 +12,6 @@ public enum BinaryOperator
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
+    And,
+    Or
 }

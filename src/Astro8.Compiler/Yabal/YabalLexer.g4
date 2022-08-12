@@ -61,6 +61,7 @@ Identifier			: IdentifierStart IdentifierPart*;
 FloatLiteral		: [0-9]+'.'[0-9]+;
 IntegerLiteral		: [0-9]+;
 StringStart		    : '"' -> pushMode(STRING);
+CharStart		    : '\'' -> pushMode(CHAR);
 
 fragment WhitespaceChar : [ \t\r\n];
 
@@ -483,24 +484,19 @@ fragment UnicodeLetter
     | [\uFFDA-\uFFDC]
     ;
 
+fragment SimpleEscapeSequence
+	: '\\' [\u0000-\uFFFE]
+	;
+
 mode STRING;
 StringEscape			: (SimpleEscapeSequence);
-StringValue     			: (~["\\])+;
-StringEnd				    : '"' -> popMode;
+StringValue     		: (~["\\])+;
+StringEnd				: '"' -> popMode;
 
-fragment SimpleEscapeSequence
-	: '\\\''
-	| '\\"'
-	| '\\\\'
-	| '\\0'
-	| '\\a'
-	| '\\b'
-	| '\\f'
-	| '\\n'
-	| '\\r'
-	| '\\t'
-	| '\\v'
-	;
+mode CHAR;
+CharEscape			    : (SimpleEscapeSequence);
+CharValue     			: (~['\\]);
+CharEnd				    : '\'' -> popMode;
 
 mode ASM;
 AsmWhiteSpaces			: WhiteSpaces -> channel(HIDDEN);

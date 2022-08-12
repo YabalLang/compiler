@@ -9,26 +9,31 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
         Value.BeforeBuild(builder);
     }
 
-    public override LanguageType BuildExpression(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        return Object switch
+        return SetValue(builder, Object, () => Value.BuildExpression(builder, false));
+    }
+
+    public static LanguageType SetValue(YabalBuilder builder, Expression @object, Func<LanguageType> value)
+    {
+        return @object switch
         {
-            IdentifierExpression expression => BuildIdentifier(builder, expression),
-            ArrayAccessExpression arrayAccess => BuildArrayAccess(builder, arrayAccess),
+            IdentifierExpression expression => BuildIdentifier(builder, expression, value),
+            ArrayAccessExpression arrayAccess => BuildArrayAccess(builder, arrayAccess, value),
             _ => throw new NotSupportedException()
         };
     }
 
-    private LanguageType BuildArrayAccess(YabalBuilder builder, ArrayAccessExpression arrayAccess)
+    private static LanguageType BuildArrayAccess(YabalBuilder builder, ArrayAccessExpression arrayAccess, Func<LanguageType> value)
     {
-        var arrayType = arrayAccess.StoreAddressInA(builder);
+        var arrayType = ArrayAccessExpression.StoreAddressInA(builder, arrayAccess.Array, arrayAccess.Key);
         var valueOffset = builder.Count;
 
         builder.SwapA_B();
 
         using var watcher = builder.WatchRegister();
 
-        var type = Value.BuildExpression(builder);
+        var type = value();
 
         if (type != arrayType.ElementType)
         {
@@ -37,8 +42,8 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
 
         if (watcher.B)
         {
-            builder.StoreA(builder.Temp, valueOffset);
-            builder.LoadB(builder.Temp);
+            builder.StoreA(builder.TempPointer, valueOffset);
+            builder.LoadB(builder.TempPointer);
         }
 
         builder.SwapA_B();
@@ -47,14 +52,14 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
         return type;
     }
 
-    private LanguageType BuildIdentifier(YabalBuilder builder, IdentifierExpression expression)
+    private static LanguageType BuildIdentifier(YabalBuilder builder, IdentifierExpression expression, Func<LanguageType> value)
     {
         if (!builder.TryGetVariable(expression.Name, out var variable))
         {
             throw new InvalidOperationException($"Variable {expression.Name} not found");
         }
 
-        var type = Value.BuildExpression(builder);
+        var type = value();
 
         if (type != variable.Type)
         {

@@ -28,12 +28,12 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
         {
             case BinaryExpression binaryExpression:
             {
-                binaryExpression.CreateComparison(builder, consequentLabel, alternateLabel ?? end);
+                binaryExpression.CreateComparison(builder, alternateLabel ?? end, consequentLabel);
                 break;
             }
             default:
             {
-                var type = Expression.BuildExpression(builder);
+                var type = Expression.BuildExpression(builder, false);
 
                 if (type != LanguageType.Boolean)
                 {

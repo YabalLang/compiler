@@ -187,8 +187,27 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                     TypeVisitor.Instance.Visit(p.type())
                 ))
                 .ToList(),
-            (BlockStatement) Visit(context.functionBody())
+            VisitFunctionBody(context.functionBody())
         );
+    }
+
+    public override BlockStatement VisitFunctionBody(YabalParser.FunctionBodyContext context)
+    {
+        if (context.expression() is { } expression)
+        {
+            return new BlockStatement(
+                context,
+                new List<Statement>
+                {
+                    new ReturnStatement(
+                        context,
+                        VisitExpression(expression)
+                    )
+                }
+            );
+        }
+
+        return VisitBlockStatement(context.blockStatement());
     }
 
     public override Node VisitCallExpression(YabalParser.CallExpressionContext context)
@@ -322,5 +341,90 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             test,
             (BlockStatement) Visit(context.blockStatement()),
             elseStatement);
+    }
+
+    public override Node VisitCharExpression(YabalParser.CharExpressionContext context)
+    {
+        var value = context.@char().charValue().GetText();
+
+        if (value.Length == 2 && value[0] == '\\')
+        {
+            value = value switch
+            {
+                "\\n" => "\n",
+                "\\r" => "\r",
+                "\\t" => "\t",
+                "\\\"" => "\"",
+                "\\'" => "'",
+                "\\\\" => "\\",
+                _ => throw new KeyNotFoundException("Unknown escape character")
+            };
+        }
+
+        return new CharExpression(
+            context,
+            value[0]
+        );
+    }
+
+    public override Node VisitForStatement(YabalParser.ForStatementContext context)
+    {
+        return new ForStatement(
+            context,
+            context.forInit()?.statement() is { } init ? VisitStatement(init) : null,
+            context.statement() is {} statement ? VisitStatement(statement) : null,
+            VisitExpression(context.expression()),
+            VisitBlockStatement(context.blockStatement())
+        );
+    }
+
+    public override Node VisitIncrementLeftExpression(YabalParser.IncrementLeftExpressionContext context)
+    {
+        return new UpdateExpression(
+            context,
+            VisitExpression(context.expression()),
+            true,
+            BinaryOperator.Add
+        );
+    }
+
+    public override Node VisitIncrementRightExpression(YabalParser.IncrementRightExpressionContext context)
+    {
+        return new UpdateExpression(
+            context,
+            VisitExpression(context.expression()),
+            false,
+            BinaryOperator.Add
+        );
+    }
+
+    public override Node VisitDecrementLeftExpression(YabalParser.DecrementLeftExpressionContext context)
+    {
+        return new UpdateExpression(
+            context,
+            VisitExpression(context.expression()),
+            true,
+            BinaryOperator.Subtract
+        );
+    }
+
+    public override Node VisitDecrementRightExpression(YabalParser.DecrementRightExpressionContext context)
+    {
+        return new UpdateExpression(
+            context,
+            VisitExpression(context.expression()),
+            false,
+            BinaryOperator.Subtract
+        );
+    }
+
+    public override Node VisitAndExpression(YabalParser.AndExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.And);
+    }
+
+    public override Node VisitOrExpression(YabalParser.OrExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.Or);
     }
 }

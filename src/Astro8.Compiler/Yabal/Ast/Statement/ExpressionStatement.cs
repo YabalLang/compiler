@@ -11,6 +11,6 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
 
     public override void Build(YabalBuilder builder)
     {
-        Expression.Build(builder);
+        Expression.BuildExpression(builder, true);
     }
 }

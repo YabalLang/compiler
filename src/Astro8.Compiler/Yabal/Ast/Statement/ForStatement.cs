@@ -2,17 +2,24 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record WhileStatement(SourceRange Range, Expression Expression, BlockStatement Block) : Statement(Range)
+public record ForStatement(SourceRange Range, Statement? Init, Statement? Update, Expression Test, BlockStatement Block) : Statement(Range)
 {
     public override void Build(YabalBuilder builder)
     {
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
+        var test = builder.CreateLabel();
+
+        Init?.Build(builder);
+        builder.Jump(test);
 
         builder.Mark(next);
+        Update?.Build(builder);
 
-        switch (Expression)
+        builder.Mark(test);
+
+        switch (Test)
         {
             case BinaryExpression binaryExpression:
                 binaryExpression.CreateComparison(builder, end, body);
@@ -25,7 +32,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
                 break;
             default:
             {
-                var type = Expression.BuildExpression(builder, false);
+                var type = Test.BuildExpression(builder, false);
 
                 if (type != LanguageType.Boolean)
                 {

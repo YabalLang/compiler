@@ -11,7 +11,7 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
             throw new InvalidOperationException("Return statement outside of function");
         }
 
-        var type = Expression.BuildExpression(builder);
+        var type = Expression.BuildExpression(builder, false);
 
         if (Expression is not AsmExpression && function.ReturnType != type)
         {

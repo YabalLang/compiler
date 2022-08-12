@@ -10,7 +10,7 @@ public record AsmInstruction(string Name, AsmArgument? Argument);
 
 public record AsmExpression(SourceRange Range, List<AsmInstruction> Instructions) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
         foreach (var (name, argument) in Instructions)
         {

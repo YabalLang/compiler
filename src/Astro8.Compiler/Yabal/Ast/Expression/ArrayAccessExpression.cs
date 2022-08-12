@@ -4,16 +4,21 @@ namespace Astro8.Yabal.Ast;
 
 public record ArrayAccessExpression(SourceRange Range, Expression Array, Expression Key) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid = false)
     {
-        var type = StoreAddressInA(builder);
+        return LoadValue(builder, Array, Key);
+    }
+
+    public static LanguageType LoadValue(YabalBuilder builder, Expression array, Expression Key)
+    {
+        var type = StoreAddressInA(builder, array, Key);
         builder.LoadA_FromAddressUsingA();
         return type.ElementType!;
     }
 
-    public LanguageType StoreAddressInA(YabalBuilder builder)
+    public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression Key)
     {
-        var type = Array.BuildExpression(builder);
+        var type = array.BuildExpression(builder, false);
         var arrayOffset = builder.Count;
 
         if (type.StaticType != StaticType.Array || type.ElementType == null)
@@ -34,7 +39,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
             builder.SwapA_B();
 
             using var watcher = builder.WatchRegister();
-            var keyType = Key.BuildExpression(builder);
+            var keyType = Key.BuildExpression(builder, false);
 
             if (keyType.StaticType != StaticType.Integer)
             {
@@ -43,8 +48,8 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             if (watcher.B)
             {
-                builder.StoreA(builder.Temp, arrayOffset);
-                builder.LoadB(builder.Temp);
+                builder.StoreA(builder.TempPointer, arrayOffset);
+                builder.LoadB(builder.TempPointer);
             }
 
             builder.Add();

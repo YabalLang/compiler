@@ -27,7 +27,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _callLabel = _builder.CreateLabel("Call");
         _returnLabel = _builder.CreateLabel("Return");
 
-        Temp = _builder.CreatePointer(name: "Temp");
+        TempPointer = _builder.CreatePointer(name: "Temp");
+        UpdatePointer = _builder.CreatePointer(name: "UpdatePointer");
         ReturnValue = _builder.CreatePointer(name: "ReturnValue");
 
         _stackIndex = new InstructionPointer(name: "CallPointer");
@@ -46,7 +47,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _callLabel = parent._callLabel;
         _returnLabel = parent._returnLabel;
 
-        Temp = parent.Temp;
+        TempPointer = parent.TempPointer;
+        UpdatePointer = parent.TempPointer;
         ReturnValue = parent.ReturnValue;
 
         _stackIndex = parent._stackIndex;
@@ -79,7 +81,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public InstructionPointer Temp { get; set; }
+    public InstructionPointer TempPointer { get; set; }
+
+    public InstructionPointer UpdatePointer { get; set; }
 
     public InstructionPointer ReturnValue { get; set; }
 
@@ -189,12 +193,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.StoreB_ToAddressInA();
 
         // Store values on stack
-        for (var i = 0; i < _stack.Count; i++)
+        foreach (var pointer in _stack)
         {
             builder.SetB(1);
             builder.Add();
 
-            builder.LoadB(_stack[i]);
+            builder.LoadB(pointer);
             builder.StoreB_ToAddressInA();
         }
 
@@ -216,21 +220,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var hasArguments = arguments is { Count: > 0 };
         var argumentTypes = hasArguments ? new LanguageType[arguments!.Count] : Array.Empty<LanguageType>();
         var returnAddress = _builder.CreateLabel();
-        var callAddress = _builder.CreateLabel();
+        var setArguments = _builder.CreateLabel();
 
-        _builder.SetA(hasArguments ? callAddress : address);
+        _builder.SetA(hasArguments ? setArguments : address);
         _builder.SwapA_C();
         _builder.SetB(returnAddress);
         _builder.Jump(_callLabel);
 
         if (hasArguments)
         {
-            _builder.Mark(callAddress);
+            _builder.Mark(setArguments);
 
             for (var i = 0; i < arguments!.Count; i++)
             {
                 var argument = arguments[i];
-                argumentTypes[i] = argument.BuildExpression(this);
+                argumentTypes[i] = argument.BuildExpression(this, false);
                 _builder.StoreA(GetStackVariable(i));
             }
 
@@ -259,11 +263,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         // Restore values from the stack
         builder.SetB(1);
 
-        for (var i = 0; i < _stack.Count; i++)
+        foreach (var pointer in _stack)
         {
             builder.Add();
             builder.LoadA_FromAddressUsingA();
-            builder.StoreA(_stack[i]);
+            builder.StoreA(pointer);
         }
 
         // Go to the return address
@@ -338,7 +342,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.Mark(ReturnValue);
         builder.EmitRaw(0);
 
-        builder.Mark(Temp);
+        builder.Mark(TempPointer);
+        builder.EmitRaw(0);
+
+        builder.Mark(UpdatePointer);
         builder.EmitRaw(0);
 
         foreach (var (value, pointer) in _values)

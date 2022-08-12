@@ -18,7 +18,7 @@ public record CallExpression(
         }
     }
 
-    public override LanguageType BuildExpression(YabalBuilder builder)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
         if (Callee is not IdentifierExpression id)
         {
