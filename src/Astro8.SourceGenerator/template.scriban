@@ -59,8 +59,43 @@ public partial class Cpu<THandler>
             context.Cpu.Bus = ExpansionPort;
         {{- end -}}
 
+        {{-func checkOverflow}}
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        {{end-}}
+
         {{- if step.MicroInstruction.IsEO }}
-        {{- if step.MicroInstruction.IsSU }}
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        {{ if step.MicroInstruction.IsSL }}
+            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B & 0b1111);
+
+            {{ checkOverflow }}
+        {{- else if step.MicroInstruction.IsSR }}
+            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B & 0b1111);
+
+            {{ checkOverflow }}
+        {{- else if step.MicroInstruction.IsAND }}
+            context.Cpu.Bus = context.Cpu.A & context.Cpu.B & 0b1111;
+
+            {{ checkOverflow }}
+        {{- else if step.MicroInstruction.IsOR }}
+            context.Cpu.Bus = context.Cpu.A | context.Cpu.B & 0b1111;
+
+            {{ checkOverflow }}
+        {{- else if step.MicroInstruction.IsNOT }}
+            context.Cpu.Bus = ~context.Cpu.A;
+
+            {{ checkOverflow }}
+        {{- else if step.MicroInstruction.IsSU }}
             // SU
             context.Cpu.Bus = context.Cpu.A - context.Cpu.B;
             context.Cpu.FlagA = context.Cpu.Bus == 0;

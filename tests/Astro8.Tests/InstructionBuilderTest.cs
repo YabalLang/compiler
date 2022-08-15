@@ -29,21 +29,26 @@ public class InstructionBuilderTest
     }
 
     [Theory]
-    [InlineData("ADD", 4, 2)]
-    [InlineData("SUB", 0, 2)]
-    [InlineData("MULT", 4, 2)]
-    [InlineData("DIV", 1, 2)]
-    public void Binary(string instruction, int a, int b)
+    [InlineData("ADD", 2, 2, 4)]
+    [InlineData("SUB", 2, 2, 0)]
+    [InlineData("MULT", 2, 2, 4)]
+    [InlineData("DIV", 2, 2, 1)]
+    [InlineData("NOT", 0b10, 0, ~0b10)]
+    [InlineData("AND", 0b10, 0b11, 0b10)]
+    [InlineData("OR", 0b10, 0b11, 0b11)]
+    [InlineData("BSL", 0b1, 1, 0b10)]
+    [InlineData("BSR", 0b10, 1, 0b1)]
+    public void Binary(string instruction, int a, int b, int expected)
     {
         var builder = new InstructionBuilder();
-        builder.SetA(2);
-            builder.SetB(2);
+        builder.SetA(a);
+            builder.SetB(b);
             builder.Emit(instruction);
 
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal((a, b, 0), (cpu.A, cpu.B, cpu.C));
+        Assert.Equal((expected, b, 0), (cpu.A, cpu.B, cpu.C));
     }
 
     [Fact]

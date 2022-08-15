@@ -147,30 +147,36 @@ public record Instruction(
 
     private static readonly string[] DefaultInstructions = {
         "fetch( 0=cr,aw & 1=rm,iw,ce & 2=ei", // Fetch
-        "ain( 2=aw,ir & 3=wa,rm & 4=ei", // LoadA
-        "bin( 2=aw,ir & 3=wb,rm & 4=ei", // LoadB
-        "cin( 2=aw,ir & 3=wc,rm & 4=ei", // LoadC
-        "ldia( 2=wa,ir & 3=ei", // Load immediate A <val>
-        "ldib( 2=wb,ir & 3=ei", // Load immediate B <val>
-        "rdexp( 2=wa,re & 3=ei", // Read from expansion port to register A
-        "wrexp( 2=ra,we & 3=ei", // Write from reg A to expansion port
-        "sta( 2=aw,ir & 3=ra,wm & 4=ei", // Store A <addr>
-        "stc( 2=aw,ir & 3=rc,wm & 4=ei", // Store C <addr>
-        "add( 2=wa,eo,fl & 3=ei", // Add
-        "sub( 2=wa,eo,su,fl & 3=ei", // Subtract
-        "mult( 2=wa,eo,mu,fl & 3=ei", // Multiply
-        "div( 2=wa,eo,di,fl & 3=ei", // Divide
-        "jmp( 2=cr,aw & 3=rm,j & 4=ei", // Jump to address following instruction
-        "jmpz( 2=cr,aw & 3=ce,rm & 4=j | zeroflag & 5=ei", // Jump if zero to address following instruction
-        "jmpc( 2=cr,aw & 3=ce,rm & 4=j | carryflag & 5=ei", // Jump if carry to address following instruction
-        "jreg( 2=ra,j & 3=ei", // Jump to the address stored in Reg A
-        "ldain( 2=ra,aw & 3=wa,rm & 4=ei", // Use reg A as memory address, then copy value from memory into A
-        "staout( 2=ra,aw & 3=rb,wm & 4=ei", // Use reg A as memory address, then copy value from B into memory
-        "ldlge( 2=cr,aw & 3=ce,rm,aw & 4=rm,wa & 5=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
-        "stlge( 2=cr,aw & 3=ce,rm,aw & 4=ra,wm & 5=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
-        "ldw( 2=cr,aw & 3=ce,rm,wa & 4=ei", // Load value directly after counter, and advance counter by 2
-        "swp( 2=ra,wc & 3=wa,rb & 4=rc,wb & 5=ei", // Swap register A and register B (this will overwrite the contents of register C, using it as a temporary swap area)
-        "swpc( 2=ra,wb & 3=wa,rc & 4=rb,wc & 5=ei", // Swap register A and register C (this will overwrite the contents of register B, using it as a temporary swap area)
+		"ain( 2=aw,ir & 3=wa,rm & 4=ei", // LoadA
+		"bin( 2=aw,ir & 3=wb,rm & 4=ei", // LoadB
+		"cin( 2=aw,ir & 3=wc,rm & 4=ei", // LoadC
+		"ldia( 2=wa,ir & 3=ei", // Load immediate A <val>
+		"ldib( 2=wb,ir & 3=ei", // Load immediate B <val>
+		"rdexp( 2=wa,re & 3=ei", // Read from expansion port to register A
+		"wrexp( 2=ra,we & 3=ei", // Write from reg A to expansion port
+		"sta( 2=aw,ir & 3=ra,wm & 4=ei", // Store A <addr>
+		"stc( 2=aw,ir & 3=rc,wm & 4=ei", // Store C <addr>
+		"add( 2=wa,eo,fl & 3=ei", // Add
+		"sub( 2=wa,eo,su,fl & 3=ei", // Subtract
+		"mult( 2=wa,eo,mu,fl & 3=ei", // Multiply
+		"div( 2=wa,eo,di,fl & 3=ei", // Divide
+		"jmp( 2=cr,aw & 3=rm,j & 4=ei", // Jump to address following instruction
+		"jmpz( 2=cr,aw & 3=ce,rm & 4=j | zeroflag & 5=ei", // Jump if zero to address following instruction
+		"jmpc( 2=cr,aw & 3=ce,rm & 4=j | carryflag & 5=ei", // Jump if carry to address following instruction
+		"jreg( 2=ra,j & 3=ei", // Jump to the address stored in Reg A
+		"ldain( 2=ra,aw & 3=wa,rm & 4=ei", // Use reg A as memory address, then copy value from memory into A
+		"staout( 2=ra,aw & 3=rb,wm & 4=ei", // Use reg A as memory address, then copy value from B into memory
+		"ldlge( 2=cr,aw & 3=ce,rm,aw & 4=rm,wa & 5=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
+		"stlge( 2=cr,aw & 3=ce,rm,aw & 4=ra,wm & 5=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
+		"ldw( 2=cr,aw & 3=ce,rm,wa & 4=ei", // Load value directly after counter into A, and advance counter by 2
+		"swp( 2=ra,wc & 3=wa,rb & 4=rc,wb & 5=ei", // Swap register A and register B (this will overwrite the contents of register C, using it as a temporary swap area)
+		"swpc( 2=ra,wb & 3=wa,rc & 4=rb,wc & 5=ei", // Swap register A and register C (this will overwrite the contents of register B, using it as a temporary swap area)
+		"pcr( 2=cr,wa & 3=ei", // Program counter read, get the current program counter value and put it into register A
+		"bsl( 2=sl,wa,eo,fl & 3=ei", // Bit shift left A register, the number of bits to shift determined by the value in register B
+		"bsr( 2=sr,wa,eo,fl & 3=ei", // Bit shift left A register, the number of bits to shift determined by the value in register B
+		"and( 2=and,wa,eo,fl & 3=ei", // Logical AND operation on register A and register B, with result put back into register A
+		"or( 2=or,wa,eo,fl & 3=ei", // Logical OR operation on register A and register B, with result put back into register A
+		"not( 2=not,wa,eo,fl & 3=ei", // Logical NOT operation on register A, with result put back into register A
     };
 
     private static IReadOnlyList<Instruction>? _default;

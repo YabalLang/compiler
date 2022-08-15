@@ -2,37 +2,42 @@
 
 public readonly record struct MicroInstruction
 {
-    private const int AluMask = 0b00000_0000_000_11;
-    public const int SU = 0b00000_0000_000_01;
-    public const int MU = 0b00000_0000_000_10;
-    public const int DI = 0b00000_0000_000_11;
+    private const int AluMask = 0b0000000000001111;
+    public const int SU = 0b0000000000000001;
+    public const int MU = 0b0000000000000010;
+    public const int DI = 0b0000000000000011;
+    public const int SL = 0b0000000000000100;
+    public const int SR = 0b0000000000000101;
+    public const int AND = 0b0000000000000110;
+    public const int OR = 0b0000000000000111;
+    public const int NOT = 0b0000000000001000;
 
-    private const int ReadMask = 0b00000_0000_111_00;
-    public const int RA = 0b00000_0000_001_00;
-    public const int RB = 0b00000_0000_010_00;
-    public const int RC = 0b00000_0000_011_00;
-    public const int RM = 0b00000_0000_100_00;
-    public const int IR = 0b00000_0000_101_00;
-    public const int CR = 0b00000_0000_110_00;
-    public const int RE = 0b00000_0000_111_00;
+    private const int ReadMask = 0b0000000001110000;
+    public const int RA = 0b0000000000010000;
+    public const int RB = 0b0000000000100000;
+    public const int RC = 0b0000000000110000;
+    public const int RM = 0b0000000001000000;
+    public const int IR = 0b0000000001010000;
+    public const int CR = 0b0000000001100000;
+    public const int RE = 0b0000000001110000;
 
-    private const int WriteMask = 0b00000_1111_000_00;
-    public const int WA = 0b00000_0001_000_00;
-    public const int WB = 0b00000_0010_000_00;
-    public const int WC = 0b00000_0011_000_00;
-    public const int IW = 0b00000_0100_000_00;
-    public const int DW = 0b00000_0101_000_00;
-    public const int WM = 0b00000_0110_000_00;
-    public const int J  = 0b00000_0111_000_00;
-    public const int AW = 0b00000_1000_000_00;
-    public const int WE = 0b00000_1001_000_00;
+    private const int WriteMask = 0b0000011110000000;
+    public const int WA = 0b0000000010000000;
+    public const int WB = 0b0000000100000000;
+    public const int WC = 0b0000000110000000;
+    public const int IW = 0b0000001000000000;
+    public const int DW = 0b0000001010000000;
+    public const int WM = 0b0000001100000000;
+    public const int J  = 0b0000001110000000;
+    public const int AW = 0b0000010000000000;
+    public const int WE = 0b0000010010000000;
 
-    private const int MiscMask = 0b11111_0000_000_00;
-    public const int EO = 0b10000_0000_000_00;
-    public const int CE = 0b01000_0000_000_00;
-    public const int ST = 0b00100_0000_000_00;
-    public const int EI = 0b00010_0000_000_00;
-    public const int FL = 0b00001_0000_000_00;
+    private const int MiscMask = 0b1111100000000000;
+    public const int FL = 0b0000100000000000;
+    public const int EI = 0b0001000000000000;
+    public const int ST = 0b0010000000000000;
+    public const int CE = 0b0100000000000000;
+    public const int EO = 0b1000000000000000;
 
     public static readonly IReadOnlyDictionary<string, MicroInstruction> All =
         new Dictionary<string, MicroInstruction>(StringComparer.OrdinalIgnoreCase)
@@ -61,6 +66,11 @@ public readonly record struct MicroInstruction
             ["ST"] = ST,
             ["EI"] = EI,
             ["FL"] = FL,
+            ["NOT"] = NOT,
+            ["AND"] = AND,
+            ["OR"] = OR,
+            ["SL"] = SL,
+            ["SR"] = SR,
         };
 
     private readonly int _valueAlu;
@@ -80,6 +90,11 @@ public readonly record struct MicroInstruction
         IsSU = _valueAlu == SU;
         IsMU = _valueAlu == MU;
         IsDI = _valueAlu == DI;
+        IsSR = _valueAlu == SR;
+        IsSL = _valueAlu == SL;
+        IsAND = _valueAlu == AND;
+        IsOR = _valueAlu == OR;
+        IsNOT = _valueAlu == NOT;
 
         IsRA = _valueRead == RA;
         IsRB = _valueRead == RB;
@@ -124,6 +139,31 @@ public readonly record struct MicroInstruction
     /// Enable divion in ALU
     /// </summary>
     public bool IsDI { get; }
+
+    /// <summary>
+    /// Bit shift left
+    /// </summary>
+    public bool IsSL { get; }
+
+    /// <summary>
+    /// Bit shift right
+    /// </summary>
+    public bool IsSR { get; }
+
+    /// <summary>
+    /// Bitwise AND
+    /// </summary>
+    public bool IsAND { get; }
+
+    /// <summary>
+    /// Bitwise OR
+    /// </summary>
+    public bool IsOR { get; }
+
+    /// <summary>
+    /// Bitwise NOT
+    /// </summary>
+    public bool IsNOT { get; }
 
     #endregion
 
@@ -311,7 +351,7 @@ public readonly record struct MicroInstruction
 
     public static MicroInstruction[] Parse(string content)
     {
-        var values = new int[2048];
+        var values = new int[4096];
         HexFile.Load(content, values);
 
         var instructions = new MicroInstruction[values.Length];

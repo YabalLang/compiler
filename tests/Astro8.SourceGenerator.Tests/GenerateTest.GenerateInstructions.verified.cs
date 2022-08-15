@@ -97,6 +97,24 @@ public partial class Cpu<THandler>
             case 24:
                 SWPC(ref context);
                 break;
+            case 25:
+                PCR(ref context);
+                break;
+            case 26:
+                BSL(ref context);
+                break;
+            case 27:
+                BSR(ref context);
+                break;
+            case 28:
+                AND(ref context);
+                break;
+            case 29:
+                OR(ref context);
+                break;
+            case 30:
+                NOT(ref context);
+                break;
         }
     }
 
@@ -253,6 +271,10 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
             // ADD
             context.Cpu.Bus = context.Cpu.A + context.Cpu.B;
             context.Cpu.FlagA = context.Cpu.Bus == 0;
@@ -276,6 +298,10 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
             // SU
             context.Cpu.Bus = context.Cpu.A - context.Cpu.B;
             context.Cpu.FlagA = context.Cpu.Bus == 0;
@@ -299,6 +325,10 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
             // MU
             context.Cpu.Bus = context.Cpu.A * context.Cpu.B;
             context.Cpu.FlagA = context.Cpu.Bus == 0;
@@ -322,6 +352,10 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
             // DI
             if (context.Cpu.B != 0)
             {
@@ -621,6 +655,153 @@ public partial class Cpu<THandler>
             context.Cpu.Bus = context.Cpu.B;
             // WC
             context.Cpu.C = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void PCR(ref StepContext context)
+    {
+        // Step 2
+        {
+            // CR
+            context.Cpu.Bus = context.Cpu.ProgramCounter;
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BSL(ref StepContext context)
+    {
+        // Step 2
+        {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
+            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B & 0b1111);
+
+            
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BSR(ref StepContext context)
+    {
+        // Step 2
+        {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
+            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B & 0b1111);
+
+            
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AND(ref StepContext context)
+    {
+        // Step 2
+        {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
+            context.Cpu.Bus = context.Cpu.A & context.Cpu.B & 0b1111;
+
+            
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void OR(ref StepContext context)
+    {
+        // Step 2
+        {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
+            context.Cpu.Bus = context.Cpu.A | context.Cpu.B & 0b1111;
+
+            
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void NOT(ref StepContext context)
+    {
+        // Step 2
+        {
+            // EO
+            context.Cpu.FlagA = false;
+            context.Cpu.FlagB = false;
+        
+            context.Cpu.Bus = ~context.Cpu.A;
+
+            
+           if (context.Cpu.Bus == 0)
+           {
+               context.Cpu.FlagA = true;
+           }
+           else if (context.Cpu.Bus >= 65534)
+           {
+               context.Cpu.Bus -= 65534;
+               context.Cpu.FlagB = true;
+           }
+        
+            // WA
+            context.Cpu.A = context.Cpu.Bus;
         }
     }
 
