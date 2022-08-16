@@ -12,6 +12,15 @@ public enum BinaryOperator
     GreaterThanOrEqual,
     LessThan,
     LessThanOrEqual,
+    AndAlso,
+    OrElse,
     And,
-    Or
+    Or,
+    LeftShift,
+    RightShift
+}
+
+public enum UnaryOperator
+{
+    Not
 }

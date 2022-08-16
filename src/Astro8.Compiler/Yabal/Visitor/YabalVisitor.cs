@@ -418,6 +418,22 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
+    public override Node VisitAndAlsoExpression(YabalParser.AndAlsoExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.AndAlso);
+    }
+
+    public override Node VisitOrElseExpression(YabalParser.OrElseExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.OrElse);
+    }
+
+    public override Node VisitShiftExpression(YabalParser.ShiftExpressionContext context)
+    {
+        var @operator = context.ShiftLeft() != null ? BinaryOperator.LeftShift : BinaryOperator.RightShift;
+        return CreateBinary(context, context.expression(), @operator);
+    }
+
     public override Node VisitAndExpression(YabalParser.AndExpressionContext context)
     {
         return CreateBinary(context, context.expression(), BinaryOperator.And);

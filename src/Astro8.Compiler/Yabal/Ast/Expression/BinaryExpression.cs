@@ -22,8 +22,23 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 break;
             case BinaryOperator.Divide:
                 SetRegisters(builder);
-                builder.SwapA_B();
                 builder.Div();
+                break;
+            case BinaryOperator.And:
+                SetRegisters(builder);
+                builder.And();
+                break;
+            case BinaryOperator.Or:
+                SetRegisters(builder);
+                builder.Or();
+                break;
+            case BinaryOperator.LeftShift:
+                SetRegisters(builder);
+                builder.BitShiftLeft();
+                break;
+            case BinaryOperator.RightShift:
+                SetRegisters(builder);
+                builder.BitShiftRight();
                 break;
             case BinaryOperator.LessThan:
             case BinaryOperator.Equal:
@@ -31,8 +46,8 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             case BinaryOperator.GreaterThan:
             case BinaryOperator.GreaterThanOrEqual:
             case BinaryOperator.LessThanOrEqual:
-            case BinaryOperator.And:
-            case BinaryOperator.Or:
+            case BinaryOperator.AndAlso:
+            case BinaryOperator.OrElse:
             {
                 var trueLabel = builder.CreateLabel();
                 var falseLabel = builder.CreateLabel();
@@ -59,7 +74,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
     public void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel)
     {
-        if (Operator == BinaryOperator.Or)
+        if (Operator == BinaryOperator.OrElse)
         {
             Left.Build(builder);
             builder.SetB(1);
@@ -75,7 +90,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             return;
         }
 
-        if (Operator == BinaryOperator.And)
+        if (Operator == BinaryOperator.AndAlso)
         {
             Left.Build(builder);
             builder.SetB(0);
@@ -95,11 +110,6 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
         switch (Operator)
         {
-            case BinaryOperator.Add:
-            case BinaryOperator.Subtract:
-            case BinaryOperator.Multiply:
-            case BinaryOperator.Divide:
-                throw new NotSupportedException();
             case BinaryOperator.GreaterThan:
                 builder.Sub();
                 builder.JumpIfZero(falseLabel);
@@ -183,14 +193,14 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             };
         }
 
-        if (Operator is BinaryOperator.And or BinaryOperator.Or &&
+        if (Operator is BinaryOperator.AndAlso or BinaryOperator.OrElse &&
             left is BooleanExpression { Value: var leftBool } &&
             right is BooleanExpression { Value: var rightBool })
         {
             return Operator switch
             {
-                BinaryOperator.And => new BooleanExpression(Range, leftBool && rightBool),
-                BinaryOperator.Or => new BooleanExpression(Range, leftBool || rightBool),
+                BinaryOperator.AndAlso => new BooleanExpression(Range, leftBool && rightBool),
+                BinaryOperator.OrElse => new BooleanExpression(Range, leftBool || rightBool),
                 _ => new BinaryExpression(Range, Operator, left, right)
             };
         }

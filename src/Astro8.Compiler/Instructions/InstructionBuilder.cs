@@ -50,6 +50,16 @@ public abstract class InstructionBuilderBase
 
     public void Div() => Emit("DIV");
 
+    public void And() => Emit("AND");
+
+    public void Or() => Emit("OR");
+
+    public void Not() => Emit("NOT");
+
+    public void BitShiftLeft() => Emit("BSL");
+
+    public void BitShiftRight() => Emit("BSR");
+
     public void CounterToA() => Emit("CTRA");
 
     public void Jump(PointerOrData counter)

@@ -35,6 +35,7 @@ expression
 	| expression SubEqual expression								    # SubEqualExpression
 	| expression MulEqual expression								    # MulEqualExpression
 	| expression DivEqual expression								    # DivEqualExpression
+	| expression (ShiftLeft|ShiftRight) expression						# ShiftExpression
     | expression (Div|Mul) expression								    # DivMulBinaryExpression
     | expression (Add|Sub) expression								    # PlusSubBinaryExpression
 	| expression Less expression									    # LessExpression
@@ -42,8 +43,10 @@ expression
 	| expression Greater expression									    # GreaterExpression
 	| expression GreaterEqual expression							    # GreaterEqualExpression
 	| expression Equals expression						                # EqualExpression
-	| expression And expression								            # AndExpression
-	| expression Or expression								            # OrExpression
+	| expression AndAlso expression								        # AndAlsoExpression
+	| expression OrElse expression								        # OrElseExpression
+	| expression And expression									        # AndExpression
+	| expression Or expression									        # OrExpression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression

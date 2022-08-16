@@ -67,15 +67,19 @@ public class AssemblerTest
     }
 
     [Theory]
-    [InlineData("+", 4)]
-    [InlineData("-", 0)]
-    [InlineData("*", 4)]
-    [InlineData("/", 1)]
-    public void Binary(string type, int expected)
+    [InlineData("+", 2, 2, 4)]
+    [InlineData("-", 2, 2, 0)]
+    [InlineData("*", 2, 2, 4)]
+    [InlineData("/", 6, 2, 3)]
+    [InlineData("&", 0b10, 0b11, 0b10)]
+    [InlineData("|", 0b10, 0b11, 0b11)]
+    [InlineData("<<", 0b1, 1, 0b10)]
+    [InlineData(">>", 0b10, 1, 0b1)]
+    public void Binary(string type, int a, int b, int expected)
     {
         var code = $"""
-            var a = 2;
-            var b = 2
+            var a = {a};
+            var b = {b}
 
             a = a {type} b;
             """;
