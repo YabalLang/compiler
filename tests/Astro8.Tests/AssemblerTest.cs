@@ -148,6 +148,51 @@ public class AssemblerTest
     }
 
     [Fact]
+    public void FunctionReturn()
+    {
+        const string code = """
+            int[] create_array(int address) {
+                return asm {
+                    AIN @address
+                }
+            }
+
+            int get_offset(int x, int y) {
+                return x * 64 + y
+            }
+
+            int get_color(int r, int g, int b) {
+                return (r / 8 << 10) + (g / 8 << 5) + (b / 8)
+            }
+
+            var screen = create_array(61439)
+
+            for (var x = 1; x <= 16; x++) {
+                for (var y = 1; y <= 16; y++) {
+                    screen[get_offset(x, y)] = get_color(255, 0, 0)
+                }
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        for (var x = 1; x <= 16; x++)
+        {
+            for (var y = 1; y <= 16; y++)
+            {
+                var offset = x * 64 + y;
+                var address = 61439 + offset;
+
+                Assert.Equal(0b111110000000000, cpu.Memory[address]);
+            }
+        }
+    }
+
+    [Fact]
     public void InlineAsm()
     {
         const string code = """
@@ -375,5 +420,24 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(step, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData("true", 0)]
+    [InlineData("false", 1)]
+    public void Negate(string input, int expected)
+    {
+        var code = $"""
+            var value = {input}
+            var result = !value
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }
 }

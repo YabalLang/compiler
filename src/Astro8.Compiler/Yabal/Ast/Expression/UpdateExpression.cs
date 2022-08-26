@@ -6,11 +6,14 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
+        var isPrefix = !isVoid && !Prefix;
+        var variable = isPrefix ? builder.GetTemporaryVariable() : null;
+
         var type = Value.BuildExpression(builder, false);
 
-        if (!isVoid && !Prefix)
+        if (variable != null)
         {
-            builder.StoreA(builder.UpdatePointer);
+            builder.StoreA(variable);
         }
 
         if (type != LanguageType.Integer)
@@ -37,9 +40,10 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
             return LanguageType.Integer;
         });
 
-        if (!isVoid && !Prefix)
+        if (variable != null)
         {
-            builder.LoadA(builder.UpdatePointer);
+            builder.LoadA(variable);
+            variable.Dispose();
         }
 
         return LanguageType.Integer;

@@ -27,6 +27,9 @@ expression
 	| expression Incr												    # IncrementRightExpression
 	| Decr expression												    # DecrementLeftExpression
 	| expression Decr												    # DecrementRightExpression
+	| Sub expression												    # MinusExpression
+	| Not expression												    # NotExpression
+	| Exclamation expression										    # NegateExpression
 	| expression inlineSwitch                                           # SwitchExpression
 	| expression {noNewLine()}? OpenBrace expressionList CloseBrace	    # CallExpression
 	| expression {noNewLine()}? OpenBracket expression CloseBracket	    # ArrayAccessExpression
@@ -35,18 +38,15 @@ expression
 	| expression SubEqual expression								    # SubEqualExpression
 	| expression MulEqual expression								    # MulEqualExpression
 	| expression DivEqual expression								    # DivEqualExpression
-	| expression (ShiftLeft|ShiftRight) expression						# ShiftExpression
     | expression (Div|Mul) expression								    # DivMulBinaryExpression
     | expression (Add|Sub) expression								    # PlusSubBinaryExpression
-	| expression Less expression									    # LessExpression
-	| expression LessEqual expression								    # LessEqualExpression
-	| expression Greater expression									    # GreaterExpression
-	| expression GreaterEqual expression							    # GreaterEqualExpression
-	| expression Equals expression						                # EqualExpression
-	| expression AndAlso expression								        # AndAlsoExpression
-	| expression OrElse expression								        # OrElseExpression
+	| expression (ShiftLeft|ShiftRight) expression						# ShiftExpression
+	| expression (GreaterEqual|Greater|LessEqual|Less) expression		# ComparisonExpression
+	| expression (Equals|NotEquals) expression						    # EqualExpression
 	| expression And expression									        # AndExpression
 	| expression Or expression									        # OrExpression
+	| expression AndAlso expression								        # AndAlsoExpression
+	| expression OrElse expression								        # OrElseExpression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression

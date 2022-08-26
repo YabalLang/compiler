@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.AccessControl;
 using Antlr4.Runtime;
 using Astro8.Yabal;
 using Astro8.Yabal.Ast;
@@ -12,29 +13,31 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionBuilder _builder;
 
     private readonly Dictionary<int, InstructionPointer> _values;
-    private readonly InstructionPointer _stackIndex;
+    private readonly InstructionPointer _stackPointer;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
     private readonly Stack<BlockStack> _blockStack;
     private readonly List<InstructionPointer> _stack;
     private readonly Dictionary<string, Function> _functions = new();
+    private readonly Dictionary<string, InstructionPointer> _globals;
+    private readonly List<InstructionPointer> _temporaryPointers;
     private bool _hasCall;
 
     public YabalBuilder()
     {
         _builder = new InstructionBuilder();
 
-        _callLabel = _builder.CreateLabel("Call");
-        _returnLabel = _builder.CreateLabel("Return");
+        _callLabel = _builder.CreateLabel("__call");
+        _returnLabel = _builder.CreateLabel("__return");
 
-        TempPointer = _builder.CreatePointer(name: "Temp");
-        UpdatePointer = _builder.CreatePointer(name: "UpdatePointer");
-        ReturnValue = _builder.CreatePointer(name: "ReturnValue");
+        ReturnValue = _builder.CreatePointer(name: "Yabal:return_value");
 
-        _stackIndex = new InstructionPointer(name: "CallPointer");
+        _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer");
         _blockStack = new Stack<BlockStack>();
         _stack = new List<InstructionPointer>();
         _values = new Dictionary<int, InstructionPointer>();
+        _globals = new Dictionary<string, InstructionPointer>();
+        _temporaryPointers = new List<InstructionPointer>();
 
         PushBlock(true);
     }
@@ -47,14 +50,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _callLabel = parent._callLabel;
         _returnLabel = parent._returnLabel;
 
-        TempPointer = parent.TempPointer;
-        UpdatePointer = parent.TempPointer;
         ReturnValue = parent.ReturnValue;
 
-        _stackIndex = parent._stackIndex;
+        _stackPointer = parent._stackPointer;
         _blockStack = parent._blockStack;
         _stack = parent._stack;
         _values = parent._values;
+        _globals = parent._globals;
+        _temporaryPointers = parent._temporaryPointers;
     }
 
     public InstructionPointer GetLargeValue(int value)
@@ -81,9 +84,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public InstructionPointer TempPointer { get; set; }
+    public InstructionPointer GetOrCreateGlobalVariable(string name)
+    {
+        if (_globals.TryGetValue(name, out var pointer))
+        {
+            return pointer;
+        }
 
-    public InstructionPointer UpdatePointer { get; set; }
+        pointer = new InstructionPointer($"Global:{name}");
+        _globals[name] = pointer;
+        return pointer;
+    }
 
     public InstructionPointer ReturnValue { get; set; }
 
@@ -189,7 +200,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.Mark(_callLabel);
 
         // Store return address
-        builder.LoadA(_stackIndex);
+        builder.LoadA(_stackPointer);
         builder.StoreB_ToAddressInA();
 
         // Store values on stack
@@ -203,10 +214,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         // Increment stack pointer
-        builder.LoadA(_stackIndex);
+        builder.LoadA(_stackPointer);
         builder.SetB(_stack.Count + 1);
         builder.Add();
-        builder.StoreA(_stackIndex);
+        builder.StoreA(_stackPointer);
 
         // Go to the address
         builder.SwapA_C();
@@ -255,10 +266,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.StoreA(ReturnValue);
 
         // Decrement the stack pointer
-        builder.LoadA(_stackIndex);
+        builder.LoadA(_stackPointer);
         builder.SetB(_stack.Count + 1);
         builder.Sub();
-        builder.StoreA(_stackIndex);
+        builder.StoreA(_stackPointer);
 
         // Restore values from the stack
         builder.SetB(1);
@@ -271,7 +282,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         // Go to the return address
-        builder.LoadA(_stackIndex);
+        builder.LoadA(_stackPointer);
         builder.LoadA_FromAddressUsingA();
         builder.JumpToA();
     }
@@ -289,11 +300,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     }
 
     public override int Count => _builder.Count;
-
-    public override InstructionBuilder.RegisterWatch WatchRegister()
-    {
-        return _builder.WatchRegister();
-    }
 
     public override InstructionLabel CreateLabel(string? name = null)
     {
@@ -339,24 +345,36 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         builder.Jump(programLabel);
 
-        builder.Mark(ReturnValue);
-        builder.EmitRaw(0);
-
-        builder.Mark(TempPointer);
-        builder.EmitRaw(0);
-
-        builder.Mark(UpdatePointer);
-        builder.EmitRaw(0);
-
         foreach (var (value, pointer) in _values)
         {
             builder.Mark(pointer);
             builder.EmitRaw(value);
         }
 
+        foreach (var (_, pointer) in _globals)
+        {
+            builder.Mark(pointer);
+            builder.EmitRaw(0);
+        }
+
+        foreach (var pointer in _stack)
+        {
+            builder.Mark(pointer);
+            builder.EmitRaw(0);
+        }
+
+        foreach (var pointer in _temporaryPointers)
+        {
+            builder.Mark(pointer);
+            builder.EmitRaw(0);
+        }
+
         if (_hasCall || _functions.Count > 0)
         {
-            builder.Mark(_stackIndex);
+            builder.Mark(ReturnValue);
+            builder.EmitRaw(0);
+
+            builder.Mark(_stackPointer);
             builder.EmitRaw(0xE000);
 
             foreach (var (_, function) in _functions)
@@ -364,12 +382,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 builder.Mark(function.Label);
                 builder.AddRange(function.Builder._builder);
                 builder.Jump(_returnLabel);
-            }
-
-            foreach (var pointer in _stack)
-            {
-                builder.Mark(pointer);
-                builder.EmitRaw(0);
             }
 
             CreateCall(builder);
@@ -385,5 +397,55 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public void DeclareFunction(Function statement)
     {
         _functions.Add(statement.Name, statement);
+    }
+
+    public TemporaryVariable GetTemporaryVariable()
+    {
+        var block = Block;
+
+        if (block.TemporaryVariablesStack.Count > 0)
+        {
+            return block.TemporaryVariablesStack.Pop();
+        }
+
+        var pointer = block.IsGlobal
+            ? new InstructionPointer("Temp:" + _temporaryPointers.Count)
+            : GetStackVariable(block.StackOffset++);
+
+        if (block.IsGlobal)
+        {
+            _temporaryPointers.Add(pointer);
+        }
+
+        return new TemporaryVariable(pointer, Block);
+    }
+}
+
+
+public sealed class TemporaryVariable : IDisposable
+{
+    public TemporaryVariable(InstructionPointer pointer, BlockStack block)
+    {
+        Pointer = pointer;
+        Block = block;
+    }
+
+    public InstructionPointer Pointer { get; }
+
+    public BlockStack Block { get; }
+
+    public void Dispose()
+    {
+        Block.TemporaryVariablesStack.Push(this);
+    }
+
+    public static implicit operator InstructionPointer(TemporaryVariable variable)
+    {
+        return variable.Pointer;
+    }
+
+    public static implicit operator PointerOrData(TemporaryVariable variable)
+    {
+        return variable.Pointer;
     }
 }

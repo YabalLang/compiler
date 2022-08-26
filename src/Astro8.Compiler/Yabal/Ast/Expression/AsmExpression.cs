@@ -3,7 +3,9 @@
 namespace Astro8.Yabal.Ast;
 
 public record AsmArgument;
+
 public record AsmVariable(string Name) : AsmArgument;
+
 public record AsmInteger(int Value) : AsmArgument;
 
 public record AsmInstruction(string Name, AsmArgument? Argument);
@@ -30,6 +32,11 @@ public record AsmExpression(SourceRange Range, List<AsmInstruction> Instructions
                     builder.Emit(name, builder.GetVariable(variableName).Pointer);
                     break;
                 case AsmInteger { Value: var intValue } when isBusValue:
+                    if (intValue > InstructionReference.MaxDataLength)
+                    {
+                        throw new InvalidOperationException($"Integer value {intValue} is too large too store in a bus value");
+                    }
+
                     builder.Emit(name, intValue);
                     break;
 

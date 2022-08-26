@@ -19,8 +19,3 @@ public enum BinaryOperator
     LeftShift,
     RightShift
 }
-
-public enum UnaryOperator
-{
-    Not
-}

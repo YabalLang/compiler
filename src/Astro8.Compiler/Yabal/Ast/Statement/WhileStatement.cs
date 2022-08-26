@@ -14,7 +14,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
 
         switch (Expression)
         {
-            case BinaryExpression binaryExpression:
+            case IComparisonExpression binaryExpression:
                 binaryExpression.CreateComparison(builder, end, body);
                 break;
             case BooleanExpression { Value: true }:

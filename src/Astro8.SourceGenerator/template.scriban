@@ -76,19 +76,19 @@ public partial class Cpu<THandler>
             context.Cpu.FlagA = false;
             context.Cpu.FlagB = false;
         {{ if step.MicroInstruction.IsSL }}
-            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B & 0b1111);
+            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B);
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsSR }}
-            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B & 0b1111);
+            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B);
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsAND }}
-            context.Cpu.Bus = context.Cpu.A & context.Cpu.B & 0b1111;
+            context.Cpu.Bus = context.Cpu.A & context.Cpu.B;
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsOR }}
-            context.Cpu.Bus = context.Cpu.A | context.Cpu.B & 0b1111;
+            context.Cpu.Bus = context.Cpu.A | context.Cpu.B;
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsNOT }}

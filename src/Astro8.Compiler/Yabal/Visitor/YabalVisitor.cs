@@ -10,6 +10,8 @@ public record Variable(InstructionPointer Pointer, LanguageType Type);
 
 public class BlockStack
 {
+    public readonly Stack<TemporaryVariable> TemporaryVariablesStack = new();
+
     private readonly Dictionary<string, Variable> _variables = new();
 
     public IReadOnlyDictionary<string, Variable> Variables => _variables;
@@ -285,29 +287,23 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return CreateBinary(context, context.expression(), BinaryOperator.NotEqual);
     }
 
-    public override Node VisitLessExpression(YabalParser.LessExpressionContext context)
+    public override Node VisitComparisonExpression(YabalParser.ComparisonExpressionContext context)
     {
-        return CreateBinary(context, context.expression(), BinaryOperator.LessThan);
-    }
+        BinaryOperator @operator;
 
-    public override Node VisitLessEqualExpression(YabalParser.LessEqualExpressionContext context)
-    {
-        return CreateBinary(context, context.expression(), BinaryOperator.LessThanOrEqual);
-    }
+        if (context.Greater() != null) @operator = BinaryOperator.GreaterThan;
+        else if (context.GreaterEqual() != null) @operator = BinaryOperator.GreaterThanOrEqual;
+        else if (context.Less() != null) @operator = BinaryOperator.LessThan;
+        else if (context.LessEqual() != null) @operator = BinaryOperator.LessThanOrEqual;
+        else throw new NotSupportedException();
 
-    public override Node VisitGreaterExpression(YabalParser.GreaterExpressionContext context)
-    {
-        return CreateBinary(context, context.expression(), BinaryOperator.GreaterThan);
-    }
-
-    public override Node VisitGreaterEqualExpression(YabalParser.GreaterEqualExpressionContext context)
-    {
-        return CreateBinary(context, context.expression(), BinaryOperator.GreaterThanOrEqual);
+        return CreateBinary(context, context.expression(), @operator);
     }
 
     public override Node VisitEqualExpression(YabalParser.EqualExpressionContext context)
     {
-        return CreateBinary(context, context.expression(), BinaryOperator.Equal);
+        var @operator = context.Equals() != null ? BinaryOperator.Equal : BinaryOperator.NotEqual;
+        return CreateBinary(context, context.expression(), @operator);
     }
 
     public override Node VisitIfStatement(YabalParser.IfStatementContext context)
@@ -442,5 +438,37 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitOrExpression(YabalParser.OrExpressionContext context)
     {
         return CreateBinary(context, context.expression(), BinaryOperator.Or);
+    }
+
+    public override Node VisitExpressionExpression(YabalParser.ExpressionExpressionContext context)
+    {
+        return VisitExpression(context.expression());
+    }
+
+    public override Node VisitNegateExpression(YabalParser.NegateExpressionContext context)
+    {
+        return new UnaryExpression(
+            context,
+            VisitExpression(context.expression()),
+            UnaryOperator.Negate
+        );
+    }
+
+    public override Node VisitNotExpression(YabalParser.NotExpressionContext context)
+    {
+        return new UnaryExpression(
+            context,
+            VisitExpression(context.expression()),
+            UnaryOperator.Not
+        );
+    }
+
+    public override Node VisitMinusExpression(YabalParser.MinusExpressionContext context)
+    {
+        return new UnaryExpression(
+            context,
+            VisitExpression(context.expression()),
+            UnaryOperator.Minus
+        );
     }
 }

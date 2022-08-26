@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record IntegerExpression(SourceRange Range, int Value) : Expression(Range), IConstantValue, IConstantIntValue
+public record IntegerExpression(SourceRange Range, int Value) : Expression(Range), IConstantValue
 {
     public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxDataLength;
 

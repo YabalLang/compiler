@@ -13,17 +13,9 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
     public override void Build(YabalBuilder builder)
     {
         var block = builder.Block;
-        InstructionPointer pointer;
-
-        if (block.IsGlobal)
-        {
-            builder.EmitRaw(0);
-            pointer = builder.CreatePointer(Name);
-        }
-        else
-        {
-            pointer = builder.GetStackVariable(block.StackOffset++);
-        }
+        var pointer = block.IsGlobal
+            ? builder.GetOrCreateGlobalVariable(Name)
+            : builder.GetStackVariable(block.StackOffset++);
 
         LanguageType? valueType = null;
 

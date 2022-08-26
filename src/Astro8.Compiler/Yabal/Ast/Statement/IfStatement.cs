@@ -26,7 +26,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
 
         switch (Expression)
         {
-            case BinaryExpression binaryExpression:
+            case IComparisonExpression binaryExpression:
             {
                 binaryExpression.CreateComparison(builder, alternateLabel ?? end, consequentLabel);
                 break;

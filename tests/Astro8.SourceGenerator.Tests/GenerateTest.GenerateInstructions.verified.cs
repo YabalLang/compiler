@@ -679,7 +679,7 @@ public partial class Cpu<THandler>
             context.Cpu.FlagA = false;
             context.Cpu.FlagB = false;
         
-            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B & 0b1111);
+            context.Cpu.Bus = context.Cpu.A << (context.Cpu.B);
 
             
            if (context.Cpu.Bus == 0)
@@ -706,7 +706,7 @@ public partial class Cpu<THandler>
             context.Cpu.FlagA = false;
             context.Cpu.FlagB = false;
         
-            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B & 0b1111);
+            context.Cpu.Bus = context.Cpu.A >> (context.Cpu.B);
 
             
            if (context.Cpu.Bus == 0)
@@ -733,7 +733,7 @@ public partial class Cpu<THandler>
             context.Cpu.FlagA = false;
             context.Cpu.FlagB = false;
         
-            context.Cpu.Bus = context.Cpu.A & context.Cpu.B & 0b1111;
+            context.Cpu.Bus = context.Cpu.A & context.Cpu.B;
 
             
            if (context.Cpu.Bus == 0)
@@ -760,7 +760,7 @@ public partial class Cpu<THandler>
             context.Cpu.FlagA = false;
             context.Cpu.FlagB = false;
         
-            context.Cpu.Bus = context.Cpu.A | context.Cpu.B & 0b1111;
+            context.Cpu.Bus = context.Cpu.A | context.Cpu.B;
 
             
            if (context.Cpu.Bus == 0)

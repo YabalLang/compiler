@@ -19,7 +19,6 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
     public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression Key)
     {
         var type = array.BuildExpression(builder, false);
-        var arrayOffset = builder.Count;
 
         if (type.StaticType != StaticType.Array || type.ElementType == null)
         {
@@ -28,17 +27,19 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
         if (Key is IntegerExpression { Value: var intValue })
         {
-            if (intValue != 0)
+            if (intValue == 0)
             {
-                builder.SetB(intValue);
-                builder.Add();
+                return type;
             }
+
+            builder.SetB(intValue);
+            builder.Add();
         }
         else
         {
-            builder.SwapA_B();
+            using var variable = builder.GetTemporaryVariable();
+            builder.StoreA(variable);
 
-            using var watcher = builder.WatchRegister();
             var keyType = Key.BuildExpression(builder, false);
 
             if (keyType.StaticType != StaticType.Integer)
@@ -46,12 +47,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
                 throw new InvalidOperationException("Array access expression can only be used on arrays");
             }
 
-            if (watcher.B)
-            {
-                builder.StoreA(builder.TempPointer, arrayOffset);
-                builder.LoadB(builder.TempPointer);
-            }
-
+            builder.LoadB(variable);
             builder.Add();
         }
 

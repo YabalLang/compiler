@@ -21,7 +21,7 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 
         switch (Test)
         {
-            case BinaryExpression binaryExpression:
+            case IComparisonExpression binaryExpression:
                 binaryExpression.CreateComparison(builder, end, body);
                 break;
             case BooleanExpression { Value: true }:

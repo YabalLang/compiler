@@ -42,8 +42,8 @@ public class InstructionBuilderTest
     {
         var builder = new InstructionBuilder();
         builder.SetA(a);
-            builder.SetB(b);
-            builder.Emit(instruction);
+        builder.SetB(b);
+        builder.Emit(instruction);
 
         var cpu = Create(builder);
         cpu.Run();

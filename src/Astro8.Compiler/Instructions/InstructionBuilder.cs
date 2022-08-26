@@ -10,8 +10,6 @@ public abstract class InstructionBuilderBase
 
     public abstract int Count { get; }
 
-    public abstract InstructionBuilder.RegisterWatch WatchRegister();
-
     public abstract InstructionLabel CreateLabel(string? name = null);
 
     public abstract InstructionPointer CreatePointer(string? name = null, int? index = null);
@@ -147,13 +145,6 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     }
 
     public int? Index { get; set; }
-
-    public override RegisterWatch WatchRegister()
-    {
-        var watch = new RegisterWatch(this);
-        _watchStack.Push(watch);
-        return watch;
-    }
 
     private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label, bool IsRaw = false)
     {

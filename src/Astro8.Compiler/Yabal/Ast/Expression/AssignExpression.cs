@@ -26,12 +26,10 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
 
     private static LanguageType BuildArrayAccess(YabalBuilder builder, ArrayAccessExpression arrayAccess, Func<LanguageType> value)
     {
+        using var address = builder.GetTemporaryVariable();
+
         var arrayType = ArrayAccessExpression.StoreAddressInA(builder, arrayAccess.Array, arrayAccess.Key);
-        var valueOffset = builder.Count;
-
-        builder.SwapA_B();
-
-        using var watcher = builder.WatchRegister();
+        builder.StoreA(address);
 
         var type = value();
 
@@ -40,11 +38,7 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
             throw new InvalidOperationException("Type mismatch");
         }
 
-        if (watcher.B)
-        {
-            builder.StoreA(builder.TempPointer, valueOffset);
-            builder.LoadB(builder.TempPointer);
-        }
+        builder.LoadB(address);
 
         builder.SwapA_B();
         builder.StoreB_ToAddressInA();

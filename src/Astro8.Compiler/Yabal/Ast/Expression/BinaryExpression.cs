@@ -2,7 +2,12 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expression Left, Expression Right) : Expression(Range)
+public interface IComparisonExpression
+{
+    void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel);
+}
+
+public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expression Left, Expression Right) : Expression(Range), IComparisonExpression
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
@@ -158,19 +163,13 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
         else
         {
+            using var variable = builder.GetTemporaryVariable();
+
             Left.Build(builder);
-            var leftOffset = builder.Count;
-            builder.SwapA_B();
+            builder.StoreA(variable);
 
-            using var watcher = builder.WatchRegister();
             Right.Build(builder);
-
-            if (watcher.B)
-            {
-                // Right changed the value in register B, so we need to store the left-side to a temporary variable
-                builder.StoreA(builder.TempPointer, leftOffset);
-                builder.LoadB(builder.TempPointer);
-            }
+            builder.LoadB(variable);
 
             builder.SwapA_B();
         }
@@ -189,7 +188,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.Equal => new BooleanExpression(Range, Equals(leftValue, rightValue)),
                 BinaryOperator.NotEqual => new BooleanExpression(Range, !Equals(leftValue, rightValue)),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => this
             };
         }
 
@@ -201,12 +200,12 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.AndAlso => new BooleanExpression(Range, leftBool && rightBool),
                 BinaryOperator.OrElse => new BooleanExpression(Range, leftBool || rightBool),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => this
             };
         }
 
-        if (left is IConstantIntValue { Value: var leftInt } &&
-            right is IConstantIntValue { Value: var rightInt })
+        if (left is IConstantValue { Value: int leftInt } &&
+            right is IConstantValue { Value: int rightInt })
         {
             return Operator switch
             {
@@ -218,10 +217,10 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 BinaryOperator.GreaterThanOrEqual => new BooleanExpression(Range, leftInt >= rightInt),
                 BinaryOperator.LessThan => new BooleanExpression(Range, leftInt < rightInt),
                 BinaryOperator.LessThanOrEqual => new BooleanExpression(Range, leftInt == rightInt),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => this
             };
         }
 
-        return new BinaryExpression(Range, Operator, left, right);
+        return this;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue, IConstantIntValue
+public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
@@ -63,7 +63,5 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
         };
     }
 
-    object IConstantValue.Value => Value;
-
-    int IConstantIntValue.Value => GetValue(Value);
+    object IConstantValue.Value => GetValue(Value);
 }
