@@ -111,40 +111,11 @@ public abstract class InstructionBuilderBase
 [SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
 public class InstructionBuilder : InstructionBuilderBase, IProgram
 {
-    public sealed class RegisterWatch : IDisposable
-    {
-        private readonly InstructionBuilder _builder;
-
-        public RegisterWatch(InstructionBuilder builder)
-        {
-            _builder = builder;
-        }
-
-        public bool A { get; set; }
-
-        public bool B { get; set; }
-
-        public bool C { get; set; }
-
-        public void Reset()
-        {
-            A = false;
-            B = false;
-            C = false;
-        }
-
-        public void Dispose()
-        {
-            _builder._watchStack.Pop();
-        }
-    }
-
     private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
     private readonly Dictionary<string, Instruction> _instructions;
 
     private int _pointerCount;
     private int _labelCount;
-    private readonly Stack<RegisterWatch> _watchStack = new();
 
     public InstructionBuilder(IEnumerable<Instruction>? instructions = null)
     {
@@ -276,34 +247,6 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         if (!_instructions.TryGetValue(name, out var instruction))
         {
             throw new ArgumentException($"Unknown instruction '{name}'", nameof(name));
-        }
-
-        // Update watchers
-        foreach (var microInstruction in instruction.MicroInstructions)
-        {
-            if (microInstruction.IsWA || microInstruction.IsJ)
-            {
-                foreach (var watch in _watchStack)
-                {
-                    watch.A = true;
-                }
-            }
-
-            if (microInstruction.IsWB || microInstruction.IsJ)
-            {
-                foreach (var watch in _watchStack)
-                {
-                    watch.B = true;
-                }
-            }
-
-            if (microInstruction.IsWC || microInstruction.IsJ)
-            {
-                foreach (var watch in _watchStack)
-                {
-                    watch.C = true;
-                }
-            }
         }
 
         // Register
