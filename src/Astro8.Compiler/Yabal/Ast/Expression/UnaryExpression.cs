@@ -1,4 +1,5 @@
 ﻿using Astro8.Instructions;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
@@ -83,7 +84,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         builder.Jump(trueLabel);
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(BlockCompileStack block)
     {
         return Operator switch
         {
@@ -93,4 +94,6 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
             _ => this
         };
     }
+
+    public override bool OverwritesB => true;
 }

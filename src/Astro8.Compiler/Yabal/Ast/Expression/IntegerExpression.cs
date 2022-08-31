@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record IntegerExpression(SourceRange Range, int Value) : Expression(Range), IConstantValue
+public record IntegerExpression(SourceRange Range, int Value) : Expression(Range), IConstantValue, IExpressionToB
 {
     public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxDataLength;
 
@@ -11,15 +11,37 @@ public record IntegerExpression(SourceRange Range, int Value) : Expression(Range
         if (IsSmall)
         {
             builder.SetA(Value);
+            builder.SetComment("load small integer");
         }
         else
         {
-            var pointer = builder.GetLargeValue(Value);
-            builder.LoadA(pointer);
+            builder.SetA_Large(Value);
+            builder.SetComment("load large integer");
         }
 
         return LanguageType.Integer;
     }
 
-    object IConstantValue.Value => Value;
+    public LanguageType BuildExpressionToB(YabalBuilder builder)
+    {
+        if (IsSmall)
+        {
+            builder.SetB(Value);
+            builder.SetComment("load small integer");
+        }
+        else
+        {
+            builder.LoadA_Large(Value);
+            builder.SwapA_B();
+            builder.SetComment("load large integer");
+        }
+
+        return LanguageType.Integer;
+    }
+
+    bool IExpressionToB.OverwritesA => !IsSmall;
+
+    object? IConstantValue.Value => Value;
+
+    public override bool OverwritesB => false;
 }

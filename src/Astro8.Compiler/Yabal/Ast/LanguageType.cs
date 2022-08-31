@@ -5,5 +5,6 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Integer = new(StaticType.Integer);
     public static readonly LanguageType Boolean = new(StaticType.Boolean);
     public static readonly LanguageType Void = new(StaticType.Void);
-    public static LanguageType Array(LanguageType elementType) => new(StaticType.Array, elementType);
+    public static readonly LanguageType Assembly = new(StaticType.Assembly);
+    public static LanguageType Pointer(LanguageType elementType) => new(StaticType.Pointer, elementType);
 }

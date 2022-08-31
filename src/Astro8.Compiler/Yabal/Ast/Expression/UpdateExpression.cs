@@ -21,7 +21,7 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
             throw new InvalidOperationException("Cannot update a non-integer value");
         }
 
-        AssignExpression.SetValue(builder, Value, () =>
+        AssignExpression.SetValue(builder, Value, (Func<LanguageType>)(() =>
         {
             builder.SetB(1);
 
@@ -29,16 +29,19 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
             {
                 case BinaryOperator.Add:
                     builder.Add();
+                    builder.SetComment("increment value");
                     break;
                 case BinaryOperator.Subtract:
                     builder.Sub();
+                    builder.SetComment("decrement value");
                     break;
                 default:
                     throw new InvalidOperationException("Unknown operator");
             }
 
             return LanguageType.Integer;
-        });
+        }));
+
 
         if (variable != null)
         {
@@ -48,4 +51,6 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
 
         return LanguageType.Integer;
     }
+
+    public override bool OverwritesB => true;
 }

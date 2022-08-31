@@ -59,14 +59,14 @@ public readonly record struct InstructionReference
             return Raw.ToString();
         }
 
-        var instruction = instructions[Id].Name;
+        var instruction = instructions[Id];
 
-        if (Data == 0)
+        if (!instruction.MicroInstructions.Any(i => i.IsIR))
         {
-            return $"{instruction}";
+            return instruction.Name;
         }
 
-        return $"{instruction} {Data}";
+        return $"{instruction.Name} {Data}";
     }
 
     public static int BitRange(int value, int offset, int n)

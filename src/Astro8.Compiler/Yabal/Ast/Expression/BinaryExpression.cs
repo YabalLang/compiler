@@ -1,4 +1,5 @@
 ﻿using Astro8.Instructions;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
@@ -45,6 +46,18 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 SetRegisters(builder);
                 builder.BitShiftRight();
                 break;
+            case BinaryOperator.Modulo:
+            {
+                SetRegisters(builder);
+                using var temp = builder.GetTemporaryVariable(global: true);
+                builder.StoreA(temp);
+                builder.Div();
+                builder.Mult();
+                builder.LoadB(temp);
+                builder.SwapA_B();
+                builder.Sub();
+                break;
+            }
             case BinaryOperator.LessThan:
             case BinaryOperator.Equal:
             case BinaryOperator.NotEqual:
@@ -113,39 +126,50 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
         SetRegisters(builder);
 
-        switch (Operator)
+        Jump(Operator, builder, falseLabel, trueLabel);
+    }
+
+    public static void Jump(BinaryOperator @operator, YabalBuilder builder, PointerOrData falseLabel, PointerOrData trueLabel)
+    {
+        switch (@operator)
         {
             case BinaryOperator.GreaterThan:
                 builder.Sub();
+                builder.SetComment("operator >");
                 builder.JumpIfZero(falseLabel);
                 builder.JumpIfCarryBit(trueLabel);
                 builder.Jump(falseLabel);
                 break;
             case BinaryOperator.GreaterThanOrEqual:
                 builder.Sub();
+                builder.SetComment("operator >=");
                 builder.JumpIfZero(trueLabel);
                 builder.JumpIfCarryBit(trueLabel);
                 builder.Jump(falseLabel);
                 break;
             case BinaryOperator.LessThan:
                 builder.Sub();
+                builder.SetComment("operator <");
                 builder.JumpIfZero(falseLabel);
                 builder.JumpIfCarryBit(falseLabel);
                 builder.Jump(trueLabel);
                 break;
             case BinaryOperator.LessThanOrEqual:
                 builder.Sub();
+                builder.SetComment("operator <=");
                 builder.JumpIfZero(trueLabel);
                 builder.JumpIfCarryBit(falseLabel);
                 builder.Jump(trueLabel);
                 break;
             case BinaryOperator.Equal:
                 builder.Sub();
+                builder.SetComment("operator ==");
                 builder.JumpIfZero(trueLabel);
                 builder.Jump(falseLabel);
                 break;
             case BinaryOperator.NotEqual:
                 builder.Sub();
+                builder.SetComment("operator !=");
                 builder.JumpIfZero(falseLabel);
                 builder.Jump(trueLabel);
                 break;
@@ -156,10 +180,18 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
     private void SetRegisters(YabalBuilder builder)
     {
-        if (Right is IntegerExpression { IsSmall: true } intExpression)
+        if (Right is IExpressionToB { OverwritesA: false } right)
         {
             Left.Build(builder);
-            builder.SetB(intExpression.Value);
+            right.BuildExpressionToB(builder);
+        }
+        else if (!Right.OverwritesB)
+        {
+            Left.Build(builder);
+            builder.SwapA_B();
+
+            Right.Build(builder);
+            builder.SwapA_B();
         }
         else
         {
@@ -175,10 +207,10 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(BlockCompileStack block)
     {
-        var left = Left.Optimize();
-        var right = Right.Optimize();
+        var left = Left.Optimize(block);
+        var right = Right.Optimize(block);
 
         if (Operator is BinaryOperator.Equal or BinaryOperator.NotEqual &&
             left is IConstantValue { Value: var leftValue } &&
@@ -188,7 +220,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.Equal => new BooleanExpression(Range, Equals(leftValue, rightValue)),
                 BinaryOperator.NotEqual => new BooleanExpression(Range, !Equals(leftValue, rightValue)),
-                _ => this
+                _ => new BinaryExpression(Range, Operator, left, right)
             };
         }
 
@@ -200,7 +232,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.AndAlso => new BooleanExpression(Range, leftBool && rightBool),
                 BinaryOperator.OrElse => new BooleanExpression(Range, leftBool || rightBool),
-                _ => this
+                _ => new BinaryExpression(Range, Operator, left, right)
             };
         }
 
@@ -213,14 +245,21 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 BinaryOperator.Subtract => new IntegerExpression(Range, leftInt - rightInt),
                 BinaryOperator.Multiply => new IntegerExpression(Range, leftInt * rightInt),
                 BinaryOperator.Divide => new IntegerExpression(Range, leftInt / rightInt),
+                BinaryOperator.Modulo => new IntegerExpression(Range, leftInt % rightInt),
                 BinaryOperator.GreaterThan => new BooleanExpression(Range, leftInt > rightInt),
                 BinaryOperator.GreaterThanOrEqual => new BooleanExpression(Range, leftInt >= rightInt),
                 BinaryOperator.LessThan => new BooleanExpression(Range, leftInt < rightInt),
                 BinaryOperator.LessThanOrEqual => new BooleanExpression(Range, leftInt == rightInt),
-                _ => this
+                BinaryOperator.LeftShift => new IntegerExpression(Range, leftInt << rightInt),
+                BinaryOperator.RightShift => new IntegerExpression(Range, leftInt >> rightInt),
+                BinaryOperator.And => new IntegerExpression(Range, leftInt & rightInt),
+                BinaryOperator.Or => new IntegerExpression(Range, leftInt | rightInt),
+                _ => new BinaryExpression(Range, Operator, left, right)
             };
         }
 
-        return this;
+        return new BinaryExpression(Range, Operator, left, right);
     }
+
+    public override bool OverwritesB => true;
 }

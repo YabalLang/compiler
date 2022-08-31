@@ -46,4 +46,6 @@ public record CallExpression(
 
         return function.ReturnType;
     }
+
+    public override bool OverwritesB => true;
 }

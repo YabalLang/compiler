@@ -4,28 +4,32 @@ namespace Astro8.Yabal.Ast;
 
 public record ArrayAccessExpression(SourceRange Range, Expression Array, Expression Key) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid = false)
+    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        return LoadValue(builder, Array, Key);
-    }
+        if (Array is IConstantValue { Value: Address constantAddress } &&
+            Key is IConstantValue { Value: int constantKey })
+        {
+            builder.LoadA_Large(constantAddress.Value + constantKey);
+            return LanguageType.Integer;
+        }
 
-    public static LanguageType LoadValue(YabalBuilder builder, Expression array, Expression Key)
-    {
-        var type = StoreAddressInA(builder, array, Key);
+        var type = StoreAddressInA(builder, Array, Key);
         builder.LoadA_FromAddressUsingA();
         return type.ElementType!;
     }
 
-    public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression Key)
+    public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpression { Value: 0 };
+
+    public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression key)
     {
         var type = array.BuildExpression(builder, false);
 
-        if (type.StaticType != StaticType.Array || type.ElementType == null)
+        if (type != LanguageType.Assembly && (type.StaticType != StaticType.Pointer || type.ElementType == null))
         {
             throw new InvalidOperationException("Array access expression can only be used on arrays");
         }
 
-        if (Key is IntegerExpression { Value: var intValue })
+        if (key is IntegerExpression { Value: var intValue })
         {
             if (intValue == 0)
             {
@@ -34,13 +38,28 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             builder.SetB(intValue);
             builder.Add();
+
+            builder.SetComment($"add {intValue} to pointer address");
+        }
+        else if (!key.OverwritesB)
+        {
+            builder.SwapA_B();
+            var keyType = key.BuildExpression(builder, false);
+
+            if (keyType.StaticType != StaticType.Integer)
+            {
+                throw new InvalidOperationException("Array access expression can only be used on arrays");
+            }
+            builder.Add();
+
+            builder.SetComment("add to pointer address");
         }
         else
         {
             using var variable = builder.GetTemporaryVariable();
             builder.StoreA(variable);
 
-            var keyType = Key.BuildExpression(builder, false);
+            var keyType = key.BuildExpression(builder, false);
 
             if (keyType.StaticType != StaticType.Integer)
             {
@@ -49,6 +68,8 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             builder.LoadB(variable);
             builder.Add();
+
+            builder.SetComment("add to pointer address");
         }
 
         return type;

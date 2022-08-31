@@ -38,7 +38,7 @@ expression
 	| expression SubEqual expression								    # SubEqualExpression
 	| expression MulEqual expression								    # MulEqualExpression
 	| expression DivEqual expression								    # DivEqualExpression
-    | expression (Div|Mul) expression								    # DivMulBinaryExpression
+    | expression (Div|Mul|Mod) expression							    # DivMulModBinaryExpression
     | expression (Add|Sub) expression								    # PlusSubBinaryExpression
 	| expression (ShiftLeft|ShiftRight) expression						# ShiftExpression
 	| expression (GreaterEqual|Greater|LessEqual|Less) expression		# ComparisonExpression
@@ -50,6 +50,7 @@ expression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
+	| CreatePointer expression                                            # CreatePointerExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
     | char                                                              # CharExpression
@@ -161,8 +162,8 @@ functionBody
 
 // Variable
 variableDeclaration
-    : type identifierName (Assign expression)?                      # DefaultVariableDeclaration
-    | Var identifierName Assign expression                          # AutoVariableDeclaration
+    : Const? type identifierName (Assign expression)?               # DefaultVariableDeclaration
+    | Const? Var identifierName Assign expression                   # AutoVariableDeclaration
     | returnType identifierName functionParameterList functionBody  # FunctionDeclaration
     ;
 

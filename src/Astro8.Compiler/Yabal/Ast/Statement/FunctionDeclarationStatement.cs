@@ -51,6 +51,7 @@ public record FunctionDeclarationStatement(
         foreach (var parameter in Parameters)
         {
             block.DeclareVariable(parameter.Name, new Variable(
+                parameter.Name,
                 builder.GetStackVariable(block.StackOffset++),
                 parameter.Type
             ));

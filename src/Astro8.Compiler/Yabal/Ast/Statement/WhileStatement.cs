@@ -18,11 +18,9 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
                 binaryExpression.CreateComparison(builder, end, body);
                 break;
             case BooleanExpression { Value: true }:
-                builder.Jump(body);
                 break;
             case BooleanExpression { Value: false }:
-                builder.Jump(next);
-                break;
+                return;
             default:
             {
                 var type = Expression.BuildExpression(builder, false);

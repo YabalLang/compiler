@@ -6,6 +6,13 @@ using static SDL2.SDL.SDL_EventType;
 
 var config = ConfigContext.Load();
 
+if (File.Exists("source.yabal"))
+{
+    var builder = new YabalBuilder();
+    builder.CompileCode(File.ReadAllText("source.yabal"));
+    File.WriteAllText("source.asm", builder.ToAssembly());
+}
+
 using var handler = new DesktopHandler(
     config.Screen.Width,
     config.Screen.Height,

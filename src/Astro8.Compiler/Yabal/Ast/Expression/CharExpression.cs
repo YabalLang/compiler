@@ -2,15 +2,23 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue
+public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue, IExpressionToB
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
         builder.SetA(GetValue(Value));
+        builder.SetComment($"load character '{Value}'");
         return LanguageType.Integer;
     }
 
-    private static int GetValue(char value)
+    public LanguageType BuildExpressionToB(YabalBuilder builder)
+    {
+        builder.SetB(GetValue(Value));
+        builder.SetComment($"load character '{Value}'");
+        return LanguageType.Integer;
+    }
+
+    public static int GetValue(char value)
     {
         return value switch
         {
@@ -63,5 +71,9 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
         };
     }
 
-    object IConstantValue.Value => GetValue(Value);
+    object? IConstantValue.Value => GetValue(Value);
+
+    public override bool OverwritesB => false;
+
+    bool IExpressionToB.OverwritesA => false;
 }

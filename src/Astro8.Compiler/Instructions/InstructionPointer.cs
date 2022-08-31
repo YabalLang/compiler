@@ -1,4 +1,6 @@
-﻿namespace Astro8.Instructions;
+﻿using Astro8.Yabal.Visitor;
+
+namespace Astro8.Instructions;
 
 public class InstructionPointer
 {
@@ -10,6 +12,10 @@ public class InstructionPointer
     }
 
     public string? Name { get; }
+
+    public List<Variable> AssignedVariables { get; } = new();
+
+    public string AssignedVariableNames => string.Join(", ", AssignedVariables.Select(i => i.Name));
 
     public int Address
     {

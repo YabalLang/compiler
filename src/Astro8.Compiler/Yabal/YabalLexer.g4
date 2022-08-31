@@ -9,6 +9,7 @@ SingleLineComment	: '//' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
 
 Asm				    : 'asm' -> pushMode(ASM);
 Var                 : 'var';
+Const               : 'const';
 Void				: 'void';
 Int				    : 'int';
 Bool				: 'bool';
@@ -23,6 +24,7 @@ AndAlso     	    : '&&';
 OrElse      		: '||';
 Or                  : '|';
 And                 : '&';
+Mod                 : '%';
 Not                 : '~';
 ShiftLeft           : '<<';
 ShiftRight          : '>>';
@@ -60,6 +62,7 @@ If					: 'if';
 Else				: 'else';
 Switch              : 'switch';
 While               : 'while';
+CreatePointer       : 'create_pointer';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

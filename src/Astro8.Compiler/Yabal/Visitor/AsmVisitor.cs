@@ -15,4 +15,9 @@ public class AsmArgumentVisitor : YabalParserBaseVisitor<AsmArgument>
     {
         return new AsmVariable(context.asmIdentifier().GetText());
     }
+
+    public override AsmArgument VisitAsmLabelReference(YabalParser.AsmLabelReferenceContext context)
+    {
+        return new AsmLabel(context.asmIdentifier().GetText());
+    }
 }

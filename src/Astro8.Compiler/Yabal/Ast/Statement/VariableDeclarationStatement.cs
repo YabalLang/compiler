@@ -3,7 +3,7 @@ using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record VariableDeclarationStatement(SourceRange Range, string Name, Expression? Value = null, LanguageType? Type = null) : Statement(Range)
+public record VariableDeclarationStatement(SourceRange Range, string Name, Expression? Value = null, LanguageType? Type = null, IConstantValue? ConstantValue = null) : Statement(Range)
 {
     public override void BeforeBuild(YabalBuilder builder)
     {
@@ -14,7 +14,7 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
     {
         var block = builder.Block;
         var pointer = block.IsGlobal
-            ? builder.GetOrCreateGlobalVariable(Name)
+            ? builder.GetGlobalVariable(block.StackOffset++)
             : builder.GetStackVariable(block.StackOffset++);
 
         LanguageType? valueType = null;
@@ -23,6 +23,7 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
         {
             valueType = Value.BuildExpression(builder, false);
             builder.StoreA(pointer);
+            builder.SetComment($"store value in variable '{Name}'");
         }
 
         if (valueType == null)
@@ -32,9 +33,18 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
 
         if (Type != null && valueType != Type)
         {
-            throw new InvalidOperationException("Type mismatch");
+            if (valueType == LanguageType.Assembly)
+            {
+                valueType = Type;
+            }
+            else
+            {
+                throw new InvalidOperationException("Type mismatch");
+            }
         }
 
-        builder.Block.DeclareVariable(Name, new Variable(pointer, valueType));
+        var variable = new Variable(Name, pointer, valueType, ConstantValue);
+        builder.Block.DeclareVariable(Name, variable);
+        pointer.AssignedVariables.Add(variable);
     }
 }

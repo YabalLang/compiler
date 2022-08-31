@@ -11,56 +11,134 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
 
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        return SetValue(builder, Object, () => Value.BuildExpression(builder, false));
+        return SetValue(builder, Object, Value, isVoid);
     }
 
-    public static LanguageType SetValue(YabalBuilder builder, Expression @object, Func<LanguageType> value)
+    public override bool OverwritesB => true;
+
+    public static LanguageType SetValue(
+        YabalBuilder builder,
+        Expression @object,
+        Either<Func<LanguageType>, Expression> value,
+        bool isVoid = false)
     {
         return @object switch
         {
             IdentifierExpression expression => BuildIdentifier(builder, expression, value),
-            ArrayAccessExpression arrayAccess => BuildArrayAccess(builder, arrayAccess, value),
+            ArrayAccessExpression arrayAccess => BuildArrayAccess(builder, arrayAccess, value, isVoid),
             _ => throw new NotSupportedException()
         };
     }
 
-    private static LanguageType BuildArrayAccess(YabalBuilder builder, ArrayAccessExpression arrayAccess, Func<LanguageType> value)
+    private static LanguageType BuildArrayAccess(
+        YabalBuilder builder,
+        ArrayAccessExpression arrayAccess,
+        Either<Func<LanguageType>, Expression> value,
+        bool isVoid)
     {
-        using var address = builder.GetTemporaryVariable();
+        if (arrayAccess is { Array: IConstantValue { Value: Address constantAddress }, Key: IConstantValue { Value: int constantKey } })
+        {
+            VisitValue(builder, value, LanguageType.Integer);
+            builder.StoreA_Large(constantAddress.Value + constantKey);
+            builder.SetComment("store value in pointer");
+            return LanguageType.Integer;
+        }
 
         var arrayType = ArrayAccessExpression.StoreAddressInA(builder, arrayAccess.Array, arrayAccess.Key);
-        builder.StoreA(address);
 
-        var type = value();
+        if (value is { Right: IExpressionToB { OverwritesA: false } expression })
+        {
+            var type = expression.BuildExpressionToB(builder);
 
-        if (type != arrayType.ElementType)
+            if (type != arrayType.ElementType)
+            {
+                throw new InvalidOperationException("Type mismatch");
+            }
+        }
+        else if (value is { Right.OverwritesB: false })
+        {
+            builder.SwapA_B();
+            VisitValue(builder, value, arrayType.ElementType);
+            builder.SwapA_B();
+            builder.StoreB_ToAddressInA();
+        }
+        else
+        {
+            using var address = builder.GetTemporaryVariable();
+            builder.StoreA(address);
+            VisitValue(builder, value, arrayType.ElementType);
+            builder.LoadB(address);
+            builder.SwapA_B();
+        }
+
+        builder.StoreB_ToAddressInA();
+        builder.SetComment("store value in array");
+
+        if (!isVoid)
+        {
+            builder.SwapA_B();
+        }
+
+        return arrayType.ElementType!;
+    }
+
+    private static LanguageType VisitValue(YabalBuilder builder, Either<Func<LanguageType>, Expression> value, LanguageType? type)
+    {
+        if (type == null)
+        {
+            throw new InvalidOperationException();
+        }
+
+        var valueType = value switch
+        {
+            { IsLeft: true, Left: var left } => left(),
+            { IsRight: true, Right: var right } => right.BuildExpression(builder, false),
+            _ => throw new InvalidOperationException("Invalid value")
+        };
+
+        if (type != valueType)
         {
             throw new InvalidOperationException("Type mismatch");
         }
 
-        builder.LoadB(address);
-
-        builder.SwapA_B();
-        builder.StoreB_ToAddressInA();
-
         return type;
     }
 
-    private static LanguageType BuildIdentifier(YabalBuilder builder, IdentifierExpression expression, Func<LanguageType> value)
+    private static LanguageType BuildIdentifier(YabalBuilder builder, IdentifierExpression expression, Either<Func<LanguageType>, Expression> value)
     {
         if (!builder.TryGetVariable(expression.Name, out var variable))
         {
             throw new InvalidOperationException($"Variable {expression.Name} not found");
         }
 
-        var type = value();
+        if (variable.IsConstant)
+        {
+            throw new InvalidOperationException($"Variable {expression.Name} is constant and cannot be assigned");
+        }
+
+        LanguageType type;
+
+        if (value is { IsLeft: true, Left: var left })
+        {
+            type = left();
+        }
+        else if (value is { IsRight: true, Right: var right })
+        {
+            type = right.BuildExpression(builder, false);
+        }
+        else
+        {
+            throw new InvalidOperationException("Invalid value");
+        }
 
         if (type != variable.Type)
         {
             throw new InvalidOperationException("Type mismatch");
         }
 
+
         builder.StoreA(variable.Pointer);
+        builder.SetComment($"store value in variable '{variable.Name}'");
         return type;
     }
 }

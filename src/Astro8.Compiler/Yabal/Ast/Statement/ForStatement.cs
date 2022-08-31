@@ -6,6 +6,8 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 {
     public override void Build(YabalBuilder builder)
     {
+        builder.PushBlock();
+
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
@@ -50,6 +52,9 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
         builder.Mark(body);
         Block.Build(builder);
         builder.Jump(next);
+        builder.SetComment("jump to next iteration");
         builder.Mark(end);
+
+        builder.PopBlock();
     }
 }

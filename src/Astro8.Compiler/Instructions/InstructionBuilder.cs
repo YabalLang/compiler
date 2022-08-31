@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Astro8.Yabal.Ast;
 
 namespace Astro8.Instructions;
 
@@ -18,7 +19,7 @@ public abstract class InstructionBuilderBase
 
     public abstract void Emit(string name, PointerOrData either = default, int? index = null);
 
-    public abstract void EmitRaw(PointerOrData value);
+    public abstract void EmitRaw(PointerOrData value, string? comment = null);
 
     public void Nop() => EmitRaw(0);
 
@@ -29,6 +30,12 @@ public abstract class InstructionBuilderBase
     public void LoadC(PointerOrData address) => Emit("CIN", address);
 
     public void SetA(PointerOrData value) => Emit("LDIA", value);
+
+    public void SetA_Large(PointerOrData value)
+    {
+        Emit("LDW");
+        EmitRaw(value);
+    }
 
     public void SetB(PointerOrData value) => Emit("LDIB", value);
 
@@ -146,7 +153,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public int? Index { get; set; }
 
-    private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label, bool IsRaw = false)
+    private readonly record struct InstructionItem(InstructionReference? Instruction, InstructionPointer? Label, bool IsRaw = false, string? Comment = null)
     {
         public override string? ToString()
         {
@@ -175,6 +182,28 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     }
 
     public override int Count => _references.Count;
+
+    public void SetComment(string comment)
+    {
+        var lastIndex = _references.Count - 1;
+
+        if (lastIndex < 0)
+        {
+            return;
+        }
+
+        var item = _references[lastIndex];
+
+        if (item.IsLeft)
+        {
+            return;
+        }
+
+        _references[lastIndex] = item.Right with
+        {
+            Comment = comment
+        };
+    }
 
     private void Add(Either<InstructionPointer, InstructionItem> instruction)
     {
@@ -292,15 +321,15 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public override void EmitRaw(PointerOrData value)
+    public override void EmitRaw(PointerOrData value, string? comment = null)
     {
         if (value.IsRight)
         {
-            Add(new InstructionItem(new InstructionReference(value.Right), null, true));
+            Add(new InstructionItem(new InstructionReference(value.Right), null, true, comment));
         }
         else
         {
-            Add(new InstructionItem(null, value.Left, true));
+            Add(new InstructionItem(null, value.Left, true, comment));
         }
     }
 
@@ -325,7 +354,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public int[] ToArray()
     {
-        var labels = GetLabels(0, out var length);
+        var labels = GetPointers(0, out var length);
         var array = new int[length];
 
         FillArray(labels, array);
@@ -335,7 +364,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public void CopyTo(int[] array, int offset)
     {
-        var labels = GetLabels(offset, out var length);
+        var labels = GetPointers(offset, out var length);
 
         if (array.Length < offset + length)
         {
@@ -343,6 +372,61 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         }
 
         FillArray(labels, array);
+    }
+
+    public string ToAssembly(bool addComments = false)
+    {
+        var labels = GetPointers(0, out _);
+        var sb = new StringBuilder();
+
+        foreach (var either in _references)
+        {
+            if (either is { IsLeft: true })
+            {
+                continue;
+            }
+
+            var (instruction, pointer, raw, comment) = either.Right;
+
+            if (!instruction.HasValue)
+            {
+                if (pointer is null)
+                {
+                    throw new InvalidOperationException("Invalid instruction");
+                }
+
+                if (!labels.TryGetValue(pointer, out var index))
+                {
+                    throw new InvalidOperationException($"Pointer {pointer.Name} not found");
+                }
+
+                sb.Append($"HERE {index}");
+            }
+            else if (pointer is null)
+            {
+                sb.Append(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
+            }
+            else if (labels.TryGetValue(pointer, out var index))
+            {
+                instruction = instruction.Value with { Data = index };
+
+                sb.Append(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
+            }
+            else
+            {
+                throw new InvalidOperationException($"Pointer {pointer.Name} not found");
+            }
+
+            if (addComments && comment != null)
+            {
+                sb.Append(" , ");
+                sb.Append(comment);
+            }
+
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
     }
 
     private void FillArray(Dictionary<InstructionPointer, int> labels, int[] array, int i = 0)
@@ -354,27 +438,27 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
                 continue;
             }
 
-            var (instruction, label, _) = either.Right;
+            var (instruction, pointer, _, _) = either.Right;
 
             if (!instruction.HasValue)
             {
-                if (label is null)
+                if (pointer is null)
                 {
                     throw new InvalidOperationException("Invalid instruction");
                 }
 
-                if (!labels.TryGetValue(label, out var index))
+                if (!labels.TryGetValue(pointer, out var index))
                 {
-                    throw new InvalidOperationException($"Label {label.Name} not found");
+                    throw new InvalidOperationException($"Pointer {pointer.Name} not found");
                 }
 
                 array[i] = index;
             }
-            else if (label is null)
+            else if (pointer is null)
             {
                 array[i] = instruction.Value;
             }
-            else if (labels.TryGetValue(label, out var index))
+            else if (labels.TryGetValue(pointer, out var index))
             {
                 array[i] = instruction.Value with
                 {
@@ -383,14 +467,14 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
             }
             else
             {
-                throw new InvalidOperationException($"Label {label.Name} not found");
+                throw new InvalidOperationException($"Pointer {pointer.Name} not found");
             }
 
             i++;
         }
     }
 
-    private Dictionary<InstructionPointer, int> GetLabels(int i, out int length)
+    private Dictionary<InstructionPointer, int> GetPointers(int i, out int length)
     {
         var labels = new Dictionary<InstructionPointer, int>();
 

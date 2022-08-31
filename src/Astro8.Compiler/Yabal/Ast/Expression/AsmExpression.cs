@@ -8,55 +8,125 @@ public record AsmVariable(string Name) : AsmArgument;
 
 public record AsmInteger(int Value) : AsmArgument;
 
-public record AsmInstruction(string Name, AsmArgument? Argument);
+public record AsmLabel(string Name) : AsmArgument;
 
-public record AsmExpression(SourceRange Range, List<AsmInstruction> Instructions) : Expression(Range)
+public record AsmInstruction(string Name, AsmArgument? Argument) : IAsmStatement;
+
+public record AsmDefineLabel(string Name) : IAsmStatement;
+
+public interface IAsmStatement
+{
+}
+
+public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) : Expression(Range)
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        foreach (var (name, argument) in Instructions)
-        {
-            var instruction = Instruction.Default.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        var labels = new Dictionary<string, InstructionPointer>();
 
-            if (instruction == null)
+        InstructionPointer GetLabel(string name)
+        {
+            if (!labels.TryGetValue(name, out var label))
             {
-                throw new KeyNotFoundException($"Unknown instruction '{name}'");
+                label = builder.CreateLabel();
+                labels.Add(name, label);
             }
 
-            var isBusValue = instruction.MicroInstructions.Any(mi => mi.IsIR);
+            return label;
+        }
 
-            switch (argument)
+        foreach (var statement in Statements)
+        {
+            switch (statement)
             {
-                // Bus value
-                case AsmVariable { Name: var variableName } when isBusValue:
-                    builder.Emit(name, builder.GetVariable(variableName).Pointer);
+                case AsmDefineLabel { Name: var name }:
+                    builder.Mark(GetLabel(name));
                     break;
-                case AsmInteger { Value: var intValue } when isBusValue:
-                    if (intValue > InstructionReference.MaxDataLength)
+                case AsmInstruction(var nameValue, var argument):
+                {
+                    var name = nameValue.ToUpperInvariant();
+                    var instruction = Instruction.Default.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+                    PointerOrData? argValue;
+
+                    switch (argument)
                     {
-                        throw new InvalidOperationException($"Integer value {intValue} is too large too store in a bus value");
+                        case AsmVariable { Name: var variableName }:
+                            argValue = builder.GetVariable(variableName).Pointer;
+                            break;
+                        case AsmLabel { Name: var labelName }:
+                            argValue = GetLabel(labelName);
+                            break;
+                        case AsmInteger { Value: var intValue and > InstructionReference.MaxDataLength }:
+                            throw new InvalidOperationException($"Integer value {intValue} is too large too store in a bus value");
+                        case AsmInteger { Value: var intValue }:
+                            argValue = intValue;
+                            break;
+                        default:
+                            argValue = null;
+                            break;
                     }
 
-                    builder.Emit(name, intValue);
-                    break;
+                    BinaryOperator? binaryOperator = name switch
+                    {
+                        "JE" => BinaryOperator.Equal,
+                        "JNE" => BinaryOperator.NotEqual,
+                        "JL" => BinaryOperator.LessThan,
+                        "JLE" => BinaryOperator.LessThanOrEqual,
+                        "JG" => BinaryOperator.GreaterThan,
+                        "JGE" => BinaryOperator.GreaterThanOrEqual,
+                        _ => null
+                    };
 
-                // Raw value
-                case AsmVariable { Name: var variableName }:
-                    builder.EmitRaw(builder.GetVariable(variableName).Pointer);
-                    builder.Emit(name);
-                    break;
-                case AsmInteger { Value: var intValue }:
-                    builder.EmitRaw(intValue);
-                    builder.Emit(name);
-                    break;
+                    if (binaryOperator.HasValue)
+                    {
+                        if (!argValue.HasValue)
+                        {
+                            throw new InvalidOperationException($"Binary operator '{name}' requires an argument");
+                        }
 
-                // No argument
-                default:
-                    builder.Emit(name);
+                        var skipLabel = builder.CreateLabel();
+                        BinaryExpression.Jump(binaryOperator.Value, builder, skipLabel, argValue.Value);
+                        builder.Mark(skipLabel);
+                        continue;
+                    }
+
+                    if (name == "HERE")
+                    {
+                        if (!argValue.HasValue)
+                        {
+                            throw new InvalidOperationException("HERE instruction does not require an argument");
+                        }
+
+                        builder.EmitRaw(argValue.Value);
+                    }
+
+                    if (instruction == null)
+                    {
+                        throw new KeyNotFoundException($"Unknown instruction '{name}'");
+                    }
+
+                    if (!argValue.HasValue)
+                    {
+                        builder.Emit(name);
+                    }
+                    else if (instruction.MicroInstructions.Any(mi => mi.IsIR))
+                    {
+                        builder.Emit(name, argValue.Value);
+                    }
+                    else
+                    {
+                        builder.EmitRaw(argValue.Value);
+                        builder.Emit(name);
+                    }
+
                     break;
+                }
             }
         }
 
-        return LanguageType.Integer;
+        return LanguageType.Assembly;
     }
+
+    public override bool OverwritesB => true;
 }

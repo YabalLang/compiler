@@ -17,5 +17,6 @@ public enum BinaryOperator
     And,
     Or,
     LeftShift,
-    RightShift
+    RightShift,
+    Modulo
 }

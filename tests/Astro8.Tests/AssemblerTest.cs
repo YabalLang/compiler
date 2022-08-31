@@ -71,17 +71,22 @@ public class AssemblerTest
     [InlineData("-", 2, 2, 0)]
     [InlineData("*", 2, 2, 4)]
     [InlineData("/", 6, 2, 3)]
+    [InlineData("%", 5, 2, 1)]
     [InlineData("&", 0b10, 0b11, 0b10)]
     [InlineData("|", 0b10, 0b11, 0b11)]
     [InlineData("<<", 0b1, 1, 0b10)]
     [InlineData(">>", 0b10, 1, 0b1)]
-    public void Binary(string type, int a, int b, int expected)
+    public void Binary(string type, int left, int right, int expected)
     {
-        var code = $"""
-            var a = {a};
-            var b = {b}
-
-            a = a {type} b;
+        var code = $$"""
+            const var leftConstant = {{ left }}
+            const var rightConstant = {{ right }}
+            var left = {{ left }}
+            var right = {{ right }}
+            var optimized = {{ left }} {{ type }} {{ right }}
+            var constant = leftConstant {{ type }} rightConstant
+            var fast = left {{ type }} {{ right }}
+            var slow = left {{ type }} right
             """;
 
         var builder = new YabalBuilder();
@@ -90,8 +95,10 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        var address = builder.GetVariable("a").Pointer.Address;
-        Assert.Equal(expected, cpu.Memory[address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("optimized").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("constant").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("fast").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("slow").Pointer.Address]);
     }
 
     [Theory]
@@ -151,12 +158,6 @@ public class AssemblerTest
     public void FunctionReturn()
     {
         const string code = """
-            int[] create_array(int address) {
-                return asm {
-                    AIN @address
-                }
-            }
-
             int get_offset(int x, int y) {
                 return x * 64 + y
             }
@@ -165,7 +166,7 @@ public class AssemblerTest
                 return (r / 8 << 10) + (g / 8 << 5) + (b / 8)
             }
 
-            var screen = create_array(61439)
+            var screen = create_pointer(61439)
 
             for (var x = 1; x <= 16; x++) {
                 for (var y = 1; y <= 16; y++) {
@@ -200,14 +201,17 @@ public class AssemblerTest
 
             void increment(int amount) {
                 asm {
-                    AIN @result
-                    BIN @amount
+                    _increment:
+                    STA 1
+                    BIN @result
                     ADD
                     STA @result
+                    BIN @amount
+                    JL _increment
                 }
             }
 
-            increment(1)
+            increment(10)
             """;
 
         var builder = new YabalBuilder();
@@ -217,7 +221,7 @@ public class AssemblerTest
         cpu.Run();
 
         var address = builder.GetVariable("result").Pointer.Address;
-        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(10, cpu.Memory[address]);
     }
 
     [Fact]
@@ -309,18 +313,12 @@ public class AssemblerTest
     public void ArraySetter()
     {
         const string code = $$"""
-            int[] create_array(int address) {
-                return asm {
-                    AIN @address
-                }
-            }
-
             int get_value() {
                 return 0
             }
 
-            var array = create_array(4095)
-            array[get_value()] = 1
+            var data = create_pointer(4095)
+            data[get_value()] = 1
             """;
 
         var builder = new YabalBuilder();
@@ -348,9 +346,12 @@ public class AssemblerTest
     public void Compare(object left, string type, object right, int expected)
     {
         var code = $$"""
+            const var leftConstant = {{ left }}
+            const var rightConstant = {{ right }}
             var left = {{ left }}
             var right = {{ right }}
             var optimized = {{ left }} {{ type }} {{ right }}
+            var constant = leftConstant {{ type }} rightConstant
             var fast = left {{ type }} {{ right }}
             var slow = left {{ type }} right
             """;
@@ -366,6 +367,7 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("optimized").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("constant").Pointer.Address]);
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("fast").Pointer.Address]);
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("slow").Pointer.Address]);
     }
@@ -376,7 +378,7 @@ public class AssemblerTest
         const string code = $$"""
             var value = 0
 
-            for (; value < 10; value++) {
+            for (var i = 0; i < 10; i++) {
                 value += 1
             }
             """;

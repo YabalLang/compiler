@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record BlockStatement(SourceRange Range, List<Statement> Statements) : Statement(Range)
+public record BlockStatement(SourceRange Range, List<Statement> Statements, bool NewScope = true) : Statement(Range)
 {
     public override void BeforeBuild(YabalBuilder builder)
     {
@@ -14,27 +14,19 @@ public record BlockStatement(SourceRange Range, List<Statement> Statements) : St
 
     public override void Build(YabalBuilder builder)
     {
+        if (NewScope)
+        {
+            builder.PushBlock();
+        }
+
         foreach (var statement in Statements)
         {
             statement.Build(builder);
         }
-    }
 
-    public IEnumerable<Statement> EnumerableAll()
-    {
-        foreach (var statement in Statements)
+        if (NewScope)
         {
-            if (statement is BlockStatement blockStatement)
-            {
-                foreach (var inner in blockStatement.EnumerableAll())
-                {
-                    yield return inner;
-                }
-            }
-            else
-            {
-                yield return statement;
-            }
+            builder.PopBlock();
         }
     }
 }

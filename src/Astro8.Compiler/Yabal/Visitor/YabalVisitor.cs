@@ -6,7 +6,10 @@ using Astro8.Yabal.Ast;
 
 namespace Astro8.Yabal.Visitor;
 
-public record Variable(InstructionPointer Pointer, LanguageType Type);
+public record Variable(string Name, InstructionPointer Pointer, LanguageType Type, IConstantValue? ConstantValue = null)
+{
+    public bool IsConstant => ConstantValue != null;
+}
 
 public class BlockStack
 {
@@ -22,14 +25,60 @@ public class BlockStack
 
     public FunctionDeclarationStatement? Function { get; set; }
 
+    public BlockStack? Parent { get; set; }
+
     public void DeclareVariable(string name, Variable variable)
     {
         _variables[name] = variable;
+    }
+
+    public bool TryGetVariable(string name, [NotNullWhen(true)] out Variable? variable)
+    {
+        if (_variables.TryGetValue(name, out variable))
+        {
+            return true;
+        }
+
+        if (Parent != null)
+        {
+            return Parent.TryGetVariable(name, out variable);
+        }
+
+        return false;
+    }
+}
+
+public class BlockCompileStack
+{
+    public BlockCompileStack(BlockCompileStack? parent = null)
+    {
+        Parent = parent;
+    }
+
+    public BlockCompileStack? Parent { get; }
+
+    public Dictionary<string, Expression> Constants { get; } = new();
+
+    public bool TryGetConstant(string name, [NotNullWhen(true)] out Expression? constant)
+    {
+        if (Constants.TryGetValue(name, out constant))
+        {
+            return true;
+        }
+
+        if (Parent != null)
+        {
+            return Parent.TryGetConstant(name, out constant);
+        }
+
+        return false;
     }
 }
 
 public class YabalVisitor : YabalParserBaseVisitor<Node>
 {
+    private BlockCompileStack _block = new();
+
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
     {
         return new ProgramStatement(
@@ -57,33 +106,74 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new InvalidOperationException($"{context.GetType().Name} is not supported.");
         }
 
-        return result.Optimize();
+        return result.Optimize(_block);
     }
 
     public override BlockStatement VisitBlockStatement(YabalParser.BlockStatementContext context)
     {
-        return new BlockStatement(
+        var parent = _block;
+        _block = new BlockCompileStack(parent);
+
+        var statement = new BlockStatement(
             context,
             context.statement().Select(VisitStatement).ToList()
         );
+
+        _block = parent;
+
+        return statement;
     }
 
     public override Node VisitDefaultVariableDeclaration(YabalParser.DefaultVariableDeclarationContext context)
     {
+        var name = context.identifierName().GetText();
+        var expression = context.expression() is { } expr ? VisitExpression(expr) : null;
+        var isConstantVariable = context.Const() != null;
+        var constantValue = isConstantVariable ? expression as IConstantValue : null;
+
+        if (isConstantVariable)
+        {
+            if (constantValue?.Value == null)
+            {
+                throw new InvalidOperationException("Constant variable must have constant value.");
+            }
+
+            _block.Constants[name] = expression!;
+            return new EmptyStatement(context);
+        }
+
         return new VariableDeclarationStatement(
             context,
-            context.identifierName().GetText(),
-            context.expression() is {} expr ? VisitExpression(expr) : null,
-            TypeVisitor.Instance.Visit(context.type())
+            name,
+            expression,
+            TypeVisitor.Instance.Visit(context.type()),
+            constantValue
         );
     }
 
     public override Node VisitAutoVariableDeclaration(YabalParser.AutoVariableDeclarationContext context)
     {
+        var name = context.identifierName().GetText();
+        var expression = VisitExpression(context.expression());
+        var isConstantVariable = context.Const() != null;
+        var constantValue = isConstantVariable ? expression as IConstantValue : null;
+
+        if (isConstantVariable)
+        {
+            if (constantValue?.Value == null)
+            {
+                throw new InvalidOperationException("Constant variable must have constant value.");
+            }
+
+            _block.Constants[name] = expression!;
+            return new EmptyStatement(context);
+        }
+
         return new VariableDeclarationStatement(
             context,
-            context.identifierName().GetText(),
-            VisitExpression(context.expression())
+            name,
+            expression,
+            ConstantValue: constantValue
         );
     }
 
@@ -136,10 +226,17 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    public override BinaryExpression VisitDivMulBinaryExpression(YabalParser.DivMulBinaryExpressionContext context)
+    public override Node VisitDivMulModBinaryExpression(YabalParser.DivMulModBinaryExpressionContext context)
     {
         var expressions = context.expression();
-        var @operator = context.Div() != null ? BinaryOperator.Divide : BinaryOperator.Multiply;
+        BinaryOperator @operator;
+
+        if (context.Div() != null)
+            @operator = BinaryOperator.Divide;
+        else if (context.Mul() != null)
+            @operator = BinaryOperator.Multiply;
+        else
+            @operator = BinaryOperator.Modulo;
 
         return CreateBinary(context, expressions, @operator);
     }
@@ -231,7 +328,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitAsmExpression(YabalParser.AsmExpressionContext context)
     {
-        var instructions = new List<AsmInstruction>();
+        var instructions = new List<IAsmStatement>();
         var items = context.asmItems().asmStatementItem();
 
         if (items != null)
@@ -243,6 +340,12 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                     instructions.Add(new AsmInstruction(
                         instruction.asmIdentifier().GetText(),
                         instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
+                    ));
+                }
+                else if (item is YabalParser.AsmLabelContext label)
+                {
+                    instructions.Add(new AsmDefineLabel(
+                        label.asmIdentifier().GetText()
                     ));
                 }
                 else
@@ -469,6 +572,14 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(context.expression()),
             UnaryOperator.Minus
+        );
+    }
+
+    public override Node VisitCreatePointerExpression(YabalParser.CreatePointerExpressionContext context)
+    {
+        return new CreatePointerExpression(
+            context,
+            VisitExpression(context.expression())
         );
     }
 }

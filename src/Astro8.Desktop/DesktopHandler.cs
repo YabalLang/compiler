@@ -180,7 +180,7 @@ public class DesktopHandler : Handler, IDisposable
 
     public override void LogSpeed(int steps, string value)
     {
-        _pendingTitle = $"C# Astro-8 Emulator | {value}";
+        // _pendingTitle = $"C# Astro-8 Emulator | {value}";
     }
 
     public void Dispose()
