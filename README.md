@@ -3,6 +3,87 @@ This repository houses two Astro-8 projects:
 1. A port of [Astro-8 Emulator by sam-astro](https://github.com/sam-astro/Astro8-Computer/tree/main/Astro8-Emulator) in C#.
 2. Custom language "Yabal" that compiles into valid Astro-8 assembly/binary.
 
+## Yabal
+Yabal is a custom language that compiles into valid Astro-8 assembly.
+
+### Features
+- ✅ Variables
+- ✅ Functions (with parameters and call stack)
+- ✅ If statements
+- ✅ Comparison operators (`==`, `!=`, `>`, `<`, `>=`, `<=`)
+- ✅ Arithmetic operators (`+`, `-`, `*`, `/`, `%`)
+- ✅ Bitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`)
+- ✅ Logical operators (`&&`, `||`, `!`)
+- ✅ Comments
+- ✅ Create pointers (`create_pointer`)
+- ✅ Inline assembly
+- 🚧 For and while loops (no support for `break` or `continue`)
+- 🚧 Chars and strings
+- ❌ Arrays
+- ❌ Classes
+- ❌ Include files
+
+### Usage
+Download the latest release from the [releases page](https://github.com/GerardSmit/Astro8/releases).
+
+When running Linux, install `libsdl2-2.0-0`:
+
+```bash
+# Linux
+sudo apt-get install libsdl2-2.0-0
+```
+
+To run a file with the C# emulator run the following command:
+
+```bash
+# Windows
+astro run source.yabal
+
+# Linux
+./astro run source.yabal
+```
+
+To compile a file to assembly run the following command:
+
+```bash
+# Windows
+astro build source.yabal
+
+# Linux
+./astro build source.yabal
+```
+
+To view all the commands with a description run `astro --help`.
+
+## Example programs
+### Write string to the character memory
+```c
+const var chars = create_pointer(16382)
+const var message = "ASTRO-8"
+
+while (true) {
+    for (var i = 0; i < sizeof(message); i++) {
+        chars[i] = message[i]
+    }
+}
+```
+
+### Write the value of the expension port to the character memory
+```c
+const var chars = create_pointer(16382)
+
+var value = 0;
+
+while (true) {
+    asm {
+        RDEXP
+        STA @value
+    }
+
+    chars[0] = value
+}
+```
+
 ## Development
 ### WASM build
 To build the project to WASM, we use `Microsoft.DotNet.ILCompiler.LLVM`. This is **NOT** the fancy shining NativeAOT compiler in .NET 7. This uses the LLVM compiler and is experimental. More information can be found in repository dotnet/runtimelab (branch: [feature/NativeAOT-LLVM](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT-LLVM#readme)).
