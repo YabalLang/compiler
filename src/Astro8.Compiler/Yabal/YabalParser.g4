@@ -47,6 +47,7 @@ expression
 	| expression Or expression									        # OrExpression
 	| expression AndAlso expression								        # AndAlsoExpression
 	| expression OrElse expression								        # OrElseExpression
+	| expression QuestionMark expression Colon expression               # TernaryExpression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
@@ -90,8 +91,8 @@ asmItems
     ;
 
 asmStatementItem
-    : asmIdentifier asmArgument?      # AsmInstruction
-    | asmIdentifier AsmColon          # AsmLabel
+    : asmIdentifier {noNewLine()}? asmArgument?      # AsmInstruction
+    | asmIdentifier {noNewLine()}? AsmColon          # AsmLabel
     ;
 
 asmArgument

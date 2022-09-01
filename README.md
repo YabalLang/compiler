@@ -17,7 +17,7 @@ Yabal is a custom language that compiles into valid Astro-8 assembly.
 - ✅ Comments
 - ✅ Create pointers (`create_pointer`)
 - ✅ Inline assembly
-- 🚧 For and while loops (no support for `break` or `continue`)
+- ✅ For and while loops
 - 🚧 Chars and strings
 - ❌ Arrays
 - ❌ Classes
@@ -33,6 +33,9 @@ When running Linux, install `libsdl2-2.0-0`:
 sudo apt-get install libsdl2-2.0-0
 ```
 
+To view all the commands with a description run `astro --help`.
+
+#### Run
 To run a file with the C# emulator run the following command:
 
 ```bash
@@ -43,6 +46,7 @@ astro run source.yabal
 ./astro run source.yabal
 ```
 
+#### Compile
 To compile a file to assembly run the following command:
 
 ```bash
@@ -53,7 +57,24 @@ astro build source.yabal
 ./astro build source.yabal
 ```
 
-To view all the commands with a description run `astro --help`.
+It is possible to change the output file with `-f <flag|extension>` to the following formats:
+
+| Flag | Name | Extension |
+| --- | --- | --- |
+| `a` | Assembly _(default)_ | `asm` |
+| `c` | Assembly with comments | `asmc` |
+| `h` | Astro-8 Emulator HEX file | `aexe` |
+| `l` | Logisim Evolution HEX file | `hex` |
+
+For example:
+
+```bash
+astro build -f h source.yabal # Compile aexe 
+astro build -f ha source.yabal # Compile aexe and asm
+
+astro build -f aexe source.yabal # Compile aexe 
+astro build -f aexe,asm source.yabal # Compile aexe and asm
+```
 
 ## Example programs
 ### Write string to the character memory

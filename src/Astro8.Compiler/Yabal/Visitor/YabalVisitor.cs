@@ -17,6 +17,8 @@ public class BlockStack
     public readonly Stack<TemporaryVariable> TemporaryVariablesStack = new();
 
     private readonly Dictionary<string, Variable> _variables = new();
+    private InstructionLabel? _continue;
+    private InstructionLabel? _break;
 
     public IReadOnlyDictionary<string, Variable> Variables => _variables;
 
@@ -27,6 +29,18 @@ public class BlockStack
     public FunctionDeclarationStatement? Function { get; set; }
 
     public BlockStack? Parent { get; set; }
+
+    public InstructionLabel? Continue
+    {
+        get => _continue ?? Parent?.Continue;
+        set => _continue = value;
+    }
+
+    public InstructionLabel? Break
+    {
+        get => _break ?? Parent?.Break;
+        set => _break = value;
+    }
 
     public void DeclareVariable(string name, Variable variable)
     {
@@ -506,6 +520,43 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
+    public override Node VisitSwitchExpression(YabalParser.SwitchExpressionContext context)
+    {
+        var expression = VisitExpression(context.expression());
+        var items = new List<SwitchItem>();
+        Expression? defaultValue = null;
+
+        if (context.inlineSwitch().inlineSwitchItem() is { } switchItems)
+        {
+            foreach (var switchItem in switchItems)
+            {
+                if (switchItem.underscore() != null)
+                {
+                    if (defaultValue != null)
+                    {
+                        throw new NotSupportedException("Multiple default cases are not supported");
+                    }
+
+                    defaultValue = VisitExpression(switchItem.expression());
+                }
+                else
+                {
+                    items.Add(new SwitchItem(
+                        switchItem.expressionList().expression().Select(VisitExpression).ToList(),
+                        VisitExpression(switchItem.expression())
+                    ));
+                }
+            }
+        }
+
+        return new SwitchExpression(
+            context,
+            expression,
+            items,
+            defaultValue
+        );
+    }
+
     public override Node VisitDecrementRightExpression(YabalParser.DecrementRightExpressionContext context)
     {
         return new UpdateExpression(
@@ -513,6 +564,16 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             VisitExpression(context.expression()),
             false,
             BinaryOperator.Subtract
+        );
+    }
+
+    public override Node VisitTernaryExpression(YabalParser.TernaryExpressionContext context)
+    {
+        return new TernaryExpression(
+            context,
+            VisitExpression(context.expression()[0]),
+            VisitExpression(context.expression()[1]),
+            VisitExpression(context.expression()[2])
         );
     }
 
@@ -588,6 +649,16 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(context.expression())
         );
+    }
+
+    public override Node VisitContinueStatement(YabalParser.ContinueStatementContext context)
+    {
+        return new ContinueStatement(context);
+    }
+
+    public override Node VisitBreakStatement(YabalParser.BreakStatementContext context)
+    {
+        return new BreakStatement(context);
     }
 
     public override Node VisitStringExpression(YabalParser.StringExpressionContext context)

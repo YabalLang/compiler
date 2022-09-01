@@ -89,9 +89,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public BlockStack Block { get; private set; }
 
-    public void PushBlock(FunctionDeclarationStatement? function = null)
+    public BlockStack PushBlock(FunctionDeclarationStatement? function = null)
     {
-        Block = new BlockStack
+        return Block = new BlockStack
         {
             IsGlobal = Block.IsGlobal && function == null,
             Function = Block.Function ?? function,
@@ -333,9 +333,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         CreateFinalBuilder().ToAssembly(writer, addComments);
     }
 
-    public void ToHexFile(StreamWriter writer, int minSize = 0)
+    public void ToHex(StreamWriter writer)
     {
-        CreateFinalBuilder().ToHexFile(writer, minSize);
+        CreateFinalBuilder().ToHex(writer);
+    }
+
+    public void ToLogisimFile(StreamWriter writer, int minSize = 0)
+    {
+        CreateFinalBuilder().ToLogisimFile(writer, minSize);
     }
 
     public override string ToString()
@@ -408,6 +413,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                         builder.SetComment($"string '{value}'");
                     }
                 }
+
+                builder.EmitRaw(0);
             }
 
             builder.Mark(endLabel);

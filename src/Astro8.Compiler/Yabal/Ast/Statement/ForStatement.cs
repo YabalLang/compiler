@@ -6,12 +6,15 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 {
     public override void Build(YabalBuilder builder)
     {
-        builder.PushBlock();
+        var block = builder.PushBlock();
 
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
         var test = builder.CreateLabel();
+
+        block.Continue = next;
+        block.Break = end;
 
         Init?.Build(builder);
         builder.Jump(test);

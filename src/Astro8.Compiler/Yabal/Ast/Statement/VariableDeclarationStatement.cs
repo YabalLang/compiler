@@ -17,13 +17,18 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
             ? builder.GetGlobalVariable(block.StackOffset++)
             : builder.GetStackVariable(block.StackOffset++);
 
-        LanguageType? valueType = null;
+        var valueType = Type;
 
         if (Value != null)
         {
             valueType = Value.BuildExpression(builder, false);
             builder.StoreA(pointer);
             builder.SetComment($"store value in variable '{Name}'");
+
+            if (valueType == LanguageType.Assembly)
+            {
+                valueType = Type;
+            }
         }
 
         if (valueType == null)
@@ -33,14 +38,7 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
 
         if (Type != null && valueType != Type)
         {
-            if (valueType == LanguageType.Assembly)
-            {
-                valueType = Type;
-            }
-            else
-            {
-                throw new InvalidOperationException("Type mismatch");
-            }
+            throw new InvalidOperationException("Type mismatch");
         }
 
         var variable = new Variable(Name, pointer, valueType);

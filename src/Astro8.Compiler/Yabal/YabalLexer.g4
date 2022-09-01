@@ -57,6 +57,8 @@ Dot					: '.';
 Underscore          : '_';
 Dollar              : '$';
 Arrow               : '=>';
+QuestionMark        : '?';
+Colon               : ':';
 
 If					: 'if';
 Else				: 'else';
@@ -68,7 +70,7 @@ SizeOf              : 'sizeof';
 Identifier			: IdentifierStart IdentifierPart*;
 
 FloatLiteral		: [0-9]+'.'[0-9]+;
-IntegerLiteral		: [0-9]+;
+IntegerLiteral		: ('0' ('x'|'b'))? [0-9]+;
 StringStart		    : '"' -> pushMode(STRING);
 CharStart		    : '\'' -> pushMode(CHAR);
 
@@ -512,6 +514,7 @@ AsmWhiteSpaces			: WhiteSpaces -> channel(HIDDEN);
 AsmLineTerminator		: LineTerminator -> channel(HIDDEN);
 AsmSemiColon			: SemiColon -> type(SemiColon);
 
+AsmComment	            : ',' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
 AsmMultiLineComment	    : MultiLineComment -> channel(HIDDEN);
 AsmSingleLineComment	: SingleLineComment -> channel(HIDDEN);
 

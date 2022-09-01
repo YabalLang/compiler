@@ -348,7 +348,27 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public void ToHexFile(StreamWriter writer, int minSize = 0)
+    public void ToHex(StreamWriter writer)
+    {
+        var labels = GetPointers(0, out _);
+        var addNewLine = false;
+
+        foreach (var value in GetBytes(labels))
+        {
+            if (addNewLine)
+            {
+                writer.WriteLine();
+            }
+            else
+            {
+                addNewLine = true;
+            }
+
+            writer.Write(value.ToString("x4"));
+        }
+    }
+
+    public void ToLogisimFile(StreamWriter writer, int minSize = 0)
     {
         var labels = GetPointers(0, out _);
 

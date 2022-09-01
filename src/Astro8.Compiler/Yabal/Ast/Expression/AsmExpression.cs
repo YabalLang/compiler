@@ -28,7 +28,7 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
         {
             if (!labels.TryGetValue(name, out var label))
             {
-                label = builder.CreateLabel();
+                label = builder.CreateLabel(name);
                 labels.Add(name, label);
             }
 
@@ -57,8 +57,6 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                         case AsmLabel { Name: var labelName }:
                             argValue = GetLabel(labelName);
                             break;
-                        case AsmInteger { Value: var intValue and > InstructionReference.MaxDataLength }:
-                            throw new InvalidOperationException($"Integer value {intValue} is too large too store in a bus value");
                         case AsmInteger { Value: var intValue }:
                             argValue = intValue;
                             break;
@@ -99,6 +97,7 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                         }
 
                         builder.EmitRaw(argValue.Value);
+                        continue;
                     }
 
                     if (instruction == null)
@@ -116,8 +115,8 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                     }
                     else
                     {
-                        builder.EmitRaw(argValue.Value);
                         builder.Emit(name);
+                        builder.EmitRaw(argValue.Value);
                     }
 
                     break;

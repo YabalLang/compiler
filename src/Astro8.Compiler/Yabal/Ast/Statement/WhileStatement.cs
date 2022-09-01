@@ -6,9 +6,14 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
 {
     public override void Build(YabalBuilder builder)
     {
+        var block = builder.PushBlock();
+
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
+
+        block.Continue = next;
+        block.Break = end;
 
         builder.Mark(next);
 
@@ -42,5 +47,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
         Block.Build(builder);
         builder.Jump(next);
         builder.Mark(end);
+
+        builder.PopBlock();
     }
 }

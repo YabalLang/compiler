@@ -5,6 +5,7 @@ using System.IO.Compression;
 using Astro8;
 using Astro8.Devices;
 using Astro8.Instructions;
+using Astro8.Utils;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
@@ -76,18 +77,12 @@ var outOption = new Option<string>(
 
 outOption.AddAlias("-o");
 
-var hexOption = new Option<bool>(
-    name: "--hex-file",
-    description: "Set the output to binary HEX file (program_machine_code).");
+var formatOption = new Option<List<OutputFormat>?>(
+    name: "--format",
+    description: "Change the output format.",
+    parseArgument: EnumHelper.ParseEnum<OutputFormat>);
 
-hexOption.AddAlias("--hex");
-hexOption.AddAlias("-x");
-
-var commentsOption = new Option<bool>(
-    name: "--comments",
-    description: "Add comments to the assembly (preview).");
-
-commentsOption.AddAlias("-c");
+formatOption.AddAlias("-f");
 
 var build = new Command(
     name: "build",
@@ -95,8 +90,7 @@ var build = new Command(
 {
     filePathOption,
     outOption,
-    commentsOption,
-    hexOption
+    formatOption
 };
 
 build.SetHandler(Build);
@@ -117,31 +111,61 @@ void Build(InvocationContext ctx)
     }
 
     var outPath = ctx.ParseResult.GetValueForOption(outOption);
+    var formats = ctx.ParseResult.GetValueForOption(formatOption) ?? new List<OutputFormat>();
 
-    if (string.IsNullOrEmpty(outPath))
+    if (formats.Count == 0)
     {
-        outPath = Path.ChangeExtension(path.FullName, ".asm");
+        formats.Add(OutputFormat.Assembly);
     }
-
-    var comments = ctx.ParseResult.GetValueForOption(commentsOption);
-    var hex = ctx.ParseResult.GetValueForOption(hexOption);
 
     var builder = new YabalBuilder();
     builder.CompileCode(File.ReadAllText(path.FullName));
 
-    using var file = File.Open(outPath, FileMode.Create);
-    using var writer = new StreamWriter(file);
-
-    if (hex)
+    if (string.IsNullOrEmpty(outPath))
     {
-        builder.ToHexFile(writer, 0xFFFF);
+        outPath = path.FullName;
     }
-    else
+    else if (Path.EndsInDirectorySeparator(outPath) || Directory.Exists(outPath))
     {
-        builder.ToAssembly(writer, comments);
+        outPath = Path.Combine(outPath, Path.GetFileName(path.FullName));
     }
 
-    Console.WriteLine($"Assembly file written to {outPath}");
+    foreach (var format in formats)
+    {
+        var filePath = Path.ChangeExtension(outPath, format switch
+        {
+            OutputFormat.Assembly => ".asm",
+            OutputFormat.AstroExecutable => ".aexe",
+            OutputFormat.Logisim => ".hex",
+            OutputFormat.AssemblyWithComments => ".asmc",
+            _ => throw new NotSupportedException()
+        });
+
+        using var file = File.Open(filePath, FileMode.Create);
+        using var writer = new StreamWriter(file);
+
+        switch (format)
+        {
+            case OutputFormat.Assembly:
+                builder.ToAssembly(writer);
+                Console.WriteLine($"Assembly file written to {filePath}");
+                break;
+            case OutputFormat.AssemblyWithComments:
+                builder.ToAssembly(writer, true);
+                Console.WriteLine($"Assembly with comments file written to {filePath}");
+                break;
+            case OutputFormat.AstroExecutable:
+                builder.ToHex(writer);
+                Console.WriteLine($"Astro Executable written to {filePath}");
+                break;
+            case OutputFormat.Logisim:
+                builder.ToLogisimFile(writer, 0xFFFF);
+                Console.WriteLine($"Logisim Evolution file written to {filePath}");
+                break;
+            default:
+                throw new NotSupportedException();
+        }
+    }
 }
 
 void Execute(InvocationContext ctx)
