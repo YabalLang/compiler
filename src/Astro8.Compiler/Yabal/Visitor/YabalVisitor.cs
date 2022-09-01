@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Astro8.Instructions;
@@ -146,8 +147,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             name,
             expression,
-            TypeVisitor.Instance.Visit(context.type()),
-            constantValue
+            TypeVisitor.Instance.Visit(context.type())
         );
     }
 
@@ -165,19 +165,18 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 throw new InvalidOperationException("Constant variable must have constant value.");
             }
 
-            _block.Constants[name] = expression!;
+            _block.Constants[name] = expression;
             return new EmptyStatement(context);
         }
 
         return new VariableDeclarationStatement(
             context,
             name,
-            expression,
-            ConstantValue: constantValue
+            expression
         );
     }
 
-    public override IntegerExpression VisitIntegerExpression(YabalParser.IntegerExpressionContext context)
+    public override IntegerExpressionBase VisitIntegerExpression(YabalParser.IntegerExpressionContext context)
     {
         return new IntegerExpression(context, int.Parse(context.GetText()));
     }
@@ -581,5 +580,41 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(context.expression())
         );
+    }
+
+    public override Node VisitSizeOfExpression(YabalParser.SizeOfExpressionContext context)
+    {
+        return new SizeOfExpression(
+            context,
+            VisitExpression(context.expression())
+        );
+    }
+
+    public override Node VisitStringExpression(YabalParser.StringExpressionContext context)
+    {
+        var sb = new StringBuilder();
+        var parts = context.@string().stringPart();
+
+        foreach (var part in parts)
+        {
+            if (part.StringEscape() is {} escape)
+            {
+                var c = escape.GetText()[1];
+
+                sb.Append(c switch
+                {
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    _ => c
+                });
+            }
+            else
+            {
+                sb.Append(part.GetText());
+            }
+        }
+
+        return new StringExpression(context, parts[0].GetText());
     }
 }

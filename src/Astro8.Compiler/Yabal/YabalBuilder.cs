@@ -17,6 +17,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionLabel _returnLabel;
     private readonly List<InstructionPointer> _stack;
     private readonly Dictionary<string, Function> _functions = new();
+    private readonly Dictionary<string, InstructionPointer> _strings;
     private readonly List<InstructionPointer> _globals;
     private readonly List<InstructionPointer> _temporaryPointers;
     private readonly BlockStack _globalBlock;
@@ -35,6 +36,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _stack = new List<InstructionPointer>();
         _globals = new List<InstructionPointer>();
         _temporaryPointers = new List<InstructionPointer>();
+        _strings = new Dictionary<string, InstructionPointer>();
 
         _globalBlock = new BlockStack { IsGlobal = true };
         Block = _globalBlock;
@@ -56,6 +58,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _globals = parent._globals;
         _temporaryPointers = parent._temporaryPointers;
         _globalBlock = parent._globalBlock;
+        _strings = parent._strings;
     }
 
     public InstructionPointer GetStackVariable(int index)
@@ -152,6 +155,18 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         return function;
+    }
+
+    public InstructionPointer GetString(string value)
+    {
+        if (_strings.TryGetValue(value, out var pointer))
+        {
+            return pointer;
+        }
+
+        pointer = _builder.CreatePointer($"String:{value}");
+        _strings.Add(value, pointer);
+        return pointer;
     }
 
     public void CompileCode(string code)
@@ -313,9 +328,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.CopyTo(array, offset);
     }
 
-    public string ToAssembly()
+    public void ToAssembly(StreamWriter writer, bool addComments = false)
     {
-        return CreateFinalBuilder().ToAssembly();
+        CreateFinalBuilder().ToAssembly(writer, addComments);
+    }
+
+    public void ToHexFile(StreamWriter writer, int minSize = 0)
+    {
+        CreateFinalBuilder().ToHexFile(writer, minSize);
     }
 
     public override string ToString()
@@ -327,6 +347,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     {
         var builder = new InstructionBuilder();
         var programLabel = builder.CreateLabel("Program");
+        var endLabel = builder.CreateLabel("End");
 
         builder.Jump(programLabel);
 
@@ -336,16 +357,16 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.EmitRaw(0, $"global value ({pointer.AssignedVariableNames})");
         }
 
-        foreach (var pointer in _stack)
-        {
-            builder.Mark(pointer);
-            builder.EmitRaw(0, $"stack value ({pointer.AssignedVariableNames})");
-        }
-
         foreach (var pointer in _temporaryPointers)
         {
             builder.Mark(pointer);
-            builder.EmitRaw(0, "temporary value");
+            builder.EmitRaw(0, "temporary global value");
+        }
+
+        foreach (var pointer in _stack)
+        {
+            builder.Mark(pointer);
+            builder.EmitRaw(0, pointer.AssignedVariables.Count > 0 ? $"stack value ({pointer.AssignedVariableNames})" : "temporary stack value");
         }
 
         if (_hasCall || _functions.Count > 0)
@@ -370,6 +391,28 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.Mark(programLabel);
         builder.AddRange(_builder);
 
+        if (_strings.Count > 0)
+        {
+            builder.Jump(endLabel);
+
+            foreach (var (value, pointer) in _strings)
+            {
+                builder.Mark(pointer);
+
+                for (var i = 0; i < value.Length; i++)
+                {
+                    builder.EmitRaw(CharExpression.GetValue(value[i]));
+
+                    if (i == 0)
+                    {
+                        builder.SetComment($"string '{value}'");
+                    }
+                }
+            }
+
+            builder.Mark(endLabel);
+        }
+
         return builder;
     }
 
@@ -381,6 +424,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public void SetComment(string comment)
     {
         _builder.SetComment(comment);
+    }
+
+    public void SetPointerOffset(int offset)
+    {
+        _builder.SetPointerOffset(offset);
     }
 
     public TemporaryVariable GetTemporaryVariable(bool global = false)

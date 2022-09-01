@@ -66,14 +66,9 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithCharacter(int? address = null)
+    public CpuBuilder<THandler> WithCharacter(int? address = null, bool writeToConsole = false)
     {
-        if (_screen == null)
-        {
-            throw new InvalidOperationException("Screen must be configured before character");
-        }
-
-        _character = new CharacterDevice<THandler>(address ?? _config.Memory.Devices.Character, _screen);
+        _character = new CharacterDevice<THandler>(address ?? _config.Memory.Devices.Character, _screen, writeToConsole: writeToConsole);
         return this;
     }
 

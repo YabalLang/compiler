@@ -6,10 +6,20 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        if (Array is IConstantValue { Value: Address constantAddress } &&
+        if (Array is IConstantValue { Value: IAddress constantAddress } &&
             Key is IConstantValue { Value: int constantKey })
         {
-            builder.LoadA_Large(constantAddress.Value + constantKey);
+            switch (constantAddress.Get(builder))
+            {
+                case { IsLeft: true, Left: var left }:
+                    builder.LoadA_Large(left + constantKey);
+                    break;
+                case { IsRight: true, Right: var right }:
+                    builder.LoadA_Large(right);
+                    builder.SetPointerOffset(constantKey);
+                    break;
+            }
+
             return LanguageType.Integer;
         }
 
@@ -18,7 +28,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
         return type.ElementType!;
     }
 
-    public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpression { Value: 0 };
+    public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpressionBase { Value: 0 };
 
     public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression key)
     {
@@ -29,7 +39,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
             throw new InvalidOperationException("Array access expression can only be used on arrays");
         }
 
-        if (key is IntegerExpression { Value: var intValue })
+        if (key is IntegerExpressionBase { Value: var intValue })
         {
             if (intValue == 0)
             {

@@ -1,32 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Astro8</RootNamespace>
         <LangVersion>preview</LangVersion>
+        <AssemblyName>astro</AssemblyName>
+        <ApplicationIcon>icon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <PropertyGroup>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <SelfContained>true</SelfContained>
         <PublishTrimmed>true</PublishTrimmed>
-        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
-        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+        <PublishSingleFile>true</PublishSingleFile>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="7.0.0-preview.*" />
+        <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+        <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+    </PropertyGroup>
 
     <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
         <None Visible="False" Update="native\win-x64\SDL2.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>SDL2.dll</Link>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
         <None Update="config.jsonc">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

@@ -63,6 +63,7 @@ Else				: 'else';
 Switch              : 'switch';
 While               : 'while';
 CreatePointer       : 'create_pointer';
+SizeOf              : 'sizeof';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

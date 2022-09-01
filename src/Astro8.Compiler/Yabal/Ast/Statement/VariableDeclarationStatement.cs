@@ -3,7 +3,7 @@ using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record VariableDeclarationStatement(SourceRange Range, string Name, Expression? Value = null, LanguageType? Type = null, IConstantValue? ConstantValue = null) : Statement(Range)
+public record VariableDeclarationStatement(SourceRange Range, string Name, Expression? Value = null, LanguageType? Type = null) : Statement(Range)
 {
     public override void BeforeBuild(YabalBuilder builder)
     {
@@ -43,7 +43,7 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
             }
         }
 
-        var variable = new Variable(Name, pointer, valueType, ConstantValue);
+        var variable = new Variable(Name, pointer, valueType);
         builder.Block.DeclareVariable(Name, variable);
         pointer.AssignedVariables.Add(variable);
     }

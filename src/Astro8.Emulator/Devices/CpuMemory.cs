@@ -112,7 +112,9 @@ public sealed class CpuMemory<THandler>
 
         for (var i = 0; i < length; i++)
         {
-            Data[i] = reader.ReadInt32();
+            var value = reader.ReadInt32();
+            Data[i] = value;
+            OnChange(i, value);
         }
     }
 }

@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Astro8</RootNamespace>
         <LangVersion>preview</LangVersion>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

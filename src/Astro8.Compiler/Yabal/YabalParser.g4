@@ -50,7 +50,8 @@ expression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
-	| CreatePointer expression                                            # CreatePointerExpression
+	| CreatePointer expression                                          # CreatePointerExpression
+	| SizeOf expression                                                 # SizeOfExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
     | char                                                              # CharExpression

@@ -2,8 +2,12 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record IntegerExpression(SourceRange Range, int Value) : Expression(Range), IConstantValue, IExpressionToB
+public record IntegerExpression(SourceRange Range, int Value) : IntegerExpressionBase(Range);
+
+public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Range), IExpressionToB, IConstantValue
 {
+    public abstract int Value { get; init; }
+
     public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxDataLength;
 
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)

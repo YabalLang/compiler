@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Astro8</RootNamespace>
         <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

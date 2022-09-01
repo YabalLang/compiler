@@ -1,8 +1,6 @@
-﻿using Astro8.Instructions;
+using Astro8.Instructions;
 
 namespace Astro8.Yabal.Ast;
-
-public record Address(int Value);
 
 public record CreatePointerExpression(SourceRange Range, Expression Value) : Expression(Range), IConstantValue
 {
@@ -18,8 +16,8 @@ public record CreatePointerExpression(SourceRange Range, Expression Value) : Exp
         return LanguageType.Pointer(LanguageType.Integer);
     }
 
-    object? IConstantValue.Value => Value is IConstantValue { Value: int value }
-        ? new Address(value)
+    object? IConstantValue.Value { get; } = Value is IConstantValue { Value: int value }
+        ? RawAddress.From(value)
         : null;
 
     public override bool OverwritesB => Value.OverwritesB;

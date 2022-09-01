@@ -11,6 +11,7 @@ public record struct SetPixel(int Address, ScreenColor Color);
 
 public class DesktopHandler : Handler, IDisposable
 {
+    private bool _screenEnabled;
     private readonly uint[] _textureData;
     private readonly int _pixelScale;
     private IntPtr _window;
@@ -82,6 +83,7 @@ public class DesktopHandler : Handler, IDisposable
             Width,
             Height
         );
+        _screenEnabled = true;
 
         UpdatePixels();
 
@@ -90,6 +92,8 @@ public class DesktopHandler : Handler, IDisposable
 
     public void Update()
     {
+        if (!_screenEnabled) return;
+
         UpdatePixels();
 
         if (_pendingTitle != null)
@@ -101,6 +105,8 @@ public class DesktopHandler : Handler, IDisposable
 
     private void UpdateTexture()
     {
+        if (!_screenEnabled) return;
+
         SDL_RenderCopy(_renderer, _texture, default, default);
         SDL_RenderPresent(_renderer);
     }
