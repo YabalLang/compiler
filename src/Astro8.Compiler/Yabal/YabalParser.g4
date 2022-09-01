@@ -92,6 +92,7 @@ asmItems
 
 asmStatementItem
     : asmIdentifier {noNewLine()}? asmArgument?      # AsmInstruction
+    | AsmHere {noNewLine()}? asmArgument?            # AsmRawValue
     | asmIdentifier {noNewLine()}? AsmColon          # AsmLabel
     ;
 

@@ -13,7 +13,7 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
 
         var type = Expression.BuildExpression(builder, false);
 
-        if (type != LanguageType.Assembly && function.ReturnType != type)
+        if (function.ReturnType != type)
         {
             throw new InvalidOperationException($"Return type mismatch: {function.ReturnType} != {type}");
         }

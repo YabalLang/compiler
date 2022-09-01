@@ -348,22 +348,26 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         {
             foreach (var item in items)
             {
-                if (item is YabalParser.AsmInstructionContext instruction)
+                switch (item)
                 {
-                    instructions.Add(new AsmInstruction(
-                        instruction.asmIdentifier().GetText(),
-                        instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
-                    ));
-                }
-                else if (item is YabalParser.AsmLabelContext label)
-                {
-                    instructions.Add(new AsmDefineLabel(
-                        label.asmIdentifier().GetText()
-                    ));
-                }
-                else
-                {
-                    throw new NotImplementedException();
+                    case YabalParser.AsmInstructionContext instruction:
+                        instructions.Add(new AsmInstruction(
+                            instruction.asmIdentifier().GetText(),
+                            instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
+                        ));
+                        break;
+                    case YabalParser.AsmLabelContext label:
+                        instructions.Add(new AsmDefineLabel(
+                            label.asmIdentifier().GetText()
+                        ));
+                        break;
+                    case YabalParser.AsmRawValueContext rawValue:
+                        instructions.Add(new AsmRawValue(
+                            AsmArgumentVisitor.Instance.Visit(rawValue.asmArgument())
+                        ));
+                        break;
+                    default:
+                        throw new NotImplementedException();
                 }
             }
         }

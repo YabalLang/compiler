@@ -14,6 +14,8 @@ public record AsmInstruction(string Name, AsmArgument? Argument) : IAsmStatement
 
 public record AsmDefineLabel(string Name) : IAsmStatement;
 
+public record AsmRawValue(AsmArgument Value) : IAsmStatement;
+
 public interface IAsmStatement
 {
 }
@@ -35,10 +37,24 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
             return label;
         }
 
+        PointerOrData? GetPointerOrData(AsmArgument? asmArgument)
+        {
+            return asmArgument switch
+            {
+                AsmVariable {Name: var variableName} => builder.GetVariable(variableName).Pointer,
+                AsmLabel {Name: var labelName} => GetLabel(labelName),
+                AsmInteger {Value: var intValue} => intValue,
+                _ => null
+            };
+        }
+
         foreach (var statement in Statements)
         {
             switch (statement)
             {
+                case AsmRawValue {Value: var value}:
+                    builder.EmitRaw(GetPointerOrData(value) ?? 0);
+                    break;
                 case AsmDefineLabel { Name: var name }:
                     builder.Mark(GetLabel(name));
                     break;
@@ -47,23 +63,7 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                     var name = nameValue.ToUpperInvariant();
                     var instruction = Instruction.Default.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-                    PointerOrData? argValue;
-
-                    switch (argument)
-                    {
-                        case AsmVariable { Name: var variableName }:
-                            argValue = builder.GetVariable(variableName).Pointer;
-                            break;
-                        case AsmLabel { Name: var labelName }:
-                            argValue = GetLabel(labelName);
-                            break;
-                        case AsmInteger { Value: var intValue }:
-                            argValue = intValue;
-                            break;
-                        default:
-                            argValue = null;
-                            break;
-                    }
+                    var argValue = GetPointerOrData(argument);
 
                     BinaryOperator? binaryOperator = name switch
                     {
@@ -86,17 +86,6 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                         var skipLabel = builder.CreateLabel();
                         BinaryExpression.Jump(binaryOperator.Value, builder, skipLabel, argValue.Value);
                         builder.Mark(skipLabel);
-                        continue;
-                    }
-
-                    if (name == "HERE")
-                    {
-                        if (!argValue.HasValue)
-                        {
-                            throw new InvalidOperationException("HERE instruction does not require an argument");
-                        }
-
-                        builder.EmitRaw(argValue.Value);
                         continue;
                     }
 
