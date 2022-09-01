@@ -54,10 +54,13 @@ self.onmessage = function handleMessageFromMain(msg) {
 
     if (code === 'program') {
         console.time('Compiling program');
-        const array = new Uint8Array(parameter);
-        const runCode = Module.cwrap('Compile', null, ['array', 'number']);
-        runCode(array, array.length);
-        console.timeEnd('Compiling program');
+        try {
+            const array = new Uint8Array(parameter);
+            const runCode = Module.cwrap('Compile', null, ['array', 'number']);
+            runCode(array, array.length);
+        } finally {
+            console.timeEnd('Compiling program');
+        }
     } else if (code === 'key') {
         setExpansionPort(parameter);
     }

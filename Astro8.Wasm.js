@@ -87,7 +87,7 @@ var nodePath;
 var requireNodeFS;
 
 if (ENVIRONMENT_IS_NODE) {
-  if (!(typeof process == 'object' && typeof require == 'function')) throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
+  if (typeof process == 'undefined' || !process.release || process.release.name !== 'node') throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
   if (ENVIRONMENT_IS_WORKER) {
     scriptDirectory = require('path').dirname(scriptDirectory) + '/';
   } else {
@@ -422,10 +422,6 @@ function unexportedRuntimeSymbol(sym) {
 }
 
 // end include: runtime_debug.js
-var tempRet0 = 0;
-var setTempRet0 = (value) => { tempRet0 = value; };
-var getTempRet0 = () => tempRet0;
-
 
 
 // === Preamble library stuff ===
@@ -698,8 +694,8 @@ function writeStackCookie() {
   // The stack grow downwards towards _emscripten_stack_get_end.
   // We write cookies to the final two words in the stack and detect if they are
   // ever overwritten.
-  HEAP32[((max)>>2)] = 0x2135467;
-  HEAP32[(((max)+(4))>>2)] = 0x89BACDFE;
+  HEAPU32[((max)>>2)] = 0x2135467;
+  HEAPU32[(((max)+(4))>>2)] = 0x89BACDFE;
   // Also test the global address 0 for integrity.
   HEAPU32[0] = 0x63736d65; /* 'emsc' */
 }
@@ -1478,15 +1474,14 @@ var ASM_CONSTS = {
         setTempRet0(0);
         return thrown;
       }
-      var typeArray = Array.prototype.slice.call(arguments);
   
       // can_catch receives a **, add indirection
       // The different catch blocks are denoted by different types.
       // Due to inheritance, those types may not precisely match the
       // type of the thrown object. Find one which matches, and
       // return the type of the catch block which should be called.
-      for (var i = 0; i < typeArray.length; i++) {
-        var caughtType = typeArray[i];
+      for (var i = 0; i < arguments.length; i++) {
+        var caughtType = arguments[i];
         if (caughtType === 0 || caughtType === thrownType) {
           // Catch all clause matched or exactly the same type is caught
           break;
@@ -1516,15 +1511,14 @@ var ASM_CONSTS = {
         setTempRet0(0);
         return thrown;
       }
-      var typeArray = Array.prototype.slice.call(arguments);
   
       // can_catch receives a **, add indirection
       // The different catch blocks are denoted by different types.
       // Due to inheritance, those types may not precisely match the
       // type of the thrown object. Find one which matches, and
       // return the type of the catch block which should be called.
-      for (var i = 0; i < typeArray.length; i++) {
-        var caughtType = typeArray[i];
+      for (var i = 0; i < arguments.length; i++) {
+        var caughtType = arguments[i];
         if (caughtType === 0 || caughtType === thrownType) {
           // Catch all clause matched or exactly the same type is caught
           break;
@@ -1608,7 +1602,7 @@ var ASM_CONSTS = {
         if (lastSlash === -1) return path;
         return path.substr(lastSlash+1);
       },join:function() {
-        var paths = Array.prototype.slice.call(arguments, 0);
+        var paths = Array.prototype.slice.call(arguments);
         return PATH.normalize(paths.join('/'));
       },join2:(l, r) => {
         return PATH.normalize(l + '/' + r);
@@ -1724,9 +1718,9 @@ var ASM_CONSTS = {
           stream.seekable = false;
         },close:function(stream) {
           // flush any pending line data
-          stream.tty.ops.flush(stream.tty);
-        },flush:function(stream) {
-          stream.tty.ops.flush(stream.tty);
+          stream.tty.ops.fsync(stream.tty);
+        },fsync:function(stream) {
+          stream.tty.ops.fsync(stream.tty);
         },read:function(stream, buffer, offset, length, pos /* ignored */) {
           if (!stream.tty || !stream.tty.ops.get_char) {
             throw new FS.ErrnoError(60);
@@ -1816,7 +1810,7 @@ var ASM_CONSTS = {
           } else {
             if (val != 0) tty.output.push(val); // val == 0 would cut text output off in the middle.
           }
-        },flush:function(tty) {
+        },fsync:function(tty) {
           if (tty.output && tty.output.length > 0) {
             out(UTF8ArrayToString(tty.output, 0));
             tty.output = [];
@@ -1828,7 +1822,7 @@ var ASM_CONSTS = {
           } else {
             if (val != 0) tty.output.push(val);
           }
-        },flush:function(tty) {
+        },fsync:function(tty) {
           if (tty.output && tty.output.length > 0) {
             err(UTF8ArrayToString(tty.output, 0));
             tty.output = [];
@@ -1837,6 +1831,7 @@ var ASM_CONSTS = {
   
   function zeroMemory(address, size) {
       HEAPU8.fill(0, address, address + size);
+      return address;
     }
   
   function alignMemory(size, alignment) {
@@ -1847,8 +1842,7 @@ var ASM_CONSTS = {
       size = alignMemory(size, 65536);
       var ptr = _emscripten_builtin_memalign(65536, size);
       if (!ptr) return 0;
-      zeroMemory(ptr, size);
-      return ptr;
+      return zeroMemory(ptr, size);
     }
   var MEMFS = {ops_table:null,mount:function(mount) {
         return MEMFS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
@@ -3760,8 +3754,7 @@ var ASM_CONSTS = {
         if (dirfd === -100) {
           dir = FS.cwd();
         } else {
-          var dirstream = FS.getStream(dirfd);
-          if (!dirstream) throw new FS.ErrnoError(8);
+          var dirstream = SYSCALLS.getStreamFromFD(dirfd);
           dir = dirstream.path;
         }
         if (path.length == 0) {
@@ -3782,23 +3775,21 @@ var ASM_CONSTS = {
           throw e;
         }
         HEAP32[((buf)>>2)] = stat.dev;
-        HEAP32[(((buf)+(4))>>2)] = 0;
         HEAP32[(((buf)+(8))>>2)] = stat.ino;
         HEAP32[(((buf)+(12))>>2)] = stat.mode;
-        HEAP32[(((buf)+(16))>>2)] = stat.nlink;
+        HEAPU32[(((buf)+(16))>>2)] = stat.nlink;
         HEAP32[(((buf)+(20))>>2)] = stat.uid;
         HEAP32[(((buf)+(24))>>2)] = stat.gid;
         HEAP32[(((buf)+(28))>>2)] = stat.rdev;
-        HEAP32[(((buf)+(32))>>2)] = 0;
         (tempI64 = [stat.size>>>0,(tempDouble=stat.size,(+(Math.abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math.min((+(Math.floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[(((buf)+(40))>>2)] = tempI64[0],HEAP32[(((buf)+(44))>>2)] = tempI64[1]);
         HEAP32[(((buf)+(48))>>2)] = 4096;
         HEAP32[(((buf)+(52))>>2)] = stat.blocks;
         (tempI64 = [Math.floor(stat.atime.getTime() / 1000)>>>0,(tempDouble=Math.floor(stat.atime.getTime() / 1000),(+(Math.abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math.min((+(Math.floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[(((buf)+(56))>>2)] = tempI64[0],HEAP32[(((buf)+(60))>>2)] = tempI64[1]);
-        HEAP32[(((buf)+(64))>>2)] = 0;
+        HEAPU32[(((buf)+(64))>>2)] = 0;
         (tempI64 = [Math.floor(stat.mtime.getTime() / 1000)>>>0,(tempDouble=Math.floor(stat.mtime.getTime() / 1000),(+(Math.abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math.min((+(Math.floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[(((buf)+(72))>>2)] = tempI64[0],HEAP32[(((buf)+(76))>>2)] = tempI64[1]);
-        HEAP32[(((buf)+(80))>>2)] = 0;
+        HEAPU32[(((buf)+(80))>>2)] = 0;
         (tempI64 = [Math.floor(stat.ctime.getTime() / 1000)>>>0,(tempDouble=Math.floor(stat.ctime.getTime() / 1000),(+(Math.abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math.min((+(Math.floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[(((buf)+(88))>>2)] = tempI64[0],HEAP32[(((buf)+(92))>>2)] = tempI64[1]);
-        HEAP32[(((buf)+(96))>>2)] = 0;
+        HEAPU32[(((buf)+(96))>>2)] = 0;
         (tempI64 = [stat.ino>>>0,(tempDouble=stat.ino,(+(Math.abs(tempDouble))) >= 1.0 ? (tempDouble > 0.0 ? ((Math.min((+(Math.floor((tempDouble)/4294967296.0))), 4294967295.0))|0)>>>0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble)))>>>0))/4294967296.0)))))>>>0) : 0)],HEAP32[(((buf)+(104))>>2)] = tempI64[0],HEAP32[(((buf)+(108))>>2)] = tempI64[1]);
         return 0;
       },doMsync:function(addr, stream, len, flags, offset) {
@@ -4074,7 +4065,7 @@ var ASM_CONSTS = {
           if (!stream.tty) return -59;
           return 0;
         }
-        default: abort('bad ioctl syscall ' + op);
+        default: return -28; // not supported
       }
     } catch (e) {
     if (typeof FS == 'undefined' || !(e instanceof FS.ErrnoError)) throw e;
@@ -4186,8 +4177,7 @@ var ASM_CONSTS = {
   function __mmap_js(len, prot, flags, fd, off, allocated) {
   try {
   
-      var stream = FS.getStream(fd);
-      if (!stream) return -8;
+      var stream = SYSCALLS.getStreamFromFD(fd);
       var res = FS.mmap(stream, len, off, prot, flags);
       var ptr = res.ptr;
       HEAP32[((allocated)>>2)] = res.allocated;
@@ -4557,7 +4547,7 @@ var ASM_CONSTS = {
       var offset = convertI32PairToI53Checked(offset_low, offset_high); if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd)
       var num = doReadv(stream, iov, iovcnt, offset);
-      HEAP32[((pnum)>>2)] = num;
+      HEAPU32[((pnum)>>2)] = num;
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e instanceof FS.ErrnoError)) throw e;
@@ -4584,7 +4574,7 @@ var ASM_CONSTS = {
       var offset = convertI32PairToI53Checked(offset_low, offset_high); if (isNaN(offset)) return 61;
       var stream = SYSCALLS.getStreamFromFD(fd)
       var num = doWritev(stream, iov, iovcnt, offset);
-      HEAP32[((pnum)>>2)] = num;
+      HEAPU32[((pnum)>>2)] = num;
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e instanceof FS.ErrnoError)) throw e;
@@ -4597,7 +4587,7 @@ var ASM_CONSTS = {
   
       var stream = SYSCALLS.getStreamFromFD(fd);
       var num = doReadv(stream, iov, iovcnt);
-      HEAP32[((pnum)>>2)] = num;
+      HEAPU32[((pnum)>>2)] = num;
       return 0;
     } catch (e) {
     if (typeof FS == 'undefined' || !(e instanceof FS.ErrnoError)) throw e;
@@ -4625,7 +4615,7 @@ var ASM_CONSTS = {
   
       var stream = SYSCALLS.getStreamFromFD(fd);
       if (stream.stream_ops && stream.stream_ops.fsync) {
-        return -stream.stream_ops.fsync(stream);
+        return stream.stream_ops.fsync(stream);
       }
       return 0; // we can't do anything synchronously; the in-memory FS is already synced to
     } catch (e) {
@@ -4646,14 +4636,6 @@ var ASM_CONSTS = {
     return e.errno;
   }
   }
-
-  function _getTempRet0() {
-      return getTempRet0();
-    }
-
-  function _setTempRet0(val) {
-      setTempRet0(val);
-    }
 
 
   function uleb128Encode(n, target) {
@@ -5336,7 +5318,6 @@ var asmLibraryArg = {
   "fd_seek": _fd_seek,
   "fd_sync": _fd_sync,
   "fd_write": _fd_write,
-  "getTempRet0": _getTempRet0,
   "invoke_ii": invoke_ii,
   "invoke_iii": invoke_iii,
   "invoke_iiii": invoke_iiii,
@@ -5347,6 +5328,7 @@ var asmLibraryArg = {
   "invoke_iiiiiiiiii": invoke_iiiiiiiiii,
   "invoke_iiiiiiiiiii": invoke_iiiiiiiiiii,
   "invoke_iiiiiiiiiiiiiiiiiiiiiiii": invoke_iiiiiiiiiiiiiiiiiiiiiiii,
+  "invoke_iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii": invoke_iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii,
   "invoke_iiiiij": invoke_iiiiij,
   "invoke_iiiij": invoke_iiiij,
   "invoke_iiij": invoke_iiij,
@@ -5375,12 +5357,14 @@ var asmLibraryArg = {
   "invoke_viiiiij": invoke_viiiiij,
   "invoke_viij": invoke_viij,
   "invoke_vij": invoke_vij,
-  "invoke_vijii": invoke_vijii,
-  "setTempRet0": _setTempRet0
+  "invoke_vijii": invoke_vijii
 };
 var asm = createWasm();
 /** @type {function(...*):?} */
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = createExportWrapper("__wasm_call_ctors");
+
+/** @type {function(...*):?} */
+var getTempRet0 = Module["getTempRet0"] = createExportWrapper("getTempRet0");
 
 /** @type {function(...*):?} */
 var _malloc = Module["_malloc"] = createExportWrapper("malloc");
@@ -5423,6 +5407,9 @@ var _ntohs = Module["_ntohs"] = createExportWrapper("ntohs");
 
 /** @type {function(...*):?} */
 var _setThrew = Module["_setThrew"] = createExportWrapper("setThrew");
+
+/** @type {function(...*):?} */
+var setTempRet0 = Module["setTempRet0"] = createExportWrapper("setTempRet0");
 
 /** @type {function(...*):?} */
 var _emscripten_stack_init = Module["_emscripten_stack_init"] = function() {
@@ -5571,13 +5558,13 @@ var dynCall_iijiiiiiiiiiijiiiiiiiiii = Module["dynCall_iijiiiiiiiiiijiiiiiiiiii"
 var dynCall_iijiiiiiiiiii = Module["dynCall_iijiiiiiiiiii"] = createExportWrapper("dynCall_iijiiiiiiiiii");
 
 /** @type {function(...*):?} */
+var dynCall_viiijj = Module["dynCall_viiijj"] = createExportWrapper("dynCall_viiijj");
+
+/** @type {function(...*):?} */
 var dynCall_vijj = Module["dynCall_vijj"] = createExportWrapper("dynCall_vijj");
 
 /** @type {function(...*):?} */
 var dynCall_diiij = Module["dynCall_diiij"] = createExportWrapper("dynCall_diiij");
-
-/** @type {function(...*):?} */
-var dynCall_viiijj = Module["dynCall_viiijj"] = createExportWrapper("dynCall_viiijj");
 
 /** @type {function(...*):?} */
 var dynCall_vijiiii = Module["dynCall_vijiiii"] = createExportWrapper("dynCall_vijiiii");
@@ -5731,10 +5718,32 @@ function invoke_viiiiii(index,a1,a2,a3,a4,a5,a6) {
   }
 }
 
+function invoke_iiiiii(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    return getWasmTableEntry(index)(a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0) throw e;
+    _setThrew(1, 0);
+  }
+}
+
 function invoke_viiiii(index,a1,a2,a3,a4,a5) {
   var sp = stackSave();
   try {
     getWasmTableEntry(index)(a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31,a32,a33,a34,a35,a36,a37,a38) {
+  var sp = stackSave();
+  try {
+    return getWasmTableEntry(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,a31,a32,a33,a34,a35,a36,a37,a38);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0) throw e;
@@ -5779,17 +5788,6 @@ function invoke_viiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) {
   var sp = stackSave();
   try {
     getWasmTableEntry(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0) throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_iiiiii(index,a1,a2,a3,a4,a5) {
-  var sp = stackSave();
-  try {
-    return getWasmTableEntry(index)(a1,a2,a3,a4,a5);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0) throw e;
@@ -6075,15 +6073,15 @@ var unexportedRuntimeSymbols = [
   'getCompilerSetting',
   'print',
   'printErr',
-  'getTempRet0',
-  'setTempRet0',
   'callMain',
   'abort',
   'keepRuntimeAlive',
   'wasmMemory',
+  'stackAlloc',
   'stackSave',
   'stackRestore',
-  'stackAlloc',
+  'getTempRet0',
+  'setTempRet0',
   'writeStackCookie',
   'checkStackCookie',
   'ptrToString',
@@ -6246,6 +6244,7 @@ var unexportedRuntimeSymbols = [
   'ExceptionInfo',
   'exception_addRef',
   'exception_decRef',
+  'getExceptionMessageCommon',
   'incrementExceptionRefcount',
   'decrementExceptionRefcount',
   'getExceptionMessage',
@@ -6379,6 +6378,7 @@ var missingLibrarySymbols = [
   'setImmediateWrapped',
   'clearImmediateWrapped',
   'polyfillSetImmediate',
+  'getExceptionMessageCommon',
   'incrementExceptionRefcount',
   'decrementExceptionRefcount',
   'getExceptionMessage',
