@@ -134,7 +134,7 @@ public sealed partial class Cpu<THandler> : IDisposable
         }
 
         var stepsPerSecond = (float)steps / _stopwatch.ElapsedMilliseconds * 1000;
-        _handler.LogSpeed(steps, SimplifiedHertz(stepsPerSecond));
+        _handler.LogSpeed(steps, stepsPerSecond);
         _steps = 0;
         _stopwatch.Restart();
 
@@ -211,23 +211,6 @@ public sealed partial class Cpu<THandler> : IDisposable
                 *(_instructionPointer + address) = new InstructionReference(value);
             }
         }
-    }
-
-    private static string SimplifiedHertz(float input)
-    {
-        if (float.IsInfinity(input))
-        {
-            input = float.MaxValue;
-        }
-
-        if (input >= 1000000000.0) // GHz
-            return (Math.Floor(input / 100000000.0f) / 10.0f) + " GHz";
-        if (input >= 1000000.0) // MHz
-            return (Math.Floor(input / 100000.0f) / 10.0f) + " MHz";
-        if (input >= 1000.0) // KHz
-            return (Math.Floor(input / 100.0f) / 10.0f) + " KHz";
-
-        return (Math.Floor(input * 10.0f) / 10.0f) + " KHz";
     }
 
     public void Dispose()

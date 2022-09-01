@@ -6,5 +6,5 @@ public abstract class Handler
 {
     public abstract void SetPixel(int address, ScreenColor color);
 
-    public abstract void LogSpeed(int steps, string value);
+    public abstract void LogSpeed(int steps, float value);
 }

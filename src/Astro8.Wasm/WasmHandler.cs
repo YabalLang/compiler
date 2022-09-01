@@ -9,7 +9,7 @@ public class WasmHandler : Handler
         Interop.UpdatePixel(address, color.Value);
     }
 
-    public override void LogSpeed(int steps, string value)
+    public override void LogSpeed(int steps, float value)
     {
 
     }

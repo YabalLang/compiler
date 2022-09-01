@@ -184,7 +184,7 @@ public class DesktopHandler : Handler, IDisposable
         );
     }
 
-    public override void LogSpeed(int steps, string value)
+    public override void LogSpeed(int steps, float value)
     {
         // _pendingTitle = $"C# Astro-8 Emulator | {value}";
     }
