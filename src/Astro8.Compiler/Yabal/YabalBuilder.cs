@@ -499,7 +499,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
-            builder.EmitRaw(0xEFFE - (1 + (_stack.Count * 16)), "stack pointer");
+            builder.EmitRaw(61293 - (1 + (_stack.Count * 16)), "stack pointer");
 
             foreach (var (_, function) in _functions)
             {
