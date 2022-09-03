@@ -66,15 +66,20 @@ Switch              : 'switch';
 While               : 'while';
 CreatePointer       : 'create_pointer';
 SizeOf              : 'sizeof';
+IncludeBytes        : 'include_bytes';
+IncludeImage        : 'include_image';
 
 Identifier			: IdentifierStart IdentifierPart*;
 
 FloatLiteral		: [0-9]+'.'[0-9]+;
-IntegerLiteral		: ('0' ('x'|'b'))? [0-9]+;
+IntegerLiteral		: DecimalLiteral | HexLiteral | ByteLiteral;
 StringStart		    : '"' -> pushMode(STRING);
 CharStart		    : '\'' -> pushMode(CHAR);
 
 fragment WhitespaceChar : [ \t\r\n];
+fragment DecimalLiteral	: [0-9]+;
+fragment HexLiteral		: '0x' [0-9a-fA-F]+;
+fragment ByteLiteral	: '0b' [01]+;
 
 fragment IdentifierStart
     : UnicodeLetter

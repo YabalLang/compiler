@@ -11,9 +11,14 @@ public class StringAddress : IAddress
 
     public string Value { get; }
 
-    public Either<int, InstructionPointer> Get(YabalBuilder builder) => builder.GetString(Value);
+    public Either<int, InstructionPointer>? Get(YabalBuilder builder) => builder.GetString(Value);
 
     public int? Length => Value.Length;
+
+    public int? GetValue(int offset)
+    {
+        return offset < Value.Length ? Character.CharToInt[Value[offset]] : null;
+    }
 
     public static IAddress From(string value) => new StringAddress(value);
 }

@@ -24,11 +24,6 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
             valueType = Value.BuildExpression(builder, false);
             builder.StoreA(pointer);
             builder.SetComment($"store value in variable '{Name}'");
-
-            if (valueType == LanguageType.Assembly)
-            {
-                valueType = Type;
-            }
         }
 
         if (valueType == null)

@@ -1,4 +1,5 @@
 ﻿using Astro8.Instructions;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
@@ -7,9 +8,10 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
         if (Array is IConstantValue { Value: IAddress constantAddress } &&
-            Key is IConstantValue { Value: int constantKey })
+            Key is IConstantValue { Value: int constantKey } &&
+            constantAddress.Get(builder) is {} value)
         {
-            switch (constantAddress.Get(builder))
+            switch (value)
             {
                 case { IsLeft: true, Left: var left }:
                     builder.LoadA_Large(left + constantKey);
@@ -83,5 +85,23 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
         }
 
         return type;
+    }
+
+    public override Expression Optimize(BlockCompileStack block)
+    {
+        if (Array is not IConstantValue {Value: IAddress address} ||
+            Key is not IConstantValue {Value: int index})
+        {
+            return this;
+        }
+
+        var value = address.GetValue(index);
+
+        if (value.HasValue)
+        {
+            return new IntegerExpression(Range, value.Value);
+        }
+
+        return this;
     }
 }

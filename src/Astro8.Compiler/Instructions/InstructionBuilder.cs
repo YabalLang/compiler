@@ -351,19 +351,12 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     public void ToHex(StreamWriter writer)
     {
         var labels = GetPointers(0, out _);
-        var addNewLine = false;
+
+        writer.Write("ASTRO-8 AEXE Executable file");
 
         foreach (var value in GetBytes(labels))
         {
-            if (addNewLine)
-            {
-                writer.WriteLine();
-            }
-            else
-            {
-                addNewLine = true;
-            }
-
+            writer.WriteLine();
             writer.Write(value.ToString("x4"));
         }
     }

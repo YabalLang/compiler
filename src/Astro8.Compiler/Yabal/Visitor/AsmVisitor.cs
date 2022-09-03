@@ -8,7 +8,7 @@ public class AsmArgumentVisitor : YabalParserBaseVisitor<AsmArgument>
 
     public override AsmArgument VisitAsmInteger(YabalParser.AsmIntegerContext context)
     {
-        return new AsmInteger(int.Parse(context.GetText()));
+        return new AsmInteger(YabalVisitor.ParseInt(context.GetText()));
     }
 
     public override AsmArgument VisitAsmAddress(YabalParser.AsmAddressContext context)

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -192,7 +193,23 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override IntegerExpressionBase VisitIntegerExpression(YabalParser.IntegerExpressionContext context)
     {
-        return new IntegerExpression(context, int.Parse(context.GetText()));
+        return new IntegerExpression(context, ParseInt(context.GetText()));
+    }
+
+    public static int ParseInt(ReadOnlySpan<char> text)
+    {
+        if (text[0] == '0' && text.Length > 1)
+        {
+            switch (text[1])
+            {
+                case 'x':
+                    return int.Parse(text[2..], NumberStyles.HexNumber);
+                case 'b':
+                    return Convert.ToInt32(text[2..].ToString(), 2);
+            }
+        }
+
+        return int.Parse(text);
     }
 
     public override BooleanExpression VisitTrue(YabalParser.TrueContext context)
@@ -663,6 +680,39 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitBreakStatement(YabalParser.BreakStatementContext context)
     {
         return new BreakStatement(context);
+    }
+
+    public override Node VisitIncludeBytesExpression(YabalParser.IncludeBytesExpressionContext context)
+    {
+        return IncludeFile(context, context.expression(), FileType.Byte);
+    }
+
+    public override Node VisitIncludeImageExpression(YabalParser.IncludeImageExpressionContext context)
+    {
+        return IncludeFile(context, context.expression(), FileType.Image);
+    }
+
+    private Node IncludeFile(SourceRange context, YabalParser.ExpressionContext expression, FileType type)
+    {
+        var value = VisitExpression(expression);
+
+        if (value is not StringExpression stringExpression)
+        {
+            throw new NotSupportedException("IncludeBytes only supports string literals");
+        }
+
+        var path = Path.GetFullPath(stringExpression.Value);
+
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"File {path} does not exist");
+        }
+
+        return new IncludeFileExpression(
+            context,
+            path,
+            type
+        );
     }
 
     public override Node VisitStringExpression(YabalParser.StringExpressionContext context)

@@ -36,11 +36,12 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
         Either<Func<LanguageType>, Expression> value,
         bool isVoid)
     {
-        if (arrayAccess is { Array: IConstantValue { Value: IAddress constantAddress }, Key: IConstantValue { Value: int constantKey } })
+        if (arrayAccess is { Array: IConstantValue { Value: IAddress constantAddress }, Key: IConstantValue { Value: int constantKey } } &&
+            constantAddress.Get(builder) is {} pointer)
         {
             VisitValue(builder, value, LanguageType.Integer);
 
-            switch (constantAddress.Get(builder))
+            switch (pointer)
             {
                 case { IsLeft: true, Left: var left }:
                     builder.StoreA_Large(left + constantKey);

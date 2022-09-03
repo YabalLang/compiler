@@ -52,6 +52,8 @@ expression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
 	| CreatePointer expression                                          # CreatePointerExpression
+	| IncludeBytes expression                                           # IncludeBytesExpression
+	| IncludeImage expression                                           # IncludeImageExpression
 	| SizeOf expression                                                 # SizeOfExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
