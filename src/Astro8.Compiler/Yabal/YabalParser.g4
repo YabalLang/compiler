@@ -23,7 +23,11 @@ returnType
     ;
 
 expression
-	: Incr expression												    # IncrementLeftExpression
+	: CreatePointer expression                                          # CreatePointerExpression
+	| IncludeBytes expression                                           # IncludeBytesExpression
+	| IncludeImage expression                                           # IncludeImageExpression
+	| SizeOf expression                                                 # SizeOfExpression
+	| Incr expression												    # IncrementLeftExpression
 	| expression Incr												    # IncrementRightExpression
 	| Decr expression												    # DecrementLeftExpression
 	| expression Decr												    # DecrementRightExpression
@@ -51,10 +55,6 @@ expression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
-	| CreatePointer expression                                          # CreatePointerExpression
-	| IncludeBytes expression                                           # IncludeBytesExpression
-	| IncludeImage expression                                           # IncludeImageExpression
-	| SizeOf expression                                                 # SizeOfExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
     | char                                                              # CharExpression

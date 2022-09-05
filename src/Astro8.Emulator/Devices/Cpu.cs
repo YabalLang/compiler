@@ -45,7 +45,15 @@ public sealed partial class Cpu<THandler> : IDisposable
         set => _context = _context with { C = value };
     }
 
+    public int ProgramCounter
+    {
+        get => _context.ProgramCounter;
+        set => _context = _context with { ProgramCounter = value };
+    }
+
     public int ExpansionPort { get; set; }
+
+    public CpuContext Context => _context;
 
     public void Run(int cycleDuration = 5, int instructionsPerCycle = 100)
     {

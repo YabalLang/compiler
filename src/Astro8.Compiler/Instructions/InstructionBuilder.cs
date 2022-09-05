@@ -396,7 +396,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public void ToAssembly(StreamWriter writer, bool addComments = false)
+    public void ToAssembly(TextWriter writer, bool addComments = false)
     {
         var pointers = GetPointers(0, out _);
 

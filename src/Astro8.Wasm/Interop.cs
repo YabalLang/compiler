@@ -8,6 +8,10 @@ namespace Astro8.Wasm;
 
 public static class Interop
 {
+    private static int _lastA;
+    private static int _lastB;
+    private static int _lastC;
+    private static int _lastExp;
     private static Cpu<WasmHandler>? _cpu;
 
     [UnmanagedCallersOnly(EntryPoint = "Compile")]
@@ -28,20 +32,74 @@ public static class Interop
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Step")]
-    public static void Step(int amount)
+    public static int Step(int amount)
     {
-        _cpu?.Step(amount);
+        if (_cpu is not {} cpu)
+        {
+            return 0;
+        }
+
+        cpu.Step(amount);
+        UpdateContext();
+
+        return cpu.ProgramCounter;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "SetExpansionPort")]
     public static void SetExpansionPort(int value)
     {
-        if (_cpu != null)
+        if (_cpu is {} cpu)
         {
-            _cpu.ExpansionPort = value;
+            cpu.ExpansionPort = value;
+        }
+    }
+
+    private static void UpdateContext()
+    {
+        if (_cpu is not {} cpu)
+        {
+            return;
+        }
+
+        var context = cpu.Context;
+
+        if (_lastA != context.A)
+        {
+            UpdateA(context.A);
+            _lastA = context.A;
+        }
+
+        if (_lastB != context.B)
+        {
+            UpdateB(context.B);
+            _lastB = context.B;
+        }
+
+        if (_lastC != context.C)
+        {
+            UpdateC(context.C);
+            _lastC = context.C;
+        }
+
+        if (_lastExp != cpu.ExpansionPort)
+        {
+            UpdateExpansionPort(cpu.ExpansionPort);
+            _lastExp = cpu.ExpansionPort;
         }
     }
 
     [DllImport("NativeLib")]
-    public static extern unsafe void UpdatePixel(int address, int color);
+    public static extern void UpdatePixel(int address, int color);
+
+    [DllImport("NativeLib")]
+    public static extern void UpdateA(int value);
+
+    [DllImport("NativeLib")]
+    public static extern void UpdateB(int value);
+
+    [DllImport("NativeLib")]
+    public static extern void UpdateC(int value);
+
+    [DllImport("NativeLib")]
+    public static extern void UpdateExpansionPort(int value);
 }
