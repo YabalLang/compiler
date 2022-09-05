@@ -18,7 +18,7 @@ public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix,
 
         if (type != LanguageType.Integer)
         {
-            throw new InvalidOperationException("Cannot update a non-integer value");
+            builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.CannotUpdateNonInteger);
         }
 
         AssignExpression.SetValue(builder, Value, (Func<LanguageType>)(() =>

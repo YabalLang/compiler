@@ -10,6 +10,14 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace Astro8.Instructions;
 
+public enum ErrorLevel
+{
+    Error,
+    Warning
+}
+
+public record CompileError(SourceRange Range, ErrorLevel Level, string Message);
+
 public record FileContent(int Offset, int[] Data)
 {
     private static readonly ConcurrentDictionary<(string, FileType), FileContent> Cache = new();
@@ -94,6 +102,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly Dictionary<(string, FileType type), InstructionPointer> _files;
     private readonly List<InstructionPointer> _globals;
     private readonly List<InstructionPointer> _temporaryPointers;
+    private readonly Dictionary<SourceRange, List<CompileError>> _errors;
     private readonly BlockStack _globalBlock;
     private bool _hasCall;
 
@@ -112,6 +121,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _temporaryPointers = new List<InstructionPointer>();
         _strings = new Dictionary<string, InstructionPointer>();
         _files = new Dictionary<(string, FileType), InstructionPointer>();
+        _errors = new Dictionary<SourceRange, List<CompileError>>();
 
         _globalBlock = new BlockStack { IsGlobal = true };
         Block = _globalBlock;
@@ -135,6 +145,23 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _globalBlock = parent._globalBlock;
         _strings = parent._strings;
         _files = parent._files;
+        _errors = parent._errors;
+    }
+
+    public IReadOnlyDictionary<SourceRange, List<CompileError>> Errors => _errors;
+
+    public void AddError(ErrorLevel level, SourceRange range, string error)
+    {
+        var errorInstance = new CompileError(range, level, error);
+
+        if (_errors.TryGetValue(range, out var list))
+        {
+            list.Add(errorInstance);
+        }
+        else
+        {
+            _errors.Add(range, new List<CompileError> { errorInstance });
+        }
     }
 
     public InstructionPointer GetFile(string path, FileType type)
@@ -327,9 +354,16 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var returnAddress = _builder.CreateLabel();
         var setArguments = _builder.CreateLabel();
 
-        _builder.SetA(hasArguments ? setArguments : address);
+        _builder.SetA_Large(hasArguments ? setArguments : address);
         _builder.SwapA_C();
-        _builder.SetB(returnAddress);
+
+        using (var variable = GetTemporaryVariable(global: true))
+        {
+            _builder.SetA_Large(returnAddress);
+            _builder.StoreA(variable);
+            _builder.LoadB(variable);
+        }
+
         _builder.Jump(_callLabel);
 
         if (hasArguments)
@@ -499,7 +533,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
-            builder.EmitRaw(61293 - (1 + (_stack.Count * 16)), "stack pointer");
+            builder.EmitRaw(0xEF6E - (1 + (_stack.Count * 16)), "stack pointer");
 
             foreach (var (_, function) in _functions)
             {
@@ -531,7 +565,15 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             for (var i = 0; i < value.Length; i++)
             {
-                builder.EmitRaw(CharExpression.GetValue(value[i]));
+                if (Character.CharToInt.TryGetValue(value[i], out var intValue))
+                {
+                    builder.EmitRaw(intValue);
+                }
+                else
+                {
+                    builder.EmitRaw(0);
+                    AddError(ErrorLevel.Error, SourceRange.Zero, ErrorMessages.InvalidCharacterInString(value[i], value));
+                }
 
                 if (i == 0)
                 {

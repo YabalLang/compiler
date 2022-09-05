@@ -15,7 +15,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
                 if (valueType != LanguageType.Integer)
                 {
-                    throw new InvalidOperationException($"Cannot use '{Operator}' operator on type '{valueType}'");
+                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
                 }
 
                 builder.Not();
@@ -27,7 +27,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
                 if (valueType != LanguageType.Boolean)
                 {
-                    throw new InvalidOperationException($"Cannot use '{Operator}' operator on type '{valueType}'");
+                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
                 }
 
                 var skip = builder.CreateLabel();
@@ -46,7 +46,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
                 if (valueType != LanguageType.Integer)
                 {
-                    throw new InvalidOperationException($"Cannot use '{Operator}' operator on type '{valueType}'");
+                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
                 }
 
                 builder.SetB(-1);
@@ -62,7 +62,8 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
     {
         if (Operator != UnaryOperator.Negate)
         {
-            throw new NotSupportedException("Cannot use this operator for comparison");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.InvalidComparison);
+            return;
         }
 
         if (Value is IComparisonExpression comparisonExpression)
@@ -75,7 +76,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
         if (type != LanguageType.Boolean)
         {
-            throw new InvalidOperationException($"Expression must be of type boolean, but is {type}");
+            builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.ExpectedBoolean(type));
         }
 
         builder.SetB(0);

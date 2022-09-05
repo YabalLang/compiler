@@ -27,7 +27,15 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
         var type = StoreAddressInA(builder, Array, Key);
         builder.LoadA_FromAddressUsingA();
-        return type.ElementType!;
+
+        if (type.ElementType == null)
+        {
+            builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ValueIsNotAnArray);
+            builder.SetA(0);
+            return LanguageType.Integer;
+        }
+
+        return type.ElementType;
     }
 
     public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpressionBase { Value: 0 };
@@ -38,7 +46,9 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
         if (type != LanguageType.Assembly && (type.StaticType != StaticType.Pointer || type.ElementType == null))
         {
-            throw new InvalidOperationException("Array access expression can only be used on arrays");
+            builder.AddError(ErrorLevel.Error, array.Range, ErrorMessages.InvalidArrayAccess);
+            builder.SetA(0);
+            return LanguageType.Integer;
         }
 
         if (key is IntegerExpressionBase { Value: var intValue })
@@ -60,8 +70,10 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             if (keyType.StaticType != StaticType.Integer)
             {
-                throw new InvalidOperationException("Array access expression can only be used on arrays");
+                builder.AddError(ErrorLevel.Error, key.Range, ErrorMessages.ArrayOnlyIntegerKey);
+                builder.SetB(0);
             }
+
             builder.Add();
 
             builder.SetComment("add to pointer address");
@@ -75,7 +87,8 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
 
             if (keyType.StaticType != StaticType.Integer)
             {
-                throw new InvalidOperationException("Array access expression can only be used on arrays");
+                builder.AddError(ErrorLevel.Error, key.Range, ErrorMessages.ArrayOnlyIntegerKey);
+                builder.SetB(0);
             }
 
             builder.LoadB(variable);

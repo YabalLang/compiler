@@ -157,6 +157,7 @@ expressionList
 
 blockStatement
 	: OpenCurly (statement (eos statement)*)? eos? CloseCurly
+	| statement
 	;
 
 // Function

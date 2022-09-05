@@ -10,17 +10,15 @@ public record AsmInteger(int Value) : AsmArgument;
 
 public record AsmLabel(string Name) : AsmArgument;
 
-public record AsmInstruction(string Name, AsmArgument? Argument) : IAsmStatement;
+public record AsmInstruction(SourceRange Range, string Name, AsmArgument? Argument) : AsmStatement(Range);
 
-public record AsmDefineLabel(string Name) : IAsmStatement;
+public record AsmDefineLabel(SourceRange Range, string Name) : AsmStatement(Range);
 
-public record AsmRawValue(AsmArgument Value) : IAsmStatement;
+public record AsmRawValue(SourceRange Range, AsmArgument Value) : AsmStatement(Range);
 
-public interface IAsmStatement
-{
-}
+public record AsmStatement(SourceRange Range);
 
-public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) : Expression(Range)
+public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : Expression(Range)
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
@@ -39,13 +37,23 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
 
         PointerOrData? GetPointerOrData(AsmArgument? asmArgument)
         {
-            return asmArgument switch
+            switch (asmArgument)
             {
-                AsmVariable {Name: var variableName} => builder.GetVariable(variableName).Pointer,
-                AsmLabel {Name: var labelName} => GetLabel(labelName),
-                AsmInteger {Value: var intValue} => intValue,
-                _ => null
-            };
+                case AsmVariable {Name: var variableName}:
+                    if (!builder.TryGetVariable(variableName, out var variable))
+                    {
+                        builder.AddError(ErrorLevel.Error, Range, ErrorMessages.UndefinedVariable(variableName));
+                        return 0;
+                    }
+
+                    return variable.Pointer;
+                case AsmLabel {Name: var labelName}:
+                    return GetLabel(labelName);
+                case AsmInteger {Value: var intValue}:
+                    return intValue;
+                default:
+                    return null;
+            }
         }
 
         foreach (var statement in Statements)
@@ -58,7 +66,7 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
                 case AsmDefineLabel { Name: var name }:
                     builder.Mark(GetLabel(name));
                     break;
-                case AsmInstruction(var nameValue, var argument):
+                case AsmInstruction(var range, var nameValue, var argument):
                 {
                     var name = nameValue.ToUpperInvariant();
                     var instruction = Instruction.Default.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -78,12 +86,14 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
 
                     if (binaryOperator.HasValue)
                     {
+                        var skipLabel = builder.CreateLabel();
+
                         if (!argValue.HasValue)
                         {
-                            throw new InvalidOperationException($"Binary operator '{name}' requires an argument");
+                            builder.AddError(ErrorLevel.Error, range, ErrorMessages.BinaryInstructionRequiresLabel);
+                            argValue = skipLabel;
                         }
 
-                        var skipLabel = builder.CreateLabel();
                         BinaryExpression.Jump(binaryOperator.Value, builder, skipLabel, argValue.Value);
                         builder.Mark(skipLabel);
                         continue;
@@ -91,7 +101,8 @@ public record AsmExpression(SourceRange Range, List<IAsmStatement> Statements) :
 
                     if (instruction == null)
                     {
-                        throw new KeyNotFoundException($"Unknown instruction '{name}'");
+                        builder.AddError(ErrorLevel.Error, range, ErrorMessages.UnknownInstruction(name));
+                        continue;
                     }
 
                     if (!argValue.HasValue)

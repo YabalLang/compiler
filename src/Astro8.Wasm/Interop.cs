@@ -27,7 +27,7 @@ public static class Interop
         _cpu = CpuBuilder.Create<WasmHandler>()
             .WithMemory(data)
             .WithScreen(0xEFFF)
-            .WithCharacter(0x3FFE)
+            .WithCharacter(0xEF6E)
             .Create();
     }
 

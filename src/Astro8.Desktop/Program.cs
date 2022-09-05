@@ -6,6 +6,7 @@ using Astro8;
 using Astro8.Devices;
 using Astro8.Instructions;
 using Astro8.Utils;
+using Astro8.Yabal;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 
@@ -119,7 +120,9 @@ void Build(InvocationContext ctx)
     }
 
     var builder = new YabalBuilder();
-    builder.CompileCode(File.ReadAllText(path.FullName));
+    var code = File.ReadAllText(path.FullName);
+    builder.CompileCode(code);
+    PrintErrors(builder.Errors, code);
 
     if (string.IsNullOrEmpty(outPath))
     {
@@ -216,7 +219,10 @@ void Execute(InvocationContext ctx)
     }
 
     var builder = new YabalBuilder();
-    builder.CompileCode(File.ReadAllText(path.FullName));
+    var code = File.ReadAllText(path.FullName);
+    builder.CompileCode(code);
+    PrintErrors(builder.Errors, code);
+
     cpuBuilder.WithProgram(builder);
 
     var cpu = cpuBuilder.Create();
@@ -335,3 +341,38 @@ void Execute(InvocationContext ctx)
 }
 
 return await rootCommand.InvokeAsync(args, console: new SystemConsole());
+
+void PrintErrors(IReadOnlyDictionary<SourceRange, List<CompileError>> errorByRange, string code)
+{
+    if (errorByRange.Count == 0)
+    {
+        return;
+    }
+
+    Console.WriteLine("Compilation errors:");
+
+    foreach (var (range, errors) in errorByRange.OrderBy(i => i.Key))
+    {
+        Console.WriteLine();
+        Console.Write($"At line {range.StartLine}, column {range.StartColumn}:");
+
+        if (errors.Count == 1)
+        {
+            Console.Write(' ');
+            Console.WriteLine(errors[0].Message);
+        }
+        else
+        {
+            Console.WriteLine();
+
+            foreach (var error in errors)
+            {
+                Console.Write("- ");
+                Console.WriteLine(error.Message);
+            }
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(code.GetPeek(range));
+    }
+}

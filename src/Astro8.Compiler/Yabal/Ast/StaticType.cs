@@ -6,6 +6,6 @@ public enum StaticType
     Boolean,
     Void,
     Pointer,
-    UserType,
+    Struct,
     Assembly
 }

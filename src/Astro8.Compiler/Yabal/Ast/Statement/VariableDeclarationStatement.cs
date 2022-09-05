@@ -28,12 +28,13 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
 
         if (valueType == null)
         {
-            throw new InvalidOperationException("No type specified");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.VariableTypeNotSpecified);
+            valueType = LanguageType.Integer;
         }
 
         if (Type != null && valueType != Type)
         {
-            throw new InvalidOperationException("Type mismatch");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.InvalidType(Type, valueType));
         }
 
         var variable = new Variable(Name, pointer, valueType);

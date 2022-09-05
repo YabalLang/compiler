@@ -8,14 +8,15 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
     {
         if (builder.Block.Function is not {} function)
         {
-            throw new InvalidOperationException("Return statement outside of function");
+            builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.ReturnOutsideFunction);
+            return;
         }
 
         var type = Expression.BuildExpression(builder, false);
 
         if (function.ReturnType != type)
         {
-            throw new InvalidOperationException($"Return type mismatch: {function.ReturnType} != {type}");
+            builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.InvalidType(function.ReturnType, type));
         }
     }
 }

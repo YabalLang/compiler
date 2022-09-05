@@ -3,7 +3,7 @@ using Antlr4.Runtime;
 
 namespace Astro8.Yabal;
 
-public record struct SourceRange(int StartLine, int StartColumn, int EndLine, int EndColumn, int Index, int Length)
+public readonly record struct SourceRange(int StartLine, int StartColumn, int EndLine, int EndColumn, int Index, int Length) : IComparable<SourceRange>
 {
     public static readonly SourceRange Zero = default;
 
@@ -94,5 +94,10 @@ public record struct SourceRange(int StartLine, int StartColumn, int EndLine, in
     public override string ToString()
     {
         return $"{StartLine}:{StartColumn} - {EndLine}:{EndColumn} (index: {Index}, length: {Length})";
+    }
+
+    public int CompareTo(SourceRange other)
+    {
+        return Index.CompareTo(other.Index);
     }
 }

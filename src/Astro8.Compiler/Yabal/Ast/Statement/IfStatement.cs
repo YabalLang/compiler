@@ -37,7 +37,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
 
                 if (type != LanguageType.Boolean)
                 {
-                    throw new InvalidOperationException($"Expression must be of type boolean, but is {type}");
+                    builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.ExpectedBoolean(type));
                 }
 
                 builder.SetB(0);

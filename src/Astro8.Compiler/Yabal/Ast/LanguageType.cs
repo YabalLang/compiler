@@ -6,6 +6,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Boolean = new(StaticType.Boolean);
     public static readonly LanguageType Void = new(StaticType.Void);
     public static readonly LanguageType Assembly = new(StaticType.Assembly);
+
     public static LanguageType Pointer(LanguageType elementType) => new(StaticType.Pointer, elementType);
 
     public override int GetHashCode()
@@ -22,5 +23,15 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         if (other.StaticType == StaticType.Assembly || StaticType == StaticType.Assembly)
             return true;
         return StaticType == other.StaticType && ElementType == other.ElementType;
+    }
+
+    public override string ToString()
+    {
+        if (StaticType == StaticType.Pointer)
+        {
+            return $"{ElementType}[]";
+        }
+
+        return StaticType.ToString();
     }
 }

@@ -9,7 +9,9 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
     {
         if (!builder.TryGetVariable(Name, out var variable))
         {
-            throw new InvalidOperationException($"Variable {Name} not found");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.UndefinedVariable(Name));
+            builder.SetA(0);
+            return LanguageType.Integer;
         }
 
         builder.LoadA(variable.Pointer);
@@ -27,7 +29,9 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
     {
         if (!builder.TryGetVariable(Name, out var variable))
         {
-            throw new InvalidOperationException($"Variable {Name} not found");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.UndefinedVariable(Name));
+            builder.SetB(0);
+            return LanguageType.Integer;
         }
 
         builder.LoadB(variable.Pointer);

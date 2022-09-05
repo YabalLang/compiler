@@ -6,6 +6,12 @@ public record BreakStatement(SourceRange Range) : Statement(Range)
 {
     public override void Build(YabalBuilder builder)
     {
-        builder.Jump(builder.Block.Break ?? throw new InvalidOperationException("Cannot continue outside of a loop"));
+        if (builder.Block.Break is null)
+        {
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.BreakOutsideLoop);
+            return;
+        }
+
+        builder.Jump(builder.Block.Break);
     }
 }

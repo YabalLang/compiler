@@ -10,7 +10,8 @@ public record CreatePointerExpression(SourceRange Range, Expression Value) : Exp
 
         if (result != LanguageType.Integer)
         {
-            throw new InvalidOperationException("Integer expected");
+            builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.ArgumentMustBeInteger);
+            builder.SetA(0);
         }
 
         return LanguageType.Pointer(LanguageType.Integer);

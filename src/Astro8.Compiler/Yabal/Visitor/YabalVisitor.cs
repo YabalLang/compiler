@@ -358,7 +358,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitAsmExpression(YabalParser.AsmExpressionContext context)
     {
-        var instructions = new List<IAsmStatement>();
+        var instructions = new List<AsmStatement>();
         var items = context.asmItems().asmStatementItem();
 
         if (items != null)
@@ -369,17 +369,20 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 {
                     case YabalParser.AsmInstructionContext instruction:
                         instructions.Add(new AsmInstruction(
+                            item,
                             instruction.asmIdentifier().GetText(),
                             instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
                         ));
                         break;
                     case YabalParser.AsmLabelContext label:
                         instructions.Add(new AsmDefineLabel(
+                            item,
                             label.asmIdentifier().GetText()
                         ));
                         break;
                     case YabalParser.AsmRawValueContext rawValue:
                         instructions.Add(new AsmRawValue(
+                            item,
                             AsmArgumentVisitor.Instance.Visit(rawValue.asmArgument())
                         ));
                         break;

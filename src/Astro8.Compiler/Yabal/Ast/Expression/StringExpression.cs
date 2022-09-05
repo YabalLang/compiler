@@ -6,7 +6,7 @@ public record StringExpression(SourceRange Range, string Value) : Expression(Ran
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
-        builder.SetA(builder.GetString(Value));
+        builder.SetA_Large(builder.GetString(Value));
         return LanguageType.Pointer(LanguageType.Integer);
     }
 

@@ -11,7 +11,7 @@
 
   "Program": {
     "Path": "program_machine_code",
-    "Size": "0x3FFE"
+    "Size": "0xEF6E"
   },
 
   "Screen": {
@@ -29,7 +29,7 @@
     // Mapping of device in memory.
     "Devices": {
         "Program": "0x0000",
-        "Character": "0x3FFE",
+        "Character": "0xEF6E",
         "Screen": "0xEFFF"
     }
   }

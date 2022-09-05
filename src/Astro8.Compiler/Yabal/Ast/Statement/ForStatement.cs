@@ -41,7 +41,7 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 
                 if (type != LanguageType.Boolean)
                 {
-                    throw new InvalidOperationException($"Expression must be of type boolean, but is {type}");
+                    builder.AddError(ErrorLevel.Error, Test.Range, ErrorMessages.ExpectedBoolean(type));
                 }
 
                 builder.SetB(0);

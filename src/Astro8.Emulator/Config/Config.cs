@@ -4,7 +4,7 @@ public class ProgramConfig
 {
     public string Path { get; set; } = "program_machine_code";
 
-    public int Size { get; set; } = 0x3FFE;
+    public int Size { get; set; } = 0xEF6E;
 }
 
 public class Config

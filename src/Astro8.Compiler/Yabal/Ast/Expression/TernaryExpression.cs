@@ -23,7 +23,7 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
 
                 if (type != LanguageType.Boolean)
                 {
-                    throw new InvalidOperationException($"Expression must be of type boolean, but is {type}");
+                    builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.ExpectedBoolean(type));
                 }
 
                 builder.SetB(0);
@@ -40,9 +40,10 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         builder.Jump(end);
         builder.Mark(alternateLabel);
 
-        if (Alternate.BuildExpression(builder, isVoid) != leftType)
+        var alternateType = Alternate.BuildExpression(builder, isVoid);
+        if (alternateType != leftType)
         {
-            throw new InvalidOperationException("Alternate expression must have the same type as the consequent expression");
+            builder.AddError(ErrorLevel.Error, Alternate.Range, ErrorMessages.InvalidType(leftType, alternateType));
         }
 
         builder.Mark(end);

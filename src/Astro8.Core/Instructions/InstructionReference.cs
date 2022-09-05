@@ -34,6 +34,11 @@ public readonly record struct InstructionReference
         get => _data;
         init
         {
+            if (value >= MaxDataLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"Data length must be less than {MaxDataLength}.");
+            }
+
             _data = value;
             Raw = (_id << 11) | value;
         }

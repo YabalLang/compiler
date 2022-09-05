@@ -73,7 +73,7 @@ window.emulator = (function() {
                     updateValue = true;
                     break;
                 case 'update_counter':
-                    counter = parameter[0];
+                    counter = isNaN(parameter[0]) ? 0 : parameter[0];
                     updateValue = true;
                     break;
                 case 'update_pixel':

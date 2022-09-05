@@ -14,12 +14,12 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
     {
         if (IsSmall)
         {
-            builder.SetA(Value);
+            builder.SetA(GetValue(builder));
             builder.SetComment("load small integer");
         }
         else
         {
-            builder.SetA_Large(Value);
+            builder.SetA_Large(GetValue(builder));
             builder.SetComment("load large integer");
         }
 
@@ -30,18 +30,20 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
     {
         if (IsSmall)
         {
-            builder.SetB(Value);
+            builder.SetB(GetValue(builder));
             builder.SetComment("load small integer");
         }
         else
         {
-            builder.LoadA_Large(Value);
+            builder.LoadA_Large(GetValue(builder));
             builder.SwapA_B();
             builder.SetComment("load large integer");
         }
 
         return LanguageType.Integer;
     }
+
+    protected virtual int GetValue(YabalBuilder builder) => Value;
 
     bool IExpressionToB.OverwritesA => !IsSmall;
 

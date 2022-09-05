@@ -10,7 +10,7 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
     {
         LanguageType? returnType = null;
 
-        void CheckReturnType(LanguageType type)
+        void CheckReturnType(LanguageType type, SourceRange range)
         {
             if (returnType == null)
             {
@@ -18,7 +18,7 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             }
             else if (returnType != type)
             {
-                throw new InvalidOperationException("Return value type does not match with previous return value type");
+                builder.AddError(ErrorLevel.Error, range, ErrorMessages.SwitchReturnTypeMismatch(returnType, type));
             }
         }
         var valueType = Value.BuildExpression(builder, isVoid);
@@ -36,9 +36,11 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
 
             foreach (var caseValue in item.Cases)
             {
-                if (caseValue.BuildExpression(builder, isVoid) != valueType)
+                var caseType = caseValue.BuildExpression(builder, isVoid);
+
+                if (caseType != valueType)
                 {
-                    throw new InvalidOperationException("Case value type does not match switch value type");
+                    builder.AddError(ErrorLevel.Error, caseValue.Range, ErrorMessages.SwitchCaseTypeMismatch(valueType, caseType));
                 }
 
                 builder.LoadB(tempValue);
@@ -48,14 +50,14 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             }
 
             builder.Mark(returnValue);
-            CheckReturnType(item.Value.BuildExpression(builder, isVoid));
+            CheckReturnType(item.Value.BuildExpression(builder, isVoid), item.Value.Range);
             builder.Jump(end);
             builder.Mark(next);
         }
 
         if (Default != null)
         {
-            CheckReturnType(Default.BuildExpression(builder, isVoid));
+            CheckReturnType(Default.BuildExpression(builder, isVoid), Default.Range);
         }
 
         builder.Mark(end);

@@ -16,7 +16,7 @@ public sealed class CpuMemory<THandler>
     public CpuMemory(int[] data)
     {
         Data = data;
-        Instruction = new InstructionReference[0x3FFE];
+        Instruction = new InstructionReference[0xEF6E];
 
         UpdateInstructions();
     }

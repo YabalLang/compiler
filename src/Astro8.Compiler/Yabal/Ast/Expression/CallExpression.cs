@@ -22,7 +22,8 @@ public record CallExpression(
     {
         if (Callee is not IdentifierExpression id)
         {
-            throw new NotSupportedException();
+            builder.AddError(ErrorLevel.Error, Callee.Range, ErrorMessages.CallExpressionCalleeMustBeIdentifier);
+            return LanguageType.Void;
         }
 
         var function = builder.GetFunction(id.Name);
@@ -31,7 +32,7 @@ public record CallExpression(
 
         if (Arguments.Count != function.Parameters.Count)
         {
-            throw new InvalidOperationException($"Function {id.Name} expects {function.Parameters.Count} arguments, but {Arguments.Count} were provided.");
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.CallExpressionArgumentCountMismatch(id.Name, function.Parameters.Count, Arguments.Count));
         }
 
         var amount = Math.Min(Arguments.Count, function.Parameters.Count);
@@ -40,7 +41,7 @@ public record CallExpression(
         {
             if (argumentTypes[i] != function.Parameters[i].Type)
             {
-                throw new InvalidOperationException($"Argument {i} of function {id.Name} is of type {argumentTypes[i]}, but expected {function.Parameters[i].Type}.");
+                builder.AddError(ErrorLevel.Error, Range, ErrorMessages.ArgumentTypeMismatch(i, id.Name, function.Parameters[i].Type, argumentTypes[i]));
             }
         }
 
