@@ -31,6 +31,8 @@ public class BlockStack
 
     public BlockStack? Parent { get; set; }
 
+    public Dictionary<string, InstructionLabel> Labels { get; } = new();
+
     public InstructionLabel? Continue
     {
         get => _continue ?? Parent?.Continue;
@@ -58,6 +60,21 @@ public class BlockStack
         if (Parent != null)
         {
             return Parent.TryGetVariable(name, out variable);
+        }
+
+        return false;
+    }
+
+    public bool TryGetLabel(string name, [NotNullWhen(true)]  out InstructionLabel? label)
+    {
+        if (Labels.TryGetValue(name, out label))
+        {
+            return true;
+        }
+
+        if (Parent != null)
+        {
+            return Parent.TryGetLabel(name, out label);
         }
 
         return false;
@@ -744,5 +761,15 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         }
 
         return new StringExpression(context, parts[0].GetText());
+    }
+
+    public override Node VisitLabelStatement(YabalParser.LabelStatementContext context)
+    {
+        return new LabelStatement(context, context.identifierName().GetText());
+    }
+
+    public override Node VisitGotoStatement(YabalParser.GotoStatementContext context)
+    {
+        return new GotoStatement(context, context.identifierName().GetText());
     }
 }

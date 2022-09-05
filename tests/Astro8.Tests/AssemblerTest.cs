@@ -131,14 +131,16 @@ public class AssemblerTest
             var a = 0
 
             void functionA(int amount) {
-                a += amount
-                functionB()
+                var currentAmount = a
+                var alsoIncreaseWith = functionB()
+
+                a = currentAmount + amount + alsoIncreaseWith
             }
 
             void functionB() {
                 var value = 1
 
-                a += value
+                return value
             }
 
             functionA(2)

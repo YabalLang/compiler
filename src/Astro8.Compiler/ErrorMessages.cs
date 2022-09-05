@@ -54,4 +54,10 @@ public class ErrorMessages
 
     public static string UnaryOperatorNotApplicableToType(UnaryOperator @operator, LanguageType valueType)
         => $"Cannot use '{@operator}' operator on type '{valueType}'";
+
+    public static string DuplicateLabel(string name)
+        => $"Label {name} already exists";
+
+    public static string UndefinedLabel(string name)
+        => $"Label {name} was not found";
 }

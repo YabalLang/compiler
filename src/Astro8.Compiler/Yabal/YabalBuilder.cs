@@ -93,6 +93,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly YabalBuilder? _parent;
     private readonly InstructionBuilder _builder;
 
+    private readonly InstructionPointer _tempPointer;
     private readonly InstructionPointer _stackPointer;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
@@ -115,6 +116,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         ReturnValue = _builder.CreatePointer(name: "Yabal:return_value");
 
+        _tempPointer = _builder.CreatePointer(name: "Yabal:temp");
         _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer");
         _stack = new List<InstructionPointer>();
         _globals = new List<InstructionPointer>();
@@ -138,6 +140,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         ReturnValue = parent.ReturnValue;
 
         _stackPointer = parent._stackPointer;
+        _tempPointer = parent._tempPointer;
         Block = parent.Block;
         _stack = parent._stack;
         _globals = parent._globals;
@@ -357,12 +360,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _builder.SetA_Large(hasArguments ? setArguments : address);
         _builder.SwapA_C();
 
-        using (var variable = GetTemporaryVariable(global: true))
-        {
-            _builder.SetA_Large(returnAddress);
-            _builder.StoreA(variable);
-            _builder.LoadB(variable);
-        }
+        _builder.SetA_Large(returnAddress);
+        _builder.StoreA(_tempPointer);
+        _builder.LoadB(_tempPointer);
 
         _builder.Jump(_callLabel);
 
@@ -400,11 +400,15 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.StoreA(_stackPointer);
 
         // Restore values from the stack
-        builder.SetB(1);
+        builder.StoreA(_tempPointer);
 
         foreach (var pointer in _stack)
         {
+            builder.LoadA(_tempPointer);
+            builder.SetB(1);
             builder.Add();
+            builder.StoreA(_tempPointer);
+
             builder.LoadA_FromAddressUsingA();
             builder.StoreA(pointer);
         }
@@ -534,6 +538,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             builder.Mark(_stackPointer);
             builder.EmitRaw(0xEF6E - (1 + (_stack.Count * 16)), "stack pointer");
+
+            builder.Mark(_tempPointer);
+            builder.EmitRaw(0, "temporary pointer");
 
             foreach (var (_, function) in _functions)
             {

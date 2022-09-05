@@ -86,6 +86,16 @@ statement
 	| continueStatement
 	| breakStatement
 	| expressionStatement
+	| gotoStatement
+	| labelStatement
+    ;
+
+labelStatement
+    : identifierName Colon
+    ;
+
+gotoStatement
+    : Goto identifierName
     ;
 
 asmItems

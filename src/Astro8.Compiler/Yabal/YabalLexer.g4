@@ -68,6 +68,7 @@ CreatePointer       : 'create_pointer';
 SizeOf              : 'sizeof';
 IncludeBytes        : 'include_bytes';
 IncludeImage        : 'include_image';
+Goto                : 'goto';
 
 Identifier			: IdentifierStart IdentifierPart*;
 
