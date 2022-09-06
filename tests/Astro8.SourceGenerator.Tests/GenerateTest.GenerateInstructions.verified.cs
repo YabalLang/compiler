@@ -50,70 +50,70 @@ public partial class Cpu<THandler>
                 STA(ref context);
                 break;
             case 9:
-                STC(ref context);
-                break;
-            case 10:
                 ADD(ref context);
                 break;
-            case 11:
+            case 10:
                 SUB(ref context);
                 break;
-            case 12:
+            case 11:
                 MULT(ref context);
                 break;
-            case 13:
+            case 12:
                 DIV(ref context);
                 break;
-            case 14:
+            case 13:
                 JMP(ref context);
                 break;
-            case 15:
+            case 14:
                 JMPZ(ref context);
                 break;
-            case 16:
+            case 15:
                 JMPC(ref context);
                 break;
-            case 17:
+            case 16:
                 JREG(ref context);
                 break;
-            case 18:
+            case 17:
                 LDAIN(ref context);
                 break;
-            case 19:
+            case 18:
                 STAOUT(ref context);
                 break;
-            case 20:
+            case 19:
                 LDLGE(ref context);
                 break;
-            case 21:
+            case 20:
                 STLGE(ref context);
                 break;
-            case 22:
+            case 21:
                 LDW(ref context);
                 break;
-            case 23:
+            case 22:
                 SWP(ref context);
                 break;
-            case 24:
+            case 23:
                 SWPC(ref context);
                 break;
-            case 25:
+            case 24:
                 PCR(ref context);
                 break;
-            case 26:
+            case 25:
                 BSL(ref context);
                 break;
-            case 27:
+            case 26:
                 BSR(ref context);
                 break;
-            case 28:
+            case 27:
                 AND(ref context);
                 break;
-            case 29:
+            case 28:
                 OR(ref context);
                 break;
-            case 30:
+            case 29:
                 NOT(ref context);
+                break;
+            case 30:
+                BNK(ref context);
                 break;
         }
     }
@@ -242,25 +242,6 @@ public partial class Cpu<THandler>
         {
             // RA
             context.Cpu.Bus = context.Cpu.A;
-            // WM
-            context.Set(context.Cpu.MemoryIndex, context.Cpu.Bus);
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void STC(ref StepContext context)
-    {
-        // Step 2
-        {
-            // IR
-            context.Cpu.Bus = context.Instruction.Data;
-            // AW
-            context.Cpu.MemoryIndex = context.Cpu.Bus;
-        }
-        // Step 3
-        {
-            // RC
-            context.Cpu.Bus = context.Cpu.C;
             // WM
             context.Set(context.Cpu.MemoryIndex, context.Cpu.Bus);
         }
@@ -802,6 +783,18 @@ public partial class Cpu<THandler>
         
             // WA
             context.Cpu.A = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BNK(ref StepContext context)
+    {
+        // Step 2
+        {
+            // IR
+            context.Cpu.Bus = context.Instruction.Data;
+            // BNK
+            context.Cpu.Bank = context.Cpu.Bus;
         }
     }
 

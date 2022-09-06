@@ -222,6 +222,7 @@ void Execute(InvocationContext ctx)
     var code = File.ReadAllText(path.FullName);
     builder.CompileCode(code);
     PrintErrors(builder.Errors, code);
+    Console.WriteLine(builder.ToString());
 
     cpuBuilder.WithProgram(builder);
 

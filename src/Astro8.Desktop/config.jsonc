@@ -29,8 +29,8 @@
     // Mapping of device in memory.
     "Devices": {
         "Program": "0x0000",
-        "Character": "0xEF6E",
-        "Screen": "0xEFFF"
+        "Character": "0xD12A",
+        "Screen": "0xD26F"
     }
   }
 }

@@ -22,7 +22,9 @@ public abstract class Pointer
 
     public abstract bool IsSmall { get; }
 
-    public abstract Address Get(IReadOnlyDictionary<InstructionPointer, int> mappings);
+    public abstract int Bank { get; }
+
+    public abstract int Get(IReadOnlyDictionary<InstructionPointer, int> mappings);
 
     public void LoadToA(YabalBuilder builder, int offset)
     {
@@ -71,15 +73,15 @@ public class AbsolutePointer : Pointer
 
     public Address Value { get; }
 
-    public int Bank { get; }
-
     public override string Name => Value.ToString();
 
     public override bool IsSmall => Value.Offset < InstructionReference.MaxDataLength;
 
-    public override Address Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
+    public override int Bank => Value.Bank;
+
+    public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
     {
-        return Value;
+        return Value.Offset;
     }
 }
 
@@ -98,13 +100,12 @@ public class PointerWithOffset : Pointer
 
     public override bool IsSmall => _pointer.IsSmall;
 
-    public override Address Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
+    public override int Bank => _pointer.Bank;
+
+    public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
     {
         var value = _pointer.Get(mappings);
 
-        return value with
-        {
-            Offset = value.Offset + _offset
-        };
+        return value + _offset;
     }
 }

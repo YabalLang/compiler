@@ -1,0 +1,5 @@
+var chars = create_pointer(0xD12A, 1)
+
+while(true) {
+    chars[0] = 1
+}

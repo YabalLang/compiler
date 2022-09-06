@@ -7,15 +7,18 @@ public sealed class Screen<THandler> : MemoryDevice
     private readonly int[] _pixels;
     private readonly int[] _overlay;
 
-    public Screen(int address, THandler handler, int width = 64, int height = 64)
+    public Screen(int bank, int address, THandler handler, int width, int height)
         : base(address, width * height)
     {
         _handler = handler;
+        Bank = bank;
         Width = width;
         Height = height;
         _pixels = new int[width * height];
         _overlay = new int[width * height];
     }
+
+    public int Bank { get; }
 
     public int Width { get; }
 

@@ -23,6 +23,8 @@ public abstract class InstructionBuilderBase
 
     public void Nop() => EmitRaw(0);
 
+    public void SetBank(int value) => Emit("BNK", value);
+
     public void LoadA(PointerOrData address) => Emit("AIN", address);
 
     public void LoadB(PointerOrData address) => Emit("BIN", address);
@@ -45,8 +47,6 @@ public abstract class InstructionBuilderBase
 
     public void StoreA(PointerOrData address, int? index = null) => Emit("STA", address, index);
 
-    public void StoreC(PointerOrData address) => Emit("STC", address);
-
     public void Add() => Emit("ADD");
 
     public void Sub() => Emit("SUB");
@@ -64,8 +64,6 @@ public abstract class InstructionBuilderBase
     public void BitShiftLeft() => Emit("BSL");
 
     public void BitShiftRight() => Emit("BSR");
-
-    public void CounterToA() => Emit("CTRA");
 
     public void Jump(PointerOrData counter)
     {
@@ -111,7 +109,7 @@ public abstract class InstructionBuilderBase
 [SuppressMessage("ReSharper", "UseIndexFromEndExpression")]
 public class InstructionBuilder : InstructionBuilderBase, IProgram
 {
-    private readonly List<Either<InstructionPointer, InstructionItem>> _references = new();
+    private readonly ReferenceList _references = new();
     private readonly Dictionary<string, Instruction> _instructions;
 
     private int _pointerCount;
@@ -123,34 +121,6 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     }
 
     public int? Index { get; set; }
-
-    private readonly record struct InstructionItem(InstructionReference? Instruction, Pointer? Pointer, bool IsRaw = false, string? Comment = null)
-    {
-        public override string? ToString()
-        {
-            if (Instruction is null)
-            {
-                return $"{Pointer?.Name}";
-            }
-
-            if (Pointer is null)
-            {
-                if (IsRaw)
-                {
-                    return Instruction?.Raw.ToString();
-                }
-
-                return Instruction?.ToString();
-            }
-
-            if (IsRaw)
-            {
-                return $"{Instruction?.Raw} {Pointer.Name}";
-            }
-
-            return $"{Instruction.Value.ToString(withData: false)} {Pointer.Name}";
-        }
-    }
 
     public override int Count => _references.Count;
 
@@ -251,7 +221,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
         // Register
         var value = data.IsRight
-            ? new InstructionItem(InstructionReference.Create(instruction.Id, data.Right), null)
+            ? new InstructionItem(InstructionReference.Create(instruction.Id, data.Right))
             : new InstructionItem(InstructionReference.Create(instruction.Id), data.Left);
 
         if (index.HasValue)
@@ -295,189 +265,9 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         return -1;
     }
 
-    public int[] ToArray()
-    {
-        var labels = GetPointers(0, out var length);
-        var array = new int[length];
-        var i = 0;
-
-        foreach (var value in GetBytes(labels))
-        {
-            array[i++] = value;
-        }
-
-        return array;
-    }
-
     public void CopyTo(int[] array, int offset)
     {
-        var labels = GetPointers(offset, out var length);
-
-        if (array.Length < offset + length)
-        {
-            throw new ArgumentException("Array is too small", nameof(array));
-        }
-
-        var i = 0;
-
-        foreach (var value in GetBytes(labels))
-        {
-            array[offset + i++] = value;
-        }
-    }
-
-    public void ToHex(StreamWriter writer)
-    {
-        var labels = GetPointers(0, out _);
-
-        writer.Write("ASTRO-8 AEXE Executable file");
-
-        foreach (var value in GetBytes(labels))
-        {
-            writer.WriteLine();
-            writer.Write(value.ToString("x4"));
-        }
-    }
-
-    public void ToLogisimFile(StreamWriter writer, int minSize = 0)
-    {
-        var labels = GetPointers(0, out _);
-
-        writer.WriteLine();
-        writer.Write("v3.0 hex words addressed");
-
-        const int perLine = 8;
-        var i = 0;
-
-        foreach (var value in GetBytes(labels))
-        {
-            if (i % perLine == 0)
-            {
-                writer.WriteLine();
-                writer.Write($"{i:x3}: ");
-            }
-
-            writer.Write(value.ToString("x4"));
-            writer.Write(' ');
-            i++;
-        }
-
-        for (; i < minSize; i++)
-        {
-            if (i % perLine == 0)
-            {
-                writer.WriteLine();
-                writer.Write($"{i:x3}: ");
-            }
-
-            writer.Write("0000 ");
-        }
-    }
-
-    public void ToAssembly(TextWriter writer, bool addComments = false)
-    {
-        var pointers = GetPointers(0, out _);
-
-        foreach (var either in _references)
-        {
-            if (either is { IsLeft: true })
-            {
-                continue;
-            }
-
-            var (instruction, pointer, raw, comment) = either.Right;
-
-            if (!instruction.HasValue)
-            {
-                if (pointer is null)
-                {
-                    throw new InvalidOperationException("Invalid instruction");
-                }
-
-                writer.Write($"HERE {pointer.Get(pointers)}");
-            }
-            else if (pointer is null)
-            {
-                writer.Write(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
-            }
-            else
-            {
-                instruction = instruction.Value with
-                {
-                    Data = pointer.Get(pointers).Offset
-                };
-
-                writer.Write(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
-            }
-
-            if (addComments && comment != null)
-            {
-                writer.Write(" , ");
-                writer.Write(comment);
-            }
-
-            writer.WriteLine();
-        }
-    }
-
-    private IEnumerable<int> GetBytes(IReadOnlyDictionary<InstructionPointer, int> pointers, int i = 0)
-    {
-        foreach (var either in _references)
-        {
-            if (either is { IsLeft: true })
-            {
-                continue;
-            }
-
-            var (instruction, pointer, _, _) = either.Right;
-
-            if (!instruction.HasValue)
-            {
-                if (pointer is null)
-                {
-                    throw new InvalidOperationException("Invalid instruction");
-                }
-
-                yield return pointer.Get(pointers).Offset;
-            }
-            else if (pointer is null)
-            {
-                yield return instruction.Value;
-            }
-            else
-            {
-                yield return instruction.Value with
-                {
-                    Data = pointer.Get(pointers).Offset
-                };
-            }
-
-            i++;
-        }
-    }
-
-    private Dictionary<InstructionPointer, int> GetPointers(int i, out int length)
-    {
-        var labels = new Dictionary<InstructionPointer, int>();
-
-        length = 0;
-
-        foreach (var either in _references)
-        {
-            if (either is { IsLeft: true })
-            {
-                var label = either.Left;
-                labels[label] = i;
-                label.Address = i;
-            }
-            else
-            {
-                i++;
-                length++;
-            }
-        }
-
-        return labels;
+        Build(offset).CopyTo(array);
     }
 
     public override string ToString()
@@ -575,5 +365,38 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         _pointerCount += builder._pointerCount;
         _labelCount += builder._labelCount;
         _references.AddRange(builder._references);
+    }
+
+    public InstructionBuildResult Build(int offset = 0)
+    {
+        return new InstructionBuildResult(_references, offset);
+    }
+}
+
+public readonly record struct InstructionItem(InstructionReference? Instruction, Pointer? Pointer = null, bool IsRaw = false, string? Comment = null)
+{
+    public override string? ToString()
+    {
+        if (Instruction is null)
+        {
+            return $"{Pointer?.Name}";
+        }
+
+        if (Pointer is null)
+        {
+            if (IsRaw)
+            {
+                return Instruction?.Raw.ToString();
+            }
+
+            return Instruction?.ToString();
+        }
+
+        if (IsRaw)
+        {
+            return $"{Instruction?.Raw} {Pointer.Name}";
+        }
+
+        return $"{Instruction.Value.ToString(withData: false)} {Pointer.Name}";
     }
 }

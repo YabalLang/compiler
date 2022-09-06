@@ -18,13 +18,14 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
     private readonly int[] _values;
     private readonly bool[] _rom;
 
-    public CharacterDevice(int address, Screen<THandler>? screen, string? data = null, bool writeToConsole = false)
-        : base(address, (int)Math.Ceiling((double) (screen?.Width ?? 64) / RENDER_WIDTH * (screen?.Height ?? 64) / RENDER_WIDTH))
+    public CharacterDevice(int bank, int address, Screen<THandler>? screen, int screenWidth, int screenHeight, string? data = null, bool writeToConsole = false)
+        : base(address, (int)Math.Ceiling((double) screenWidth / RENDER_WIDTH * screenHeight / RENDER_WIDTH))
     {
         _screen = screen;
+        Bank = bank;
         _writeToConsole = writeToConsole;
-        _width = (screen?.Width ?? 64) / RENDER_WIDTH;
-        _height = (screen?.Height ?? 64) / RENDER_WIDTH;
+        _width = screenWidth / RENDER_WIDTH;
+        _height = screenHeight / RENDER_WIDTH;
         _values = new int[(_width + 1) * (_height + 1)];
 
         data ??= Default;
@@ -38,6 +39,8 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
 
         _rom = rom;
     }
+
+    public int Bank { get; }
 
     public override void Initialize(Span<int> span, bool isState)
     {

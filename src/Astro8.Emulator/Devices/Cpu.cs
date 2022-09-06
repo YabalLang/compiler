@@ -8,15 +8,15 @@ public sealed partial class Cpu<THandler> : IDisposable
     where THandler : Handler
 {
     private readonly Stopwatch _stopwatch;
-    private readonly CpuMemory<THandler> _memory;
+    private readonly CpuMemory<THandler>[] _banks;
     private readonly THandler _handler;
     private int _steps;
     private bool _halt;
     private CpuContext _context;
 
-    public Cpu(CpuMemory<THandler> memory, THandler handler)
+    public Cpu(CpuMemory<THandler>[] banks, THandler handler)
     {
-        _memory = memory;
+        _banks = banks;
         _handler = handler;
         _stopwatch = Stopwatch.StartNew();
     }
@@ -25,7 +25,7 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public bool Running => !_halt;
 
-    public CpuMemory<THandler> Memory => _memory;
+    public CpuMemory<THandler> Memory => _banks[_context.Bank];
 
     public int A
     {
@@ -49,6 +49,12 @@ public sealed partial class Cpu<THandler> : IDisposable
     {
         get => _context.ProgramCounter;
         set => _context = _context with { ProgramCounter = value };
+    }
+
+    public int Bank
+    {
+        get => _context.Bank;
+        set => _context = _context with { Bank = value };
     }
 
     public int ExpansionPort { get; set; }
@@ -93,44 +99,59 @@ public sealed partial class Cpu<THandler> : IDisposable
             return default;
         }
 
-        var instructionLength = _memory.Instruction.Length;
         var steps = 0;
 
-        fixed (int* dataPointer = _memory.Data)
-        fixed (InstructionReference* instructionPointer = _memory.Instruction)
+        fetch_memory:
+        var activeBankId = _context.Bank;
+        var activeBank = _banks[activeBankId];
+        var programMemory = _banks[0];
+        var instructionLength = programMemory.Instruction.Length;
+
+        fixed (int* bankPointer = activeBank.Data)
+        fixed (InstructionReference* instructionPointer = programMemory.Instruction)
         {
             var context = new StepContext(
-                _memory,
-                dataPointer,
+                activeBank,
+                bankPointer,
                 instructionPointer,
                 instructionLength
             );
 
-            // Store current values on the stack
-            context.Cpu = _context;
-
-            int i;
-
-            for (i = 0; i < amount && !_halt; i++)
+            try
             {
-                context.Cpu.MemoryIndex = context.Cpu.ProgramCounter;
+                // Store current values on the stack
+                context.Cpu = _context;
 
-                if (context.Cpu.MemoryIndex >= instructionLength)
+                int i;
+
+                for (i = 0; i < amount && !_halt; i++)
                 {
-                    _halt = true;
-                    break;
+                    context.Cpu.MemoryIndex = context.Cpu.ProgramCounter;
+
+                    if (context.Cpu.MemoryIndex >= instructionLength)
+                    {
+                        _halt = true;
+                        break;
+                    }
+
+                    context.Cpu.ProgramCounter += 1;
+                    context.Instruction = *(instructionPointer + context.Cpu.MemoryIndex);
+
+                    Step(ref context);
+                    steps++;
+
+                    if (context.Cpu.Bank != activeBankId)
+                    {
+                        // Bank changed, so the pointer should be updated
+                        goto fetch_memory;
+                    }
                 }
-
-                context.Cpu.ProgramCounter += 1;
-                context.Instruction = *(instructionPointer + context.Cpu.MemoryIndex);
-
-                Step(ref context);
-
-                steps++;
             }
-
-            // Restore values from the stack
-            _context = context.Cpu;
+            finally
+            {
+                // Restore values from the stack
+                _context = context.Cpu;
+            }
         }
 
         TotalSteps += steps;
@@ -163,7 +184,12 @@ public sealed partial class Cpu<THandler> : IDisposable
         writer.Write(C);
         writer.Write(ExpansionPort);
         writer.Write(_halt);
-        _memory.Save(writer);
+
+        foreach (var memory in _banks)
+        {
+            memory.Save(writer);
+        }
+
         _context.Save(writer);
         writer.Flush();
     }
@@ -176,24 +202,29 @@ public sealed partial class Cpu<THandler> : IDisposable
         C = reader.ReadInt32();
         ExpansionPort = reader.ReadInt32();
         _halt = reader.ReadBoolean();
-        _memory.Load(reader);
+
+        foreach (var memory in _banks)
+        {
+            memory.Load(reader);
+        }
+
         _context = CpuContext.Load(reader);
     }
 
     private unsafe ref struct StepContext
     {
-        private readonly CpuMemory<THandler> _cpuMemory;
+        private readonly CpuMemory<THandler> _bank;
         private readonly int* _memoryPointer;
         private readonly InstructionReference* _instructionPointer;
         private readonly int _instructionLength;
 
         public StepContext(
-            CpuMemory<THandler> cpuMemory,
+            CpuMemory<THandler> bank,
             int* memoryPointer,
             InstructionReference* instructionPointer,
             int instructionLength)
         {
-            _cpuMemory = cpuMemory;
+            _bank = bank;
             _memoryPointer = memoryPointer;
             _instructionPointer = instructionPointer;
             _instructionLength = instructionLength;
@@ -212,8 +243,9 @@ public sealed partial class Cpu<THandler> : IDisposable
         public void Set(int address, int value)
         {
             *(_memoryPointer + address) = value;
-            _cpuMemory.OnChange(address, value);
+            _bank.OnChange(address, value);
 
+            // TODO(Performance): Other than bank 0 the instructions shouldn't be updated.
             if (address < _instructionLength)
             {
                 *(_instructionPointer + address) = new InstructionReference(value);

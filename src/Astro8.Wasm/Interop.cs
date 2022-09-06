@@ -25,7 +25,7 @@ public static class Interop
         HexFile.Load(code, data);
 
         _cpu = CpuBuilder.Create<WasmHandler>()
-            .WithMemory(data)
+            .WithMemory(0, data)
             .WithScreen(0xEFFF)
             .WithCharacter(0xEF6E)
             .Create();

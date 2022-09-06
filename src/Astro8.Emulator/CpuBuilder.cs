@@ -10,7 +10,7 @@ public class CpuBuilder<THandler>
     private readonly THandler _handler;
     private Screen<THandler>? _screen;
     private CharacterDevice<THandler>? _character;
-    private CpuMemory<THandler>? _memory;
+    private readonly CpuMemory<THandler>?[] _memory = new CpuMemory<THandler>?[2]; // TODO: Make the amount of banks variable
 
     public CpuBuilder(THandler handler, Config config)
     {
@@ -18,73 +18,94 @@ public class CpuBuilder<THandler>
         _config = config;
     }
 
-    public CpuBuilder<THandler> WithMemory(int? size = null)
+    public CpuBuilder<THandler> WithMemory(int bank = 0, int? size = null)
     {
-        _memory = new CpuMemory<THandler>(size ?? _config.Memory.Size);
+        _memory[bank] = new CpuMemory<THandler>(size ?? _config.Memory.Size);
         return this;
     }
 
     public CpuBuilder<THandler> WithProgram(IProgram builder)
     {
-        if (_memory == null)
+        var memory = _memory[0];
+
+        if (memory == null)
         {
             throw new InvalidOperationException("Memory must be configured before program");
         }
 
-        builder.CopyTo(_memory.Data, 0);
-        _memory.UpdateInstructions();
+        builder.CopyTo(memory.Data, 0);
+        memory.UpdateInstructions();
 
         return this;
     }
 
-    public CpuBuilder<THandler> WithProgramFile(string? file = null, int? address = null)
+    public CpuBuilder<THandler> WithProgramFile(int bank, string? file = null, int? address = null)
     {
-        if (_memory == null)
+        var memory = _memory[bank];
+
+        if (memory == null)
         {
             throw new InvalidOperationException("Memory must be configured before program file");
         }
 
         HexFile.LoadFile(
             file ?? _config.Program.Path,
-            _memory.Data,
+            memory.Data,
             address ?? _config.Memory.Devices.Program
         );
-        _memory.UpdateInstructions();
+        memory.UpdateInstructions();
 
         return this;
     }
 
-    public CpuBuilder<THandler> WithMemory(int[] memory)
+    public CpuBuilder<THandler> WithMemory(int bank, int[] memory)
     {
-        _memory = new CpuMemory<THandler>(memory);
+        _memory[bank] = new CpuMemory<THandler>(memory);
         return this;
     }
 
-    public CpuBuilder<THandler> WithScreen(int? address = null)
+    public CpuBuilder<THandler> WithScreen(int bank = 1, int? address = null)
     {
-        _screen = new Screen<THandler>(address ?? _config.Memory.Devices.Screen, _handler);
+        _screen = new Screen<THandler>(
+            bank,
+            address ?? _config.Memory.Devices.Screen,
+            _handler,
+            _config.Screen.Width,
+            _config.Screen.Height
+        );
         return this;
     }
 
-    public CpuBuilder<THandler> WithCharacter(int? address = null, bool writeToConsole = false)
+    public CpuBuilder<THandler> WithCharacter(int bank = 1, int? address = null, bool writeToConsole = false)
     {
-        _character = new CharacterDevice<THandler>(address ?? _config.Memory.Devices.Character, _screen, writeToConsole: writeToConsole);
+        _character = new CharacterDevice<THandler>(
+            bank,
+            address ?? _config.Memory.Devices.Character,
+            _screen,
+            _config.Screen.Width,
+            _config.Screen.Height,
+            writeToConsole: writeToConsole
+        );
         return this;
     }
 
     public Cpu<THandler> Create()
     {
-        var memory = _memory ?? new CpuMemory<THandler>();
-        var cpu = new Cpu<THandler>(memory, _handler);
+        for (var i = 0; i < _memory.Length; i++)
+        {
+            _memory[i] ??= new CpuMemory<THandler>();
+        }
+
+        var cpu = new Cpu<THandler>(_memory!, _handler);
 
         if (_screen != null)
         {
-            memory.MapScreen(_screen);
+            _memory[_screen.Bank]!.MapScreen(_screen);
         }
 
         if (_character != null)
         {
-            memory.MapCharacterScreen(_character);
+            _memory[_character.Bank]!.MapCharacterScreen(_character);
         }
 
         return cpu;

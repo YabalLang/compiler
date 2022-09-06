@@ -186,6 +186,9 @@ public partial class Cpu<THandler>
         {{- else if step.MicroInstruction.IsWE }}
             // WE
             ExpansionPort = context.Cpu.Bus;
+        {{- else if step.MicroInstruction.IsBNK }}
+            // BNK
+            context.Cpu.Bank = context.Cpu.Bus;
         {{- end -}}
 
         {{- if step.MicroInstruction.IsCE }}

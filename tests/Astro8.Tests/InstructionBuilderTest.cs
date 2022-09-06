@@ -109,10 +109,22 @@ public class InstructionBuilderTest
         builder.CreatePointer(out var pointerA);
         builder.EmitRaw(0);
         builder.CreatePointer(out var pointerB);
-        builder.ToArray();
+        builder.Build();
 
         Assert.NotEqual(pointerA, pointerB);
         Assert.Equal(0, pointerA.Address);
         Assert.Equal(1, pointerB.Address);
+    }
+
+    [Fact]
+    public void BNK()
+    {
+        var builder = new InstructionBuilder();
+        builder.SetBank(1);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Bank);
     }
 }

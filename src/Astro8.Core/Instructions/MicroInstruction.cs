@@ -22,15 +22,16 @@ public readonly record struct MicroInstruction
     public const int RE = 0b0000000001110000;
 
     private const int WriteMask = 0b0000011110000000;
-    public const int WA = 0b0000000010000000;
-    public const int WB = 0b0000000100000000;
-    public const int WC = 0b0000000110000000;
-    public const int IW = 0b0000001000000000;
-    public const int DW = 0b0000001010000000;
-    public const int WM = 0b0000001100000000;
-    public const int J  = 0b0000001110000000;
-    public const int AW = 0b0000010000000000;
-    public const int WE = 0b0000010010000000;
+    public const int WA =  0b0000000010000000;
+    public const int WB =  0b0000000100000000;
+    public const int WC =  0b0000000110000000;
+    public const int IW =  0b0000001000000000;
+    public const int DW =  0b0000001010000000;
+    public const int WM =  0b0000001100000000;
+    public const int J  =  0b0000001110000000;
+    public const int AW =  0b0000010000000000;
+    public const int WE =  0b0000010010000000;
+    public const int BNK = 0b0000010100000000;
 
     private const int MiscMask = 0b1111100000000000;
     public const int FL = 0b0000100000000000;
@@ -71,6 +72,7 @@ public readonly record struct MicroInstruction
             ["OR"] = OR,
             ["SL"] = SL,
             ["SR"] = SR,
+            ["BNK"] = BNK,
         };
 
     private readonly int _valueAlu;
@@ -113,6 +115,7 @@ public readonly record struct MicroInstruction
         IsJ  = _valueWrite == J;
         IsAW = _valueWrite == AW;
         IsWE = _valueWrite == WE;
+        IsBNK = _valueWrite == BNK;
 
         IsEO = (_valueMisc & EO) == EO;
         IsCE = (_valueMisc & CE) == CE;
@@ -252,6 +255,11 @@ public readonly record struct MicroInstruction
     /// Write from bus to expansion port
     /// </summary>
     public bool IsWE { get; }
+
+    /// <summary>
+    /// Change bank, changes the memory bank register to the value
+    /// </summary>
+    public bool IsBNK { get; }
 
     #endregion
 

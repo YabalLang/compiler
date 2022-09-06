@@ -2,9 +2,11 @@
 
 public class MemoryDeviceConfig
 {
-    public int Screen { get; set; } = 0xEFFF;
+    // TODO: Allow to specify bank
 
-    public int Character { get; set; } = 0xEF6E;
+    public int Screen { get; set; } = 0xD26F;
+
+    public int Character { get; set; } = 0xD12A;
 
     public int Program { get; set; } = 0x0000;
 }

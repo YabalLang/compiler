@@ -10,6 +10,7 @@ public record struct CpuContext
     public bool FlagA;
     public bool FlagB;
     public int ProgramCounter;
+    public int Bank;
 
     public void Save(BinaryWriter writer)
     {
@@ -21,6 +22,7 @@ public record struct CpuContext
         writer.Write(FlagA);
         writer.Write(FlagB);
         writer.Write(ProgramCounter);
+        writer.Write(Bank);
     }
 
     public static CpuContext Load(BinaryReader reader)
@@ -34,7 +36,8 @@ public record struct CpuContext
             MemoryIndex = reader.ReadInt32(),
             FlagA = reader.ReadBoolean(),
             FlagB = reader.ReadBoolean(),
-            ProgramCounter = reader.ReadInt32()
+            ProgramCounter = reader.ReadInt32(),
+            Bank = reader.ReadInt32()
         };
     }
 }

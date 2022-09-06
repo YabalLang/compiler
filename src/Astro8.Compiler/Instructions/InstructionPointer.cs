@@ -18,6 +18,8 @@ public class InstructionPointer : Pointer
 
     public override bool IsSmall { get; }
 
+    public override int Bank => 0;
+
     public int Size { get; }
 
     public List<Variable> AssignedVariables { get; } = new();
@@ -35,13 +37,13 @@ public class InstructionPointer : Pointer
         return $"{Name}";
     }
 
-    public override Address Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
+    public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
     {
         if (!mappings.TryGetValue(this, out var value))
         {
             throw new InvalidOperationException($"No address has been set for {this}");
         }
 
-        return new Address(0, value);
+        return value;
     }
 }

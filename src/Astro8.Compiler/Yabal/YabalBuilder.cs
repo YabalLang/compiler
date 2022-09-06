@@ -369,32 +369,31 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public void CopyTo(int[] array, int offset)
     {
-        var builder = CreateFinalBuilder();
-
-        builder.CopyTo(array, offset);
+        var builder = Build(offset);
+        builder.CopyTo(array);
     }
 
     public void ToAssembly(StreamWriter writer, bool addComments = false)
     {
-        CreateFinalBuilder().ToAssembly(writer, addComments);
+        Build().ToAssembly(writer, addComments);
     }
 
     public void ToHex(StreamWriter writer)
     {
-        CreateFinalBuilder().ToHex(writer);
+        Build().ToHex(writer);
     }
 
     public void ToLogisimFile(StreamWriter writer, int minSize = 0)
     {
-        CreateFinalBuilder().ToLogisimFile(writer, minSize);
+        Build().ToLogisimFile(writer, minSize);
     }
 
     public override string ToString()
     {
-        return CreateFinalBuilder().ToString();
+        return _builder.ToString();
     }
 
-    private InstructionBuilder CreateFinalBuilder()
+    private InstructionBuildResult Build(int offset = 0)
     {
         var builder = new InstructionBuilder();
 
@@ -402,7 +401,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.AddRange(_builder);
         AddStrings(builder);
 
-        return builder;
+        return builder.Build(offset);
     }
 
     private void AddHeader(InstructionBuilder builder)
