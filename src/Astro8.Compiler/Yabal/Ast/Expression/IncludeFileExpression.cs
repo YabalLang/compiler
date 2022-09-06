@@ -9,7 +9,7 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Typ
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
         builder.SetA(builder.GetFile(Path, Type));
-        return LanguageType.Array(LanguageType.Integer);
+        return LanguageType.Pointer(LanguageType.Integer);
     }
 
     public override bool OverwritesB => false;

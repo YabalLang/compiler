@@ -48,7 +48,7 @@ public class AssemblerTest
         var value = builder.CreatePointer("Counter");
         var function = builder.CreateLabel("Function");
         var skipFunction = builder.CreateLabel("Main");
-        var stackVariable = builder.GetStackVariable(0);
+        var stackVariable = builder.Stack.Get(0, 1);
 
         builder.Jump(skipFunction);
 

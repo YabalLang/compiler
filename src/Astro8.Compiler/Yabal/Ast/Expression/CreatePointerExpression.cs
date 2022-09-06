@@ -14,7 +14,7 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, Langu
             builder.SetA(0);
         }
 
-        return LanguageType.Array(Type);
+        return LanguageType.Pointer(Type);
     }
 
     object? IConstantValue.Value { get; } = Value is IConstantValue { Value: int value }

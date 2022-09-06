@@ -13,23 +13,28 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, Expre
     public override void Build(YabalBuilder builder)
     {
         var block = builder.Block;
-        var pointer = block.IsGlobal
-            ? builder.GetGlobalVariable(block.StackOffset++)
-            : builder.GetStackVariable(block.StackOffset++);
 
         var valueType = Type;
 
         if (Value != null)
         {
             valueType = Value.BuildExpression(builder, false);
-            builder.StoreA(pointer);
-            builder.SetComment($"store value in variable '{Name}'");
         }
 
         if (valueType == null)
         {
             builder.AddError(ErrorLevel.Error, Range, ErrorMessages.VariableTypeNotSpecified);
             valueType = LanguageType.Integer;
+        }
+
+        var pointer = block.IsGlobal
+            ? builder.Globals.GetNext(block, valueType)
+            : builder.Stack.GetNext(block, valueType);
+
+        if (Value != null)
+        {
+            builder.StoreA(pointer);
+            builder.SetComment($"store value in variable '{Name}'");
         }
 
         if (Type != null && valueType != Type)

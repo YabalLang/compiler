@@ -17,19 +17,41 @@ public class BlockStack
 {
     public readonly Stack<TemporaryVariable> TemporaryVariablesStack = new();
 
+    private readonly Dictionary<int, int> _offsetsBySize = new();
     private readonly Dictionary<string, Variable> _variables = new();
     private InstructionLabel? _continue;
     private InstructionLabel? _break;
 
+    public BlockStack()
+    {
+    }
+
+    public BlockStack(BlockStack parent, FunctionDeclarationStatement? function = null)
+    {
+        IsGlobal = parent.IsGlobal && function == null;
+        Function = parent.Function ?? function;
+        Parent = parent;
+        _offsetsBySize = parent._offsetsBySize.ToDictionary(x => x.Key, x => x.Value);
+    }
+
     public IReadOnlyDictionary<string, Variable> Variables => _variables;
 
-    public int StackOffset { get; set; }
+    public int GetNextOffset(int size)
+    {
+        if (!_offsetsBySize.TryGetValue(size, out var offset))
+        {
+            offset = 0;
+        }
+
+        _offsetsBySize[size] = offset + 1;
+        return offset;
+    }
 
     public bool IsGlobal { get; set; }
 
-    public FunctionDeclarationStatement? Function { get; set; }
+    public FunctionDeclarationStatement? Function { get; }
 
-    public BlockStack? Parent { get; set; }
+    public BlockStack? Parent { get; }
 
     public Dictionary<string, InstructionLabel> Labels { get; } = new();
 
@@ -682,7 +704,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new CreatePointerExpression(
             context,
             VisitExpression(context.expression()),
-            context.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Array(LanguageType.Integer)
+            context.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Pointer(LanguageType.Integer)
         );
     }
 

@@ -5,8 +5,7 @@ public enum StaticType
     Integer,
     Boolean,
     Void,
-    Array,
+    Pointer,
     Struct,
-    Assembly,
-    Pointer
+    Assembly
 }

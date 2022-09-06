@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Collections;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.AccessControl;
 using Antlr4.Runtime;
 using Astro8.Yabal;
 using Astro8.Yabal.Ast;
@@ -14,6 +14,63 @@ public enum ErrorLevel
 {
     Error,
     Warning
+}
+
+public class PointerCollection : IEnumerable<InstructionPointer>
+{
+    private readonly Dictionary<int, List<InstructionPointer>> _pointersBySize = new();
+    private readonly string _name;
+
+    public PointerCollection(string name)
+    {
+        _name = name;
+    }
+
+    public int Count => _pointersBySize.Sum(i => i.Value.Count);
+
+    public InstructionPointer Get(int index, int size)
+    {
+        if (!_pointersBySize.TryGetValue(size, out var pointers))
+        {
+            pointers = new List<InstructionPointer>();
+            _pointersBySize[size] = pointers;
+        }
+
+        if (index < pointers.Count)
+        {
+            return pointers[index];
+        }
+
+        var pointer = new InstructionPointer($"{_name}:{index}");
+        pointers.Add(pointer);
+        return pointer;
+    }
+
+    public InstructionPointer GetNext(int size)
+    {
+        var index = _pointersBySize.TryGetValue(size, out var pointers) ? pointers.Count : 0;
+        return Get(index, size);
+    }
+
+    public InstructionPointer GetNext(BlockStack block, int size)
+    {
+        return Get(block.GetNextOffset(size), size);
+    }
+
+    public InstructionPointer GetNext(BlockStack block, LanguageType type)
+    {
+        return GetNext(block, type.Size);
+    }
+
+    public IEnumerator<InstructionPointer> GetEnumerator()
+    {
+        return _pointersBySize.SelectMany(i => i.Value).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 }
 
 public record CompileError(SourceRange Range, ErrorLevel Level, string Message);
@@ -97,13 +154,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionPointer _stackPointer;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
-    private readonly List<InstructionPointer> _stack;
     private readonly Dictionary<string, Function> _functions = new();
-    private readonly Dictionary<string, LanguageStruct> _structs = new();
     private readonly Dictionary<string, InstructionPointer> _strings;
     private readonly Dictionary<(string, FileType type), InstructionPointer> _files;
-    private readonly List<InstructionPointer> _globals;
-    private readonly List<InstructionPointer> _temporaryPointers;
     private readonly Dictionary<SourceRange, List<CompileError>> _errors;
     private readonly BlockStack _globalBlock;
     private bool _hasCall;
@@ -119,9 +172,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         _tempPointer = _builder.CreatePointer(name: "Yabal:temp");
         _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer");
-        _stack = new List<InstructionPointer>();
-        _globals = new List<InstructionPointer>();
-        _temporaryPointers = new List<InstructionPointer>();
+        Stack = new PointerCollection("Stack");
+        Globals = new PointerCollection("Global");
+        Temporary = new PointerCollection("Temp");
         _strings = new Dictionary<string, InstructionPointer>();
         _files = new Dictionary<(string, FileType), InstructionPointer>();
         _errors = new Dictionary<SourceRange, List<CompileError>>();
@@ -143,14 +196,20 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _stackPointer = parent._stackPointer;
         _tempPointer = parent._tempPointer;
         Block = parent.Block;
-        _stack = parent._stack;
-        _globals = parent._globals;
-        _temporaryPointers = parent._temporaryPointers;
+        Stack = parent.Stack;
+        Globals = parent.Globals;
+        Temporary = parent.Temporary;
         _globalBlock = parent._globalBlock;
         _strings = parent._strings;
         _files = parent._files;
         _errors = parent._errors;
     }
+
+    public PointerCollection Stack { get; }
+
+    public PointerCollection Globals { get; }
+
+    public PointerCollection Temporary { get; }
 
     public IReadOnlyDictionary<SourceRange, List<CompileError>> Errors => _errors;
 
@@ -191,43 +250,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public InstructionPointer GetStackVariable(int index)
-    {
-        if (index < _stack.Count)
-        {
-            return _stack[index];
-        }
-
-        var pointer = new InstructionPointer($"Stack:{index}");
-        _stack.Add(pointer);
-        return pointer;
-    }
-
-    public InstructionPointer GetGlobalVariable(int index)
-    {
-        if (index < _globals.Count)
-        {
-            return _globals[index];
-        }
-
-        var pointer = new InstructionPointer($"Global:{index}");
-        _globals.Add(pointer);
-        return pointer;
-    }
-
     public InstructionPointer ReturnValue { get; set; }
 
     public BlockStack Block { get; private set; }
 
     public BlockStack PushBlock(FunctionDeclarationStatement? function = null)
     {
-        return Block = new BlockStack
-        {
-            IsGlobal = Block.IsGlobal && function == null,
-            Function = Block.Function ?? function,
-            Parent = Block,
-            StackOffset = function == null ? Block.StackOffset : 0
-        };
+        return Block = new BlockStack(Block, function);
     }
 
     public void PopBlock()
@@ -287,32 +316,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return function;
     }
 
-    public bool TryGetStruct(string name, [NotNullWhen(true)] out LanguageStruct? @struct)
-    {
-        if (_structs.TryGetValue(name, out @struct))
-        {
-            return true;
-        }
-
-        if (_parent != null)
-        {
-            return _parent.TryGetStruct(name, out @struct);
-        }
-
-        @struct = default;
-        return false;
-    }
-
-    public LanguageStruct GetStruct(string name)
-    {
-        if (!TryGetStruct(name, out var function))
-        {
-            throw new KeyNotFoundException($"Struct '{name}' not found");
-        }
-
-        return function;
-    }
-
     public InstructionPointer GetString(string value)
     {
         if (_strings.TryGetValue(value, out var pointer))
@@ -355,7 +358,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.StoreB_ToAddressInA();
 
         // Store values on stack
-        foreach (var pointer in _stack)
+        foreach (var pointer in Stack)
         {
             builder.SetB(1);
             builder.Add();
@@ -366,7 +369,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         // Increment stack pointer
         builder.LoadA(_stackPointer);
-        builder.SetB(_stack.Count + 1);
+        builder.SetB(Stack.Count + 1);
         builder.Add();
         builder.StoreA(_stackPointer);
 
@@ -400,8 +403,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             for (var i = 0; i < arguments!.Count; i++)
             {
                 var argument = arguments[i];
-                argumentTypes[i] = argument.BuildExpression(this, false);
-                _builder.StoreA(GetStackVariable(i));
+                var type = argument.BuildExpression(this, false);
+                argumentTypes[i] = type;
+                _builder.StoreA(Stack.Get(i, type.Size));
             }
 
             _builder.Jump(address);
@@ -422,14 +426,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         // Decrement the stack pointer
         builder.LoadA(_stackPointer);
-        builder.SetB(_stack.Count + 1);
+        builder.SetB(Stack.Count + 1);
         builder.Sub();
         builder.StoreA(_stackPointer);
 
         // Restore values from the stack
         builder.StoreA(_tempPointer);
 
-        foreach (var pointer in _stack)
+        foreach (var pointer in Stack)
         {
             builder.LoadA(_tempPointer);
             builder.SetB(1);
@@ -525,9 +529,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     private void AddHeader(InstructionBuilder builder)
     {
-        if (_globals.Count == 0 &&
-            _temporaryPointers.Count == 0 &&
-            _stack.Count == 0 &&
+        if (Globals.Count == 0 &&
+            Temporary.Count == 0 &&
+            Stack.Count == 0 &&
             _functions.Count == 0 &&
             !_hasCall)
         {
@@ -538,24 +542,19 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         builder.Jump(programLabel);
 
-        foreach (var pointer in _globals)
+        foreach (var pointer in Globals.Concat(Temporary).Concat(Stack))
         {
             builder.Mark(pointer);
-            builder.EmitRaw(0, $"global value ({pointer.AssignedVariableNames})");
-        }
 
-        foreach (var pointer in _temporaryPointers)
-        {
-            builder.Mark(pointer);
-            builder.EmitRaw(0, "temporary global value");
-        }
+            for (var i = 0; i < pointer.Size; i++)
+            {
+                builder.EmitRaw(0);
 
-        foreach (var pointer in _stack)
-        {
-            builder.Mark(pointer);
-            builder.EmitRaw(0, pointer.AssignedVariables.Count > 0
-                ? $"stack value ({pointer.AssignedVariableNames})"
-                : "temporary stack value");
+                if (i == 0)
+                {
+                    builder.SetComment($"value ({pointer.AssignedVariableNames})");
+                }
+            }
         }
 
         if (_hasCall || _functions.Count > 0)
@@ -564,7 +563,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
-            builder.EmitRaw(0xEF6E - (1 + (_stack.Count * 16)), "stack pointer");
+            builder.EmitRaw(0xEF6E - (1 + (Stack.Count * 16)), "stack pointer");
 
             builder.Mark(_tempPointer);
             builder.EmitRaw(0, "temporary pointer");
@@ -641,11 +640,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _functions.Add(statement.Name, statement);
     }
 
-    public void DeclareStruct(LanguageStruct value)
-    {
-        _structs.Add(value.Name, value);
-    }
-
     public void SetComment(string comment)
     {
         _builder.SetComment(comment);
@@ -656,7 +650,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _builder.SetPointerOffset(offset);
     }
 
-    public TemporaryVariable GetTemporaryVariable(bool global = false)
+    public TemporaryVariable GetTemporaryVariable(bool global = false, int size = 1)
     {
         var block = global ? _globalBlock : Block;
 
@@ -666,13 +660,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         var pointer = block.IsGlobal
-            ? new InstructionPointer("Temp:" + _temporaryPointers.Count)
-            : GetStackVariable(block.StackOffset++);
-
-        if (block.IsGlobal)
-        {
-            _temporaryPointers.Add(pointer);
-        }
+            ? Temporary.GetNext(size)
+            : Stack.GetNext(block, size);
 
         return new TemporaryVariable(pointer, Block);
     }

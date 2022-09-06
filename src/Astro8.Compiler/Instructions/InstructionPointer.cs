@@ -6,12 +6,15 @@ public class InstructionPointer
 {
     private int? _address;
 
-    public InstructionPointer(string? name)
+    public InstructionPointer(string? name, int size = 1)
     {
         Name = name;
+        Size = size;
     }
 
     public string? Name { get; }
+
+    public int Size { get; }
 
     public List<Variable> AssignedVariables { get; } = new();
 

@@ -26,7 +26,7 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
     public override LanguageType VisitArrayType(YabalParser.ArrayTypeContext context)
     {
         return new LanguageType(
-            StaticType.Array,
+            StaticType.Pointer,
             ElementType: Visit(context.type())
         );
     }

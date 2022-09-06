@@ -50,7 +50,7 @@ public record FunctionDeclarationStatement(
 
         foreach (var parameter in Parameters)
         {
-            var pointer = builder.GetStackVariable(block.StackOffset++);
+            var pointer = builder.Stack.GetNext(block, parameter.Type.Size);
             var variable = new Variable(
                 parameter.Name,
                 pointer,

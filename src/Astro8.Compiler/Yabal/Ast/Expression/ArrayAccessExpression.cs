@@ -66,7 +66,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
     {
         var type = array.BuildExpression(builder, false);
 
-        if (type != LanguageType.Assembly && (type.StaticType != StaticType.Array || type.ElementType == null))
+        if (type != LanguageType.Assembly && (type.StaticType != StaticType.Pointer || type.ElementType == null))
         {
             builder.AddError(ErrorLevel.Error, array.Range, ErrorMessages.InvalidArrayAccess);
             builder.SetA(0);
