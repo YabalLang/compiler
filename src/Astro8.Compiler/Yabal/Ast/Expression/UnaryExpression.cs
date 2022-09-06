@@ -1,35 +1,30 @@
 ﻿using Astro8.Instructions;
-using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
 public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator Operator) : Expression(Range), IComparisonExpression
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    public override void Initialize(YabalBuilder builder)
+    {
+        Value.Initialize(builder);
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         switch (Operator)
         {
             case UnaryOperator.Not:
-            {
-                var valueType = Value.BuildExpression(builder, isVoid);
-
-                if (valueType != LanguageType.Integer)
-                {
-                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
-                }
-
+                Value.BuildExpression(builder, isVoid);
                 builder.Not();
-                return LanguageType.Integer;
-            }
+                break;
+            case UnaryOperator.Minus:
+                Value.BuildExpression(builder, isVoid);
+                builder.SetB(-1);
+                builder.Mult();
+                break;
             case UnaryOperator.Negate:
             {
-                var valueType = Value.BuildExpression(builder, isVoid);
-
-                if (valueType != LanguageType.Boolean)
-                {
-                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
-                }
-
+                Value.BuildExpression(builder, isVoid);
                 var skip = builder.CreateLabel();
 
                 builder.SetB(1);
@@ -37,21 +32,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
                 builder.JumpIfZero(skip);
                 builder.SetA(1);
                 builder.Mark(skip);
-
-                return LanguageType.Boolean;
-            }
-            case UnaryOperator.Minus:
-            {
-                var valueType = Value.BuildExpression(builder, isVoid);
-
-                if (valueType != LanguageType.Integer)
-                {
-                    builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.UnaryOperatorNotApplicableToType(Operator, valueType));
-                }
-
-                builder.SetB(-1);
-                builder.Mult();
-                return LanguageType.Integer;
+                break;
             }
             default:
                 throw new InvalidOperationException();
@@ -72,20 +53,14 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
             return;
         }
 
-        var type = Value.BuildExpression(builder, false);
-
-        if (type != LanguageType.Boolean)
-        {
-            builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.ExpectedBoolean(type));
-        }
-
+        Value.BuildExpression(builder, false);
         builder.SetB(0);
         builder.Sub();
         builder.JumpIfZero(falseLabel);
         builder.Jump(trueLabel);
     }
 
-    public override Expression Optimize(BlockCompileStack block)
+    public override Expression Optimize()
     {
         return Operator switch
         {
@@ -97,4 +72,12 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => Operator switch
+    {
+        UnaryOperator.Not => LanguageType.Integer,
+        UnaryOperator.Negate => LanguageType.Boolean,
+        UnaryOperator.Minus => LanguageType.Integer,
+        _ => throw new InvalidOperationException()
+    };
 }

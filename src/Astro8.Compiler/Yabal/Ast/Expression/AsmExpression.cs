@@ -20,7 +20,7 @@ public record AsmStatement(SourceRange Range);
 
 public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         var labels = new Dictionary<string, InstructionPointer>();
 
@@ -123,9 +123,9 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                 }
             }
         }
-
-        return LanguageType.Assembly;
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => LanguageType.Assembly;
 }

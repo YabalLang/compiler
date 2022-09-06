@@ -148,7 +148,7 @@ public class AssemblerTest
                 a = currentAmount + amount + alsoIncreaseWith
             }
 
-            void functionB() {
+            int functionB() {
                 var value = 1
 
                 return value
@@ -165,6 +165,30 @@ public class AssemblerTest
 
         var address = builder.GetVariable("a").Pointer.Address;
         Assert.Equal(3, cpu.Memory[address]);
+    }
+
+    [Fact]
+    public void FunctionArgument()
+    {
+        const string code = """
+            var called = 0
+
+            int get(int value) {
+                called = 1
+                return value
+            }
+
+            var value = get(1)
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("called").Pointer.Address]);
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
     }
 
     [Fact]
@@ -212,7 +236,7 @@ public class AssemblerTest
         const string code = """
             var result = 0
 
-            void increment(int amount) {
+            void increment_loop(int amount) {
                 asm {
                     _increment:
                     STA 1
@@ -224,7 +248,7 @@ public class AssemblerTest
                 }
             }
 
-            increment(10)
+            increment_loop(10)
             """;
 
         var builder = new YabalBuilder();
@@ -237,21 +261,18 @@ public class AssemblerTest
         Assert.Equal(10, cpu.Memory[address]);
     }
 
-    [Fact]
-    public void Array()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Array(bool @const)
     {
-        const string code = """
-            int[] create_memory(int address) {
-                return asm {
-                    AIN @address
-                }
-            }
-
+        var code = $$"""
             var index = 1
             var value = 2
-            var memory = create_memory(4095)
+            {{(@const ? "const " : "")}}var memory = create_pointer(4095)
 
             memory[index] = value
+            value = memory[index]
             """;
 
         var builder = new YabalBuilder();
@@ -260,8 +281,13 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal(4095, cpu.Memory[builder.GetVariable("memory").Pointer.Address]);
+        if (!@const)
+        {
+            Assert.Equal(4095, cpu.Memory[builder.GetVariable("memory").Pointer.Address]);
+        }
+
         Assert.Equal(2, cpu.Memory[4096]);
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
     }
 
     [Theory]
@@ -320,27 +346,6 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(0, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
-    }
-
-    [Fact]
-    public void ArraySetter()
-    {
-        const string code = $$"""
-            int get_value() {
-                return 0
-            }
-
-            var data = create_pointer(4095)
-            data[get_value()] = 1
-            """;
-
-        var builder = new YabalBuilder();
-        builder.CompileCode(code);
-
-        var cpu = Create(builder);
-        cpu.Run();
-
-        Assert.Equal(1, cpu.Memory[4095]);
     }
 
     [Theory]
@@ -413,7 +418,9 @@ public class AssemblerTest
     {
         var code = $$"""
             var result = 0
-            var value = {{step}}
+            var value = 0
+
+            value = {{step}}
 
             if (value == 1) {
                 result = 1
@@ -459,7 +466,7 @@ public class AssemblerTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void Struct(bool @const)
+    public void StructToArray(bool @const)
     {
         var code = $$"""
             struct Test {
@@ -468,16 +475,16 @@ public class AssemblerTest
             }
 
             {{(@const ? "const " : "")}}var pointer = create_pointer(4095, Test)
-            var first = pointer[0]
+
+            Test first
             first.a = 1
             first.b = 2
+            pointer[0] = first
 
-            var offset = 1
-            var second = pointer[offset]
+            Test second
             second.a = 3
             second.b = 4
-
-            var value = pointer[0].a + pointer[0].b + pointer[offset].a + pointer[1].b
+            pointer[1] = second
             """;
 
         var builder = new YabalBuilder();
@@ -486,14 +493,109 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal(4095, cpu.Memory[builder.GetVariable("first").Pointer.Address]);
         Assert.Equal(1, cpu.Memory[4095]);
         Assert.Equal(2, cpu.Memory[4096]);
 
-        Assert.Equal(4097, cpu.Memory[builder.GetVariable("second").Pointer.Address]);
         Assert.Equal(3, cpu.Memory[4097]);
         Assert.Equal(4, cpu.Memory[4098]);
+    }
 
-        Assert.Equal(10, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
+    [Fact]
+    public void ArrayToStruct()
+    {
+        const string code = $$"""
+            struct Test {
+                int a
+                int b
+            }
+
+            var pointer = create_pointer(4095, Test)
+
+            var first = pointer[0]
+            var a = first.a
+            var b = first.b
+
+            int index
+            index = 1
+            var second = pointer[index]
+            var c = second.a
+            var d = second.b
+            """ ;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Memory[4095] = 1;
+        cpu.Memory[4096] = 2;
+        cpu.Memory[4097] = 3;
+        cpu.Memory[4098] = 4;
+        cpu.Run();
+
+        Assert.Equal(4095, cpu.Memory[builder.GetVariable("pointer").Pointer.Address]);
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("a").Pointer.Address]);
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("b").Pointer.Address]);
+        Assert.Equal(3, cpu.Memory[builder.GetVariable("c").Pointer.Address]);
+        Assert.Equal(4, cpu.Memory[builder.GetVariable("d").Pointer.Address]);
+    }
+
+    [Fact]
+    public void Struct()
+    {
+        const string code = $$"""
+            struct Test {
+                int a
+                int b
+            }
+
+            Test test
+            test.a = 1
+            test.b = 2
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("test").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(2, cpu.Memory[address + 1]);
+    }
+
+    [Fact]
+    public void StructDeep()
+    {
+        const string code = $$"""
+            struct Position {
+                int x
+                int y
+            }
+
+            struct ScreenColor {
+                int color
+                int alpha
+                Position pos
+            }
+
+            ScreenColor color
+            color.color = 1
+            color.alpha = 2
+            color.pos.x = 3
+            color.pos.y = 4
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("color").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(2, cpu.Memory[address + 1]);
+        Assert.Equal(3, cpu.Memory[address + 2]);
+        Assert.Equal(4, cpu.Memory[address + 3]);
     }
 }

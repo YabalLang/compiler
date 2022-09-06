@@ -4,7 +4,7 @@ namespace Astro8.Yabal.Ast;
 
 public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue, IExpressionToB
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         if (Character.CharToInt.TryGetValue(Value, out var intValue))
         {
@@ -17,10 +17,9 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
         }
 
         builder.SetComment($"load character '{Value}'");
-        return LanguageType.Integer;
     }
 
-    public LanguageType BuildExpressionToB(YabalBuilder builder)
+    void IExpressionToB.BuildExpressionToB(YabalBuilder builder)
     {
         if (Character.CharToInt.TryGetValue(Value, out var intValue))
         {
@@ -33,12 +32,18 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
         }
 
         builder.SetComment($"load character '{Value}'");
-        return LanguageType.Integer;
     }
 
     object? IConstantValue.Value => Character.CharToInt.TryGetValue(Value, out var intValue) ? intValue : 0;
 
     public override bool OverwritesB => false;
 
+    public override LanguageType Type => LanguageType.Char;
+
     bool IExpressionToB.OverwritesA => false;
+
+    public override string ToString()
+    {
+        return $"'{Value}'";
+    }
 }

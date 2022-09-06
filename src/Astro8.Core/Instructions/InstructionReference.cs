@@ -57,6 +57,11 @@ public readonly record struct InstructionReference
 
     public override string ToString()
     {
+        return ToString(true);
+    }
+
+    public string ToString(bool withData)
+    {
         var instructions = Instruction.Default;
 
         if (Id >= instructions.Count)
@@ -66,7 +71,7 @@ public readonly record struct InstructionReference
 
         var instruction = instructions[Id];
 
-        if (!instruction.MicroInstructions.Any(i => i.IsIR))
+        if (!withData || !instruction.MicroInstructions.Any(i => i.IsIR))
         {
             return instruction.Name;
         }

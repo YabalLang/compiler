@@ -11,7 +11,7 @@ public class StringAddress : IAddress
 
     public string Value { get; }
 
-    public Either<int, InstructionPointer>? Get(YabalBuilder builder) => builder.GetString(Value);
+    public Pointer? Pointer => throw new NotImplementedException();
 
     public int? Length => Value.Length;
 

@@ -2,6 +2,25 @@ using Astro8.Yabal.Ast;
 
 namespace Astro8.Yabal.Visitor;
 
+public class TypeDiscover : YabalParserBaseListener
+{
+    private readonly TypeVisitor _typeVisitor;
+
+    public TypeDiscover(TypeVisitor typeVisitor)
+    {
+        _typeVisitor = typeVisitor;
+    }
+
+    public override void EnterStructType(YabalParser.StructTypeContext context)
+    {
+        var reference = new LanguageStruct(
+            context.identifierName().GetText()
+        );
+
+        _typeVisitor.Structs[reference.Name] = reference;
+    }
+}
+
 public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
 {
     public Dictionary<string, LanguageStruct> Structs { get; } = new();
@@ -26,7 +45,7 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
     public override LanguageType VisitArrayType(YabalParser.ArrayTypeContext context)
     {
         return new LanguageType(
-            StaticType.Pointer,
+            StaticType.Array,
             ElementType: Visit(context.type())
         );
     }

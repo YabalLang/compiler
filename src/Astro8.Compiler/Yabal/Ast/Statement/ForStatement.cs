@@ -1,20 +1,34 @@
 ﻿using Astro8.Instructions;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record ForStatement(SourceRange Range, Statement? Init, Statement? Update, Expression Test, BlockStatement Block) : Statement(Range)
+public record ForStatement(SourceRange Range, Statement? Init, Statement? Update, Expression Test, BlockStatement Body) : ScopeStatement(Range)
 {
-    public override void Build(YabalBuilder builder)
+    public override void OnDeclare(YabalBuilder builder)
     {
-        var block = builder.PushBlock();
+        Init?.Declare(builder);
+        Update?.Declare(builder);
+        Body.Declare(builder);
+    }
 
+    public override void OnInitialize(YabalBuilder builder)
+    {
+        Init?.Initialize(builder);
+        Update?.Initialize(builder);
+        Test.Initialize(builder);
+        Body.Initialize(builder);
+    }
+
+    public override void OnBuild(YabalBuilder builder)
+    {
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
         var test = builder.CreateLabel();
 
-        block.Continue = next;
-        block.Break = end;
+        Block.Continue = next;
+        Block.Break = end;
 
         Init?.Build(builder);
         builder.Jump(test);
@@ -23,41 +37,13 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
         Update?.Build(builder);
 
         builder.Mark(test);
-
-        switch (Test)
-        {
-            case IComparisonExpression binaryExpression:
-                binaryExpression.CreateComparison(builder, end, body);
-                break;
-            case BooleanExpression { Value: true }:
-                builder.Jump(body);
-                break;
-            case BooleanExpression { Value: false }:
-                builder.Jump(next);
-                break;
-            default:
-            {
-                var type = Test.BuildExpression(builder, false);
-
-                if (type != LanguageType.Boolean)
-                {
-                    builder.AddError(ErrorLevel.Error, Test.Range, ErrorMessages.ExpectedBoolean(type));
-                }
-
-                builder.SetB(0);
-                builder.Sub();
-                builder.JumpIfZero(end);
-                builder.Jump(body);
-                break;
-            }
-        }
+        Test.CreateComparison(builder, end, body);
 
         builder.Mark(body);
-        Block.Build(builder);
+        Body.Build(builder);
         builder.Jump(next);
         builder.SetComment("jump to next iteration");
-        builder.Mark(end);
 
-        builder.PopBlock();
+        builder.Mark(end);
     }
 }

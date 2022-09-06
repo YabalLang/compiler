@@ -1,18 +1,22 @@
-﻿using Astro8.Yabal.Visitor;
+﻿using Astro8.Yabal.Ast;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Instructions;
 
-public class InstructionPointer
+public class InstructionPointer : Pointer
 {
     private int? _address;
 
-    public InstructionPointer(string? name, int size = 1)
+    public InstructionPointer(string? name, int size = 1, bool isSmall = false)
     {
         Name = name;
         Size = size;
+        IsSmall = isSmall;
     }
 
-    public string? Name { get; }
+    public override string? Name { get; }
+
+    public override bool IsSmall { get; }
 
     public int Size { get; }
 
@@ -28,6 +32,16 @@ public class InstructionPointer
 
     public override string? ToString()
     {
-        return $"@{Name}";
+        return $"{Name}";
+    }
+
+    public override Address Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
+    {
+        if (!mappings.TryGetValue(this, out var value))
+        {
+            throw new InvalidOperationException($"No address has been set for {this}");
+        }
+
+        return new Address(0, value);
     }
 }

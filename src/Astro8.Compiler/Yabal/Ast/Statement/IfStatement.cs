@@ -4,9 +4,22 @@ namespace Astro8.Yabal.Ast;
 
 public record IfStatement(SourceRange Range, Expression Expression, Statement Consequent, Statement? Alternate) : Statement(Range)
 {
+    public override void Declare(YabalBuilder builder)
+    {
+        Consequent.Declare(builder);
+        Alternate?.Declare(builder);
+    }
+
+    public override void Initialize(YabalBuilder builder)
+    {
+        Expression.Initialize(builder);
+        Consequent.Initialize(builder);
+        Alternate?.Initialize(builder);
+    }
+
     public override void Build(YabalBuilder builder)
     {
-        if (Expression is BooleanExpression { Value: var value })
+        if (Expression.Optimize() is IConstantValue { Value: bool value })
         {
             if (value)
             {
@@ -33,13 +46,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
             }
             default:
             {
-                var type = Expression.BuildExpression(builder, false);
-
-                if (type != LanguageType.Boolean)
-                {
-                    builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.ExpectedBoolean(type));
-                }
-
+                Expression.BuildExpression(builder, false);
                 builder.SetB(0);
                 builder.Sub();
                 builder.JumpIfZero(alternateLabel ?? end);

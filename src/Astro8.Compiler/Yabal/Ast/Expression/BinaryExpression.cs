@@ -1,5 +1,4 @@
 ﻿using Astro8.Instructions;
-using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
@@ -8,9 +7,34 @@ public interface IComparisonExpression
     void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel);
 }
 
+public static class ExpressionExtensions
+{
+    public static void CreateComparison(this Expression expression, YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel)
+    {
+        if (expression is IComparisonExpression comparisonExpression)
+        {
+            comparisonExpression.CreateComparison(builder, falseLabel, trueLabel);
+        }
+        else
+        {
+            expression.BuildExpression(builder, false);
+            builder.SetB(0);
+            builder.Sub();
+            builder.JumpIfZero(falseLabel);
+            builder.Jump(trueLabel);
+        }
+    }
+}
+
 public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expression Left, Expression Right) : Expression(Range), IComparisonExpression
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    public override void Initialize(YabalBuilder builder)
+    {
+        Left.Initialize(builder);
+        Right.Initialize(builder);
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         switch (Operator)
         {
@@ -80,14 +104,11 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 builder.SetA(1);
 
                 builder.Mark(end);
-
-                return LanguageType.Boolean;
+                break;
             }
             default:
                 throw new NotSupportedException();
         }
-
-        return LanguageType.Integer;
     }
 
     public void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel)
@@ -207,14 +228,14 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
     }
 
-    public override Expression Optimize(BlockCompileStack block)
+    public override Expression Optimize()
     {
-        var left = Left.Optimize(block);
-        var right = Right.Optimize(block);
+        var left = Left.Optimize();
+        var right = Right.Optimize();
 
         if (Operator is BinaryOperator.Equal or BinaryOperator.NotEqual &&
-            left is IConstantValue { Value: var leftValue } &&
-            right is IConstantValue { Value: var rightValue })
+            left is IConstantValue { Value: {} leftValue } &&
+            right is IConstantValue { Value: {} rightValue })
         {
             return Operator switch
             {
@@ -225,8 +246,8 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
 
         if (Operator is BinaryOperator.AndAlso or BinaryOperator.OrElse &&
-            left is BooleanExpression { Value: var leftBool } &&
-            right is BooleanExpression { Value: var rightBool })
+            left is IConstantValue { Value: bool leftBool } &&
+            right is IConstantValue { Value: bool rightBool })
         {
             return Operator switch
             {
@@ -262,4 +283,26 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => Operator switch
+    {
+        BinaryOperator.Add => LanguageType.Integer,
+        BinaryOperator.Subtract => LanguageType.Integer,
+        BinaryOperator.Multiply => LanguageType.Integer,
+        BinaryOperator.Divide => LanguageType.Integer,
+        BinaryOperator.Modulo => LanguageType.Integer,
+        BinaryOperator.GreaterThan => LanguageType.Boolean,
+        BinaryOperator.GreaterThanOrEqual => LanguageType.Boolean,
+        BinaryOperator.LessThan => LanguageType.Boolean,
+        BinaryOperator.LessThanOrEqual => LanguageType.Boolean,
+        BinaryOperator.LeftShift => LanguageType.Integer,
+        BinaryOperator.RightShift => LanguageType.Integer,
+        BinaryOperator.And => LanguageType.Integer,
+        BinaryOperator.Or => LanguageType.Integer,
+        BinaryOperator.Equal => LanguageType.Boolean,
+        BinaryOperator.NotEqual => LanguageType.Boolean,
+        BinaryOperator.AndAlso => LanguageType.Boolean,
+        BinaryOperator.OrElse => LanguageType.Boolean,
+        _ => throw new NotSupportedException()
+    };
 }

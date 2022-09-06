@@ -13,7 +13,7 @@ public class FileAddress : IAddress
         _type = type;
     }
 
-    public Either<int, InstructionPointer>? Get(YabalBuilder builder) => builder.GetFile(_path, _type);
+    public Pointer? Pointer => throw new NotImplementedException();
 
     public int? Length
     {

@@ -4,30 +4,33 @@ namespace Astro8.Yabal.Ast;
 
 public record SwitchItem(List<Expression> Cases, Expression Value);
 
-public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchItem> Items, Expression? Default) : Expression(Range)
+public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchItem> Items, Expression Default) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    public override void Initialize(YabalBuilder builder)
     {
-        LanguageType? returnType = null;
+        Value.Initialize(builder);
 
-        void CheckReturnType(LanguageType type, SourceRange range)
+        foreach (var item in Items)
         {
-            if (returnType == null)
+            foreach (var @case in item.Cases)
             {
-                returnType = type;
+                @case.Initialize(builder);
             }
-            else if (returnType != type)
-            {
-                builder.AddError(ErrorLevel.Error, range, ErrorMessages.SwitchReturnTypeMismatch(returnType, type));
-            }
+
+            item.Value.Initialize(builder);
         }
-        var valueType = Value.BuildExpression(builder, isVoid);
+
+        Default.Initialize(builder);
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    {
+        Value.BuildExpression(builder, isVoid);
 
         using var tempValue = builder.GetTemporaryVariable();
         builder.StoreA(tempValue);
 
         var end = builder.CreateLabel();
-
 
         foreach (var item in Items)
         {
@@ -36,13 +39,7 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
 
             foreach (var caseValue in item.Cases)
             {
-                var caseType = caseValue.BuildExpression(builder, isVoid);
-
-                if (caseType != valueType)
-                {
-                    builder.AddError(ErrorLevel.Error, caseValue.Range, ErrorMessages.SwitchCaseTypeMismatch(valueType, caseType));
-                }
-
+                caseValue.BuildExpression(builder, isVoid);
                 builder.LoadB(tempValue);
                 builder.Sub();
                 builder.JumpIfZero(returnValue);
@@ -50,20 +47,16 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             }
 
             builder.Mark(returnValue);
-            CheckReturnType(item.Value.BuildExpression(builder, isVoid), item.Value.Range);
+            item.Value.BuildExpression(builder, isVoid);
             builder.Jump(end);
             builder.Mark(next);
         }
 
-        if (Default != null)
-        {
-            CheckReturnType(Default.BuildExpression(builder, isVoid), Default.Range);
-        }
-
+        Default.BuildExpression(builder, isVoid);
         builder.Mark(end);
-
-        return returnType ?? throw new InvalidOperationException("No return value");
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => Default?.Type ?? Items[0].Value.Type;
 }

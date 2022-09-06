@@ -10,7 +10,7 @@ public record Function(
     string Name,
     InstructionLabel Label,
     LanguageType ReturnType,
-    List<FunctionParameter> Parameters,
+    List<Variable> Parameters,
     YabalBuilder Builder
 );
 
@@ -20,48 +20,46 @@ public record FunctionDeclarationStatement(
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
     BlockStatement Body
-) : Statement(Range)
+) : ScopeStatement(Range)
 {
     private Function? _function;
 
-    public override void BeforeBuild(YabalBuilder builder)
+    public override void OnDeclare(YabalBuilder builder)
     {
-        Body.BeforeBuild(builder);
+        var functionBuilder = new YabalBuilder(builder);
+        functionBuilder.PushBlock(this);
+
+        var parameters = new List<Variable>();
+
+        foreach (var parameter in Parameters)
+        {
+            parameters.Add(functionBuilder.CreateVariable(parameter.Name, parameter.Type));
+        }
 
         _function = new Function(
             Name,
             builder.CreateLabel(Name),
             ReturnType,
-            Parameters,
-            new YabalBuilder(builder)
+            parameters,
+            functionBuilder
         );
 
         builder.DeclareFunction(_function);
+
+        Body.Declare(builder);
     }
 
-    public override void Build(YabalBuilder _)
+    public override void OnInitialize(YabalBuilder builder)
     {
         Debug.Assert(_function != null);
-        var builder = _function.Builder;
 
-        builder.PushBlock(this);
+        Body.Initialize(_function.Builder);
+    }
 
-        var block = builder.Block;
+    public override void OnBuild(YabalBuilder _)
+    {
+        Debug.Assert(_function != null);
 
-        foreach (var parameter in Parameters)
-        {
-            var pointer = builder.Stack.GetNext(block, parameter.Type.Size);
-            var variable = new Variable(
-                parameter.Name,
-                pointer,
-                parameter.Type
-            );
-
-            pointer.AssignedVariables.Add(variable);
-            block.DeclareVariable(parameter.Name, variable);
-        }
-
-        Body.Build(builder);
-        builder.PopBlock();
+        Body.Build(_function.Builder);
     }
 }

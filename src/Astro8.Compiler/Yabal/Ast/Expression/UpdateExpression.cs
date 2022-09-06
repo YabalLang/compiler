@@ -2,55 +2,53 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record UpdateExpression(SourceRange Range, Expression Value, bool Prefix, BinaryOperator Operator) : Expression(Range)
+public record UpdateExpression(SourceRange Range, IAssignExpression Value, bool Prefix, BinaryOperator Operator) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    public override void Initialize(YabalBuilder builder)
+    {
+        Value.Initialize(builder);
+
+        Value.MarkModified();
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         var isPrefix = !isVoid && !Prefix;
         var variable = isPrefix ? builder.GetTemporaryVariable() : null;
 
-        var type = Value.BuildExpression(builder, false);
+        Value.BuildExpression(builder, false);
 
         if (variable != null)
         {
             builder.StoreA(variable);
         }
 
-        if (type != LanguageType.Integer)
+        builder.SetB(1);
+
+        switch (Operator)
         {
-            builder.AddError(ErrorLevel.Error, Value.Range, ErrorMessages.CannotUpdateNonInteger);
+            case BinaryOperator.Add:
+                builder.Add();
+                builder.SetComment("increment value");
+                break;
+            case BinaryOperator.Subtract:
+                builder.Sub();
+                builder.SetComment("decrement value");
+                break;
+            default:
+                throw new InvalidOperationException("Unknown operator");
         }
 
-        AssignExpression.SetValue(builder, Value, (Func<LanguageType>)(() =>
-        {
-            builder.SetB(1);
-
-            switch (Operator)
-            {
-                case BinaryOperator.Add:
-                    builder.Add();
-                    builder.SetComment("increment value");
-                    break;
-                case BinaryOperator.Subtract:
-                    builder.Sub();
-                    builder.SetComment("decrement value");
-                    break;
-                default:
-                    throw new InvalidOperationException("Unknown operator");
-            }
-
-            return LanguageType.Integer;
-        }));
-
+        Value.StoreA(builder);
 
         if (variable != null)
         {
             builder.LoadA(variable);
             variable.Dispose();
         }
-
-        return LanguageType.Integer;
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => LanguageType.Integer;
 }

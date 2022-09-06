@@ -1,138 +1,153 @@
 ﻿using Astro8.Instructions;
-using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record ArrayAccessExpression(SourceRange Range, Expression Array, Expression Key) : Expression(Range)
+public interface INode
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
-    {
-        if (Array is IConstantValue { Value: IAddress constantAddress } &&
-            Key is IConstantValue { Value: int constantKey } &&
-            constantAddress.Get(builder) is {} value)
-        {
-            var elementSize = constantAddress.Type.Size;
+    void Initialize(YabalBuilder builder);
+}
 
-            if (constantAddress.Type.StaticType == StaticType.Struct)
+public interface IExpression : INode
+{
+    LanguageType Type { get; }
+
+    bool OverwritesB { get; }
+
+    void BuildExpression(YabalBuilder builder, bool isVoid);
+}
+
+public interface IAssignExpression : IExpression
+{
+    void Assign(YabalBuilder builder, Expression expression);
+
+    void StoreA(YabalBuilder builder);
+
+    void MarkModified()
+    {
+    }
+}
+
+public interface IAddressExpression : IAssignExpression
+{
+    Pointer? Pointer { get; }
+
+    void StoreAddressInA(YabalBuilder builder);
+
+    void IAssignExpression.StoreA(YabalBuilder builder)
+    {
+        if (Type.Size > 1)
+        {
+            throw new NotImplementedException();
+        }
+
+        if (Pointer is { } pointer)
+        {
+            builder.StoreA(pointer);
+        }
+        else if (!OverwritesB)
+        {
+            builder.SwapA_B();
+            StoreAddressInA(builder);
+            builder.SwapA_B();
+            builder.StoreB_ToAddressInA();
+        }
+        else
+        {
+            using var temp = builder.GetTemporaryVariable();
+            builder.StoreA(temp);
+            StoreAddressInA(builder);
+            builder.LoadB(temp);
+            builder.StoreB_ToAddressInA();
+        }
+    }
+
+    void IAssignExpression.Assign(YabalBuilder builder, Expression expression)
+    {
+        if (Pointer is {} pointer)
+        {
+            builder.SetValue(pointer, expression);
+        }
+        else if (expression is IExpressionToB { OverwritesA: false } expressionToB)
+        {
+            var size = expression.Type.Size;
+
+            if (size == 1)
             {
-                switch (value)
+                StoreAddressInA(builder);
+
+                if (expression is not IConstantValue { Value: 0 })
                 {
-                    case { IsLeft: true, Left: var left }:
-                        builder.SetA_Large(left + constantKey * elementSize);
-                        break;
-                    case { IsRight: true, Right: var right }:
-                        builder.SetA_Large(right);
-                        builder.SetPointerOffset(constantKey * elementSize);
-                        break;
+                    expressionToB.BuildExpressionToB(builder);
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+
+                builder.StoreB_ToAddressInA();
+            }
+            else if (expression is IAddressExpression { Pointer: {} valuePointer })
+            {
+                for (var i = 0; i < size; i++)
+                {
+                    StoreAddressInA(builder);
+
+                    if (i > 0)
+                    {
+                        builder.SetB(i);
+                        builder.Add();
+                    }
+
+                    builder.SwapA_B();
+                    valuePointer.LoadToA(builder, i);
+
+                    builder.SwapA_B();
+                    builder.StoreB_ToAddressInA();
                 }
             }
             else
             {
-                switch (value)
-                {
-                    case { IsLeft: true, Left: var left }:
-                        builder.LoadA_Large(left + constantKey * elementSize);
-                        break;
-                    case { IsRight: true, Right: var right }:
-                        builder.LoadA_Large(right);
-                        builder.SetPointerOffset(constantKey * elementSize);
-                        break;
-                }
+                expression.BuildExpression(builder, false);
+                StoreA(builder);
             }
-
-            return constantAddress.Type;
         }
+        else
+        {
+            expression.BuildExpression(builder, false);
+            StoreA(builder);
+        }
+    }
+}
 
-        var type = StoreAddressInA(builder, Array, Key);
+public record ArrayAccessExpression(SourceRange Range, Expression Array, Expression Key) : Expression(Range), IAddressExpression
+{
+    public override void Initialize(YabalBuilder builder)
+    {
+        Array.Initialize(builder);
+        Key.Initialize(builder);
 
-        if (type.ElementType == null)
+        if (Array.Type.StaticType != StaticType.Array)
         {
             builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ValueIsNotAnArray);
-            builder.SetA(0);
-            return LanguageType.Integer;
         }
 
-        if (type.ElementType.StaticType != StaticType.Struct)
+        if (Key.Type.StaticType != StaticType.Integer)
         {
-            builder.LoadA_FromAddressUsingA();
+            builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ArrayOnlyIntegerKey);
         }
+    }
 
-        return type.ElementType;
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    {
+        StoreAddressInA(builder);
+        builder.LoadA_FromAddressUsingA();
     }
 
     public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpressionBase { Value: 0 };
 
-    public static LanguageType StoreAddressInA(YabalBuilder builder, Expression array, Expression key)
-    {
-        var type = array.BuildExpression(builder, false);
+    public override LanguageType Type => Array.Type.ElementType ?? LanguageType.Integer;
 
-        if (type != LanguageType.Assembly && (type.StaticType != StaticType.Pointer || type.ElementType == null))
-        {
-            builder.AddError(ErrorLevel.Error, array.Range, ErrorMessages.InvalidArrayAccess);
-            builder.SetA(0);
-            return LanguageType.Integer;
-        }
-
-        var elementSize = type.ElementType?.Size ?? 1;
-
-        if (key is IntegerExpressionBase { Value: var intValue })
-        {
-            var offset = intValue * elementSize;
-
-            if (offset == 0)
-            {
-                return type;
-            }
-
-            builder.SetB(offset);
-            builder.Add();
-
-            builder.SetComment($"add {intValue} to pointer address");
-        }
-        else if (!key.OverwritesB && elementSize == 1)
-        {
-            builder.SwapA_B();
-            var keyType = key.BuildExpression(builder, false);
-
-            if (keyType.StaticType != StaticType.Integer)
-            {
-                builder.AddError(ErrorLevel.Error, key.Range, ErrorMessages.ArrayOnlyIntegerKey);
-                builder.SetB(0);
-            }
-
-            builder.Add();
-
-            builder.SetComment("add to pointer address");
-        }
-        else
-        {
-            using var variable = builder.GetTemporaryVariable();
-            builder.StoreA(variable);
-
-            var keyType = key.BuildExpression(builder, false);
-
-            if (keyType.StaticType != StaticType.Integer)
-            {
-                builder.AddError(ErrorLevel.Error, key.Range, ErrorMessages.ArrayOnlyIntegerKey);
-                builder.SetB(0);
-            }
-
-            if (elementSize > 1)
-            {
-                builder.SetB(elementSize);
-                builder.Mult();
-            }
-
-            builder.LoadB(variable);
-            builder.Add();
-
-            builder.SetComment("add to pointer address");
-        }
-
-        return type;
-    }
-
-    public override Expression Optimize(BlockCompileStack block)
+    public override Expression Optimize()
     {
         if (Array is not IConstantValue {Value: IAddress address} ||
             Key is not IConstantValue {Value: int index})
@@ -148,5 +163,80 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
         }
 
         return this;
+    }
+
+    public Pointer? Pointer
+    {
+        get
+        {
+            if (Array is not IAddressExpression {Pointer: { } pointer} ||
+                Key is not IConstantValue {Value: int index})
+            {
+                return null;
+            }
+
+            var elementSize = Array.Type.ElementType?.Size ?? 1;
+            return pointer.Add(index * elementSize);
+        }
+    }
+
+    public void StoreAddressInA(YabalBuilder builder)
+    {
+        var elementSize = Array.Type.ElementType?.Size ?? 1;
+
+        if (Array is IAddressExpression { Pointer: {} pointer } &&
+            Key is IConstantValue { Value: int constantKey })
+        {
+            builder.SetA_Large(pointer.Add(constantKey * elementSize));
+            return;
+        }
+
+        Array.BuildExpression(builder, false);
+
+        if (Key is IntegerExpressionBase { Value: var intValue })
+        {
+            var offset = intValue * elementSize;
+
+            if (offset == 0)
+            {
+                return;
+            }
+
+            builder.SetB(offset);
+            builder.Add();
+
+            builder.SetComment($"add {intValue} to pointer address");
+            return;
+        }
+
+        if (!Key.OverwritesB && elementSize == 1)
+        {
+            builder.SwapA_B();
+            Key.BuildExpression(builder, false);
+            builder.Add();
+            builder.SetComment("add to pointer address");
+            return;
+        }
+
+        using var variable = builder.GetTemporaryVariable();
+        builder.StoreA(variable);
+
+        Key.BuildExpression(builder, false);
+
+        if (elementSize > 1)
+        {
+            builder.SetB(elementSize);
+            builder.Mult();
+        }
+
+        builder.LoadB(variable);
+        builder.Add();
+
+        builder.SetComment("add to pointer address");
+    }
+
+    public override string ToString()
+    {
+        return $"{Array}[{Key}]";
     }
 }

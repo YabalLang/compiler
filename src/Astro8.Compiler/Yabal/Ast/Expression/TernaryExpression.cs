@@ -4,51 +4,33 @@ namespace Astro8.Yabal.Ast;
 
 public record TernaryExpression(SourceRange Range, Expression Expression, Expression Consequent, Expression Alternate) : Expression(Range)
 {
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    public override void Initialize(YabalBuilder builder)
+    {
+        Expression.Initialize(builder);
+        Consequent.Initialize(builder);
+        Alternate.Initialize(builder);
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         var consequentLabel = builder.CreateLabel();
         var alternateLabel = builder.CreateLabel();
         var end = builder.CreateLabel();
+        var expression = Expression.Optimize();
 
-        switch (Expression)
-        {
-            case IComparisonExpression binaryExpression:
-            {
-                binaryExpression.CreateComparison(builder, alternateLabel, consequentLabel);
-                break;
-            }
-            default:
-            {
-                var type = Expression.BuildExpression(builder, false);
-
-                if (type != LanguageType.Boolean)
-                {
-                    builder.AddError(ErrorLevel.Error, Expression.Range, ErrorMessages.ExpectedBoolean(type));
-                }
-
-                builder.SetB(0);
-                builder.Sub();
-                builder.JumpIfZero(alternateLabel);
-                builder.Jump(end);
-                break;
-            }
-        }
+        expression.CreateComparison(builder, alternateLabel, consequentLabel);
 
         builder.Mark(consequentLabel);
-        var leftType = Consequent.BuildExpression(builder, isVoid);
+        Consequent.BuildExpression(builder, isVoid);
 
         builder.Jump(end);
         builder.Mark(alternateLabel);
 
-        var alternateType = Alternate.BuildExpression(builder, isVoid);
-        if (alternateType != leftType)
-        {
-            builder.AddError(ErrorLevel.Error, Alternate.Range, ErrorMessages.InvalidType(leftType, alternateType));
-        }
-
+        Alternate.BuildExpression(builder, isVoid);
         builder.Mark(end);
-        return leftType;
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => Consequent.Type;
 }

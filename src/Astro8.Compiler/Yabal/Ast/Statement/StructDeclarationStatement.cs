@@ -4,7 +4,7 @@ namespace Astro8.Yabal.Ast;
 
 public record StructDeclarationStatement(SourceRange Range, LanguageStruct Struct) : Statement(Range)
 {
-    public override void BeforeBuild(YabalBuilder builder)
+    public override void Initialize(YabalBuilder builder)
     {
     }
 

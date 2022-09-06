@@ -4,7 +4,7 @@ namespace Astro8.Yabal.Ast;
 
 public interface IAddress
 {
-    Either<int, InstructionPointer>? Get(YabalBuilder builder);
+    Pointer? Pointer { get; }
 
     int? Length { get; }
 

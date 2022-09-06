@@ -8,45 +8,29 @@ public record CallExpression(
     List<Expression> Arguments
 ) : Expression(Range)
 {
-    public override void BeforeBuild(YabalBuilder builder)
+    public Function Function { get; private set; } = null!;
+
+    public override void Initialize(YabalBuilder builder)
     {
-        Callee.BeforeBuild(builder);
+        if (Callee is not IdentifierExpression identifier)
+        {
+            throw new NotSupportedException("Callee must be an identifier");
+        }
+
+        Function = builder.GetFunction(identifier.Name);
 
         foreach (var argument in Arguments)
         {
-            argument.BeforeBuild(builder);
+            argument.Initialize(builder);
         }
     }
 
-    public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
-        if (Callee is not IdentifierExpression id)
-        {
-            builder.AddError(ErrorLevel.Error, Callee.Range, ErrorMessages.CallExpressionCalleeMustBeIdentifier);
-            return LanguageType.Void;
-        }
-
-        var function = builder.GetFunction(id.Name);
-
-        var argumentTypes = builder.Call(function.Label, Arguments);
-
-        if (Arguments.Count != function.Parameters.Count)
-        {
-            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.CallExpressionArgumentCountMismatch(id.Name, function.Parameters.Count, Arguments.Count));
-        }
-
-        var amount = Math.Min(Arguments.Count, function.Parameters.Count);
-
-        for (var i = 0; i < amount; i++)
-        {
-            if (argumentTypes[i] != function.Parameters[i].Type)
-            {
-                builder.AddError(ErrorLevel.Error, Range, ErrorMessages.ArgumentTypeMismatch(i, id.Name, function.Parameters[i].Type, argumentTypes[i]));
-            }
-        }
-
-        return function.ReturnType;
+        builder.Call(Function.Label, Arguments);
     }
 
     public override bool OverwritesB => true;
+
+    public override LanguageType Type => Function.ReturnType;
 }

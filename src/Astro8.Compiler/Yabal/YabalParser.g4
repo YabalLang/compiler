@@ -23,7 +23,7 @@ returnType
     ;
 
 expression
-	: CreatePointer OpenBrace expression (Comma type)? CloseBrace       # CreatePointerExpression
+	: createPointer                                                     # CreatePointerExpression
 	| IncludeBytes expression                                           # IncludeBytesExpression
 	| IncludeImage expression                                           # IncludeImageExpression
 	| SizeOf expression                                                 # SizeOfExpression
@@ -62,6 +62,10 @@ expression
 	| integer                       								    # IntegerExpression
 	| boolean                       								    # BooleanExpression
 	| identifierName										            # IdentifierExpression
+    ;
+
+createPointer
+    : CreatePointer OpenBrace expression (Comma integer)? (Comma type)? CloseBrace
     ;
 
 inlineSwitch

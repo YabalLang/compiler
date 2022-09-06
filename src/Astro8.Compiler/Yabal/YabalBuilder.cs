@@ -1,149 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using Antlr4.Runtime;
 using Astro8.Yabal;
 using Astro8.Yabal.Ast;
 using Astro8.Yabal.Visitor;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Astro8.Instructions;
-
-public enum ErrorLevel
-{
-    Error,
-    Warning
-}
-
-public class PointerCollection : IEnumerable<InstructionPointer>
-{
-    private readonly Dictionary<int, List<InstructionPointer>> _pointersBySize = new();
-    private readonly string _name;
-
-    public PointerCollection(string name)
-    {
-        _name = name;
-    }
-
-    public int Count => _pointersBySize.Sum(i => i.Value.Count);
-
-    public InstructionPointer Get(int index, int size)
-    {
-        if (!_pointersBySize.TryGetValue(size, out var pointers))
-        {
-            pointers = new List<InstructionPointer>();
-            _pointersBySize[size] = pointers;
-        }
-
-        if (index < pointers.Count)
-        {
-            return pointers[index];
-        }
-
-        var pointer = new InstructionPointer($"{_name}:{index}");
-        pointers.Add(pointer);
-        return pointer;
-    }
-
-    public InstructionPointer GetNext(int size)
-    {
-        var index = _pointersBySize.TryGetValue(size, out var pointers) ? pointers.Count : 0;
-        return Get(index, size);
-    }
-
-    public InstructionPointer GetNext(BlockStack block, int size)
-    {
-        return Get(block.GetNextOffset(size), size);
-    }
-
-    public InstructionPointer GetNext(BlockStack block, LanguageType type)
-    {
-        return GetNext(block, type.Size);
-    }
-
-    public IEnumerator<InstructionPointer> GetEnumerator()
-    {
-        return _pointersBySize.SelectMany(i => i.Value).GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
-}
-
-public record CompileError(SourceRange Range, ErrorLevel Level, string Message);
-
-public record FileContent(int Offset, int[] Data)
-{
-    private static readonly ConcurrentDictionary<(string, FileType), FileContent> Cache = new();
-
-    public static FileContent Get(string path, FileType type)
-    {
-        return Cache.GetOrAdd((path, type), FileContentFactory);
-    }
-
-    private static FileContent FileContentFactory((string, FileType) key)
-    {
-        var (path, type) = key;
-        using var stream = File.OpenRead(path);
-        var i = 0;
-
-        int[] content;
-
-        switch (type)
-        {
-            case FileType.Image:
-            {
-                using var image = Image.Load<Rgba32>(stream);
-
-                var width = (byte) image.Width;
-                var height = (byte) image.Height;
-
-                content = new int[width * height + 1];
-                content[i++] = (width << 8) | height;
-
-                for (var y = 0; y < height; y++)
-                {
-                    for (var x = 0; x < width; x++)
-                    {
-                        var pixel = image[x, y];
-                        var value = (pixel.A / 16 << 15) | (pixel.R / 8 << 10) | (pixel.G / 8 << 5) | (pixel.B / 8);
-
-                        content[i++] = value;
-                    }
-                }
-
-                return new FileContent(1, content);
-            }
-            case FileType.Byte:
-            {
-                content = new int[stream.Length / 2 + 1];
-                content[i++] = (int) (stream.Length / 2);
-
-                var memory = new byte[2];
-                int length;
-
-                while ((length = stream.Read(memory, 0, 2)) > 0)
-                {
-                    if (length == 1)
-                    {
-                        content[i++] = memory[0] << 8;
-                    }
-                    else
-                    {
-                        content[i++] = memory[0] << 8 | memory[1];
-                    }
-                }
-
-                return new FileContent(1, content);
-            }
-            default:
-                throw new NotSupportedException();
-        }
-    }
-}
 
 public class YabalBuilder : InstructionBuilderBase, IProgram
 {
@@ -264,6 +125,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         Block = Block.Parent ?? _globalBlock;
     }
 
+    public void PushBlock(BlockStack block)
+    {
+        block.Parent = Block;
+        Block = block;
+    }
+
     public bool TryGetVariable(string name, [NotNullWhen(true)] out Variable? variable)
     {
         if (Block.TryGetVariable(name, out variable))
@@ -287,6 +154,18 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             throw new KeyNotFoundException($"Variable '{name}' not found");
         }
 
+        return variable;
+    }
+
+    public Variable CreateVariable(string name, LanguageType type, IConstantValue? constantValue = null)
+    {
+        var pointer = Block.IsGlobal
+            ? Globals.GetNext(Block, type)
+            : Stack.GetNext(Block, type);
+
+        var variable = new Variable(name, pointer, type, constantValue);
+        Block.DeclareVariable(name, variable);
+        pointer.AssignedVariables.Add(variable);
         return variable;
     }
 
@@ -342,7 +221,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var listener = new YabalVisitor();
         var program = listener.VisitProgram(parser.program());
 
-        program.BeforeBuild(this);
+        program.Declare(this);
+        program.Initialize(this);
         program.Build(this);
     }
 
@@ -378,12 +258,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.JumpToA();
     }
 
-    public LanguageType[] Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null)
+    public void Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null)
     {
         _hasCall = true;
 
         var hasArguments = arguments is { Count: > 0 };
-        var argumentTypes = hasArguments ? new LanguageType[arguments!.Count] : Array.Empty<LanguageType>();
         var returnAddress = _builder.CreateLabel();
         var setArguments = _builder.CreateLabel();
 
@@ -403,9 +282,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             for (var i = 0; i < arguments!.Count; i++)
             {
                 var argument = arguments[i];
-                var type = argument.BuildExpression(this, false);
-                argumentTypes[i] = type;
-                _builder.StoreA(Stack.Get(i, type.Size));
+                var variable = Stack.Get(i, argument.Type.Size);
+
+                argument.BuildExpression(this, false);
+                _builder.StoreA(variable);
             }
 
             _builder.Jump(address);
@@ -413,8 +293,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         _builder.Mark(returnAddress);
         _builder.LoadA(ReturnValue);
-
-        return argumentTypes;
     }
 
     private void CreateReturn(InstructionBuilderBase builder)
@@ -552,7 +430,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
                 if (i == 0)
                 {
-                    builder.SetComment($"value ({pointer.AssignedVariableNames})");
+                    builder.SetComment($"size: {pointer.Size}, variables: {pointer.AssignedVariableNames}");
                 }
             }
         }
@@ -645,11 +523,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _builder.SetComment(comment);
     }
 
-    public void SetPointerOffset(int offset)
-    {
-        _builder.SetPointerOffset(offset);
-    }
-
     public TemporaryVariable GetTemporaryVariable(bool global = false, int size = 1)
     {
         var block = global ? _globalBlock : Block;
@@ -665,33 +538,41 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         return new TemporaryVariable(pointer, Block);
     }
-}
 
-
-public sealed class TemporaryVariable : IDisposable
-{
-    public TemporaryVariable(InstructionPointer pointer, BlockStack block)
+    public void SetValue(Pointer pointer, Expression expression)
     {
-        Pointer = pointer;
-        Block = block;
-    }
+        var size = expression.Type.Size;
 
-    public InstructionPointer Pointer { get; }
+        if (expression is IAddressExpression addressExpression)
+        {
+            if (addressExpression.Pointer is { } valuePointer)
+            {
+                for (var i = 0; i < size; i++)
+                {
+                    valuePointer.CopyTo(this, pointer, i);
+                }
+            }
+            else
+            {
+                for (var i = 0; i < size; i++)
+                {
+                    addressExpression.StoreAddressInA(this);
+                    SetB(i);
+                    Add();
+                    LoadA_FromAddressUsingA();
 
-    public BlockStack Block { get; }
-
-    public void Dispose()
-    {
-        Block.TemporaryVariablesStack.Push(this);
-    }
-
-    public static implicit operator InstructionPointer(TemporaryVariable variable)
-    {
-        return variable.Pointer;
-    }
-
-    public static implicit operator PointerOrData(TemporaryVariable variable)
-    {
-        return variable.Pointer;
+                    StoreA_Large(pointer.Add(i));
+                }
+            }
+        }
+        else if (size == 1)
+        {
+            expression.BuildExpression(this, false);
+            StoreA_Large(pointer);
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
     }
 }

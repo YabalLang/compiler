@@ -4,11 +4,19 @@ namespace Astro8.Yabal.Ast;
 
 public record BlockStatement(SourceRange Range, List<Statement> Statements, bool NewScope = true) : Statement(Range)
 {
-    public override void BeforeBuild(YabalBuilder builder)
+    public override void Declare(YabalBuilder builder)
     {
         foreach (var statement in Statements)
         {
-            statement.BeforeBuild(builder);
+            statement.Declare(builder);
+        }
+    }
+
+    public override void Initialize(YabalBuilder builder)
+    {
+        foreach (var statement in Statements)
+        {
+            statement.Initialize(builder);
         }
     }
 

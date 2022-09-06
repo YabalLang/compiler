@@ -5,7 +5,11 @@ public enum StaticType
     Integer,
     Boolean,
     Void,
-    Pointer,
+    Array,
     Struct,
-    Assembly
+    Assembly,
+    Address,
+    Unknown,
+    String,
+    Char
 }

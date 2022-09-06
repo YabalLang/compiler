@@ -4,16 +4,17 @@ namespace Astro8.Yabal.Ast;
 
 public class RawAddress : IAddress
 {
-    private RawAddress(int value, int? length, LanguageType type)
+    private RawAddress(Address value, int? length, LanguageType type)
     {
         Value = value;
         Length = length;
         Type = type;
+        Pointer = new AbsolutePointer(value);
     }
 
-    public int Value { get; }
+    public Address Value { get; }
 
-    public Either<int, InstructionPointer>? Get(YabalBuilder builder) => Value;
+    public Pointer Pointer { get; }
 
     public int? Length { get; }
 
@@ -24,5 +25,5 @@ public class RawAddress : IAddress
         return null;
     }
 
-    public static IAddress From(int value, LanguageType type, int? length = null) => new RawAddress(value, length, type);
+    public static IAddress From(Address value, LanguageType type, int? length = null) => new RawAddress(value, length, type);
 }

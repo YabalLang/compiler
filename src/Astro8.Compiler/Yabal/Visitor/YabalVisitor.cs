@@ -1,134 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-using Astro8.Instructions;
 using Astro8.Yabal.Ast;
 
 namespace Astro8.Yabal.Visitor;
-
-public record Variable(string Name, InstructionPointer Pointer, LanguageType Type, IConstantValue? ConstantValue = null)
-{
-    public bool IsConstant => ConstantValue != null;
-}
-
-public class BlockStack
-{
-    public readonly Stack<TemporaryVariable> TemporaryVariablesStack = new();
-
-    private readonly Dictionary<int, int> _offsetsBySize = new();
-    private readonly Dictionary<string, Variable> _variables = new();
-    private InstructionLabel? _continue;
-    private InstructionLabel? _break;
-
-    public BlockStack()
-    {
-    }
-
-    public BlockStack(BlockStack parent, FunctionDeclarationStatement? function = null)
-    {
-        IsGlobal = parent.IsGlobal && function == null;
-        Function = parent.Function ?? function;
-        Parent = parent;
-        _offsetsBySize = parent._offsetsBySize.ToDictionary(x => x.Key, x => x.Value);
-    }
-
-    public IReadOnlyDictionary<string, Variable> Variables => _variables;
-
-    public int GetNextOffset(int size)
-    {
-        if (!_offsetsBySize.TryGetValue(size, out var offset))
-        {
-            offset = 0;
-        }
-
-        _offsetsBySize[size] = offset + 1;
-        return offset;
-    }
-
-    public bool IsGlobal { get; set; }
-
-    public FunctionDeclarationStatement? Function { get; }
-
-    public BlockStack? Parent { get; }
-
-    public Dictionary<string, InstructionLabel> Labels { get; } = new();
-
-    public InstructionLabel? Continue
-    {
-        get => _continue ?? Parent?.Continue;
-        set => _continue = value;
-    }
-
-    public InstructionLabel? Break
-    {
-        get => _break ?? Parent?.Break;
-        set => _break = value;
-    }
-
-    public void DeclareVariable(string name, Variable variable)
-    {
-        _variables[name] = variable;
-    }
-
-    public bool TryGetVariable(string name, [NotNullWhen(true)] out Variable? variable)
-    {
-        if (_variables.TryGetValue(name, out variable))
-        {
-            return true;
-        }
-
-        if (Parent != null)
-        {
-            return Parent.TryGetVariable(name, out variable);
-        }
-
-        return false;
-    }
-
-    public bool TryGetLabel(string name, [NotNullWhen(true)]  out InstructionLabel? label)
-    {
-        if (Labels.TryGetValue(name, out label))
-        {
-            return true;
-        }
-
-        if (Parent != null)
-        {
-            return Parent.TryGetLabel(name, out label);
-        }
-
-        return false;
-    }
-}
-
-public class BlockCompileStack
-{
-    public BlockCompileStack(BlockCompileStack? parent = null)
-    {
-        Parent = parent;
-    }
-
-    public BlockCompileStack? Parent { get; }
-
-    public Dictionary<string, Expression> Constants { get; } = new();
-
-    public bool TryGetConstant(string name, [NotNullWhen(true)] out Expression? constant)
-    {
-        if (Constants.TryGetValue(name, out constant))
-        {
-            return true;
-        }
-
-        if (Parent != null)
-        {
-            return Parent.TryGetConstant(name, out constant);
-        }
-
-        return false;
-    }
-}
 
 public class YabalVisitor : YabalParserBaseVisitor<Node>
 {
@@ -143,7 +19,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    private new Statement VisitStatement(ParserRuleContext context)
+    private Statement VisitStatement(ParserRuleContext context)
     {
         return Visit(context) switch
         {
@@ -162,7 +38,19 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new InvalidOperationException($"{context.GetType().Name} is not supported.");
         }
 
-        return result.Optimize(_block);
+        return result.Optimize();
+    }
+
+    private IAssignExpression VisitAssignExpression(IParseTree context)
+    {
+        return VisitExpression(context) as IAssignExpression ??
+               throw new InvalidOperationException($"Cannot assign to {context.GetType().Name}.");
+    }
+
+    private IAddressExpression VisitAddressExpression(IParseTree context)
+    {
+        return VisitExpression(context) as IAddressExpression ??
+               throw new InvalidOperationException($"Cannot assign to {context.GetType().Name}.");
     }
 
     public override BlockStatement VisitBlockStatement(YabalParser.BlockStatementContext context)
@@ -184,23 +72,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         var name = context.identifierName().GetText();
         var expression = context.expression() is { } expr ? VisitExpression(expr) : null;
-        var isConstantVariable = context.Const() != null;
-        var constantValue = isConstantVariable ? expression as IConstantValue : null;
-
-        if (isConstantVariable)
-        {
-            if (constantValue?.Value == null)
-            {
-                throw new InvalidOperationException("Constant variable must have constant value.");
-            }
-
-            _block.Constants[name] = expression!;
-            return new EmptyStatement(context);
-        }
 
         return new VariableDeclarationStatement(
             context,
             name,
+            context.Const() != null,
             expression,
             _typeVisitor.Visit(context.type())
         );
@@ -210,23 +86,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         var name = context.identifierName().GetText();
         var expression = VisitExpression(context.expression());
-        var isConstantVariable = context.Const() != null;
-        var constantValue = isConstantVariable ? expression as IConstantValue : null;
-
-        if (isConstantVariable)
-        {
-            if (constantValue?.Value == null)
-            {
-                throw new InvalidOperationException("Constant variable must have constant value.");
-            }
-
-            _block.Constants[name] = expression;
-            return new EmptyStatement(context);
-        }
 
         return new VariableDeclarationStatement(
             context,
             name,
+            context.Const() != null,
             expression
         );
     }
@@ -266,7 +130,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new AssignExpression(
             context,
-            VisitExpression(context.expression()[0]),
+            VisitAssignExpression(context.expression()[0]),
             VisitExpression(context.expression()[1])
         );
     }
@@ -291,7 +155,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new AssignExpression(
             context,
-            VisitExpression(expressions[0]),
+            VisitAssignExpression(expressions[0]),
             CreateBinary(context, expressions, @operator)
         );
     }
@@ -558,7 +422,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new UpdateExpression(
             context,
-            VisitExpression(context.expression()),
+            VisitAssignExpression(context.expression()),
             true,
             BinaryOperator.Add
         );
@@ -568,7 +432,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new UpdateExpression(
             context,
-            VisitExpression(context.expression()),
+            VisitAssignExpression(context.expression()),
             false,
             BinaryOperator.Add
         );
@@ -578,7 +442,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new UpdateExpression(
             context,
-            VisitExpression(context.expression()),
+            VisitAssignExpression(context.expression()),
             true,
             BinaryOperator.Subtract
         );
@@ -625,7 +489,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new UpdateExpression(
             context,
-            VisitExpression(context.expression()),
+            VisitAssignExpression(context.expression()),
             false,
             BinaryOperator.Subtract
         );
@@ -701,10 +565,13 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitCreatePointerExpression(YabalParser.CreatePointerExpressionContext context)
     {
+        var createPointer = context.createPointer();
+
         return new CreatePointerExpression(
             context,
-            VisitExpression(context.expression()),
-            context.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Pointer(LanguageType.Integer)
+            VisitExpression(createPointer.expression()),
+            createPointer.integer() is {} integer ? ParseInt(integer.GetText()) : 0,
+            createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Array(LanguageType.Integer)
         );
     }
 
@@ -799,8 +666,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitStructDeclaration(YabalParser.StructDeclarationContext context)
     {
-        var fields = new List<LanguageStructField>();
         var offset = 0;
+
+        var reference = new LanguageStruct(
+            context.identifierName().GetText()
+        );
 
         foreach (var item in context.structItem())
         {
@@ -808,7 +678,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             {
                 var type = _typeVisitor.VisitType(field.type());
 
-                fields.Add(new LanguageStructField(
+                reference.Fields.Add(new LanguageStructField(
                     field.identifierName().GetText(),
                     type,
                     offset
@@ -817,11 +687,6 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 offset += type.Size;
             }
         }
-
-        var reference = new LanguageStruct(
-            context.identifierName().GetText(),
-            fields
-        );
 
         _typeVisitor.Structs[reference.Name] = reference;
 
@@ -832,7 +697,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new MemberExpression(
             context,
-            VisitExpression(context.expression()),
+            VisitAddressExpression(context.expression()),
             context.identifierName().GetText()
         );
     }
