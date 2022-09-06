@@ -69,6 +69,7 @@ SizeOf              : 'sizeof';
 IncludeBytes        : 'include_bytes';
 IncludeImage        : 'include_image';
 Goto                : 'goto';
+Struct              : 'struct';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

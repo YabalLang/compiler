@@ -4,7 +4,7 @@ namespace Astro8.Yabal.Visitor;
 
 public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
 {
-    public static readonly TypeVisitor Instance = new();
+    public Dictionary<string, LanguageStruct> Structs { get; } = new();
 
     public override LanguageType VisitIntType(YabalParser.IntTypeContext context)
     {
@@ -16,15 +16,17 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
         return LanguageType.Boolean;
     }
 
-    public override LanguageType VisitClassType(YabalParser.ClassTypeContext context)
+    public override LanguageType VisitStructType(YabalParser.StructTypeContext context)
     {
-        throw new NotImplementedException();
+        return LanguageType.Struct(
+            Structs[context.identifierName().GetText()]
+        );
     }
 
     public override LanguageType VisitArrayType(YabalParser.ArrayTypeContext context)
     {
         return new LanguageType(
-            StaticType.Pointer,
+            StaticType.Array,
             ElementType: Visit(context.type())
         );
     }

@@ -8,5 +8,7 @@ public interface IAddress
 
     int? Length { get; }
 
+    LanguageType Type { get; }
+
     int? GetValue(int offset);
 }

@@ -16,12 +16,23 @@ public class AssemblerTest
 
     private Cpu<Handler> Create(YabalBuilder builder)
     {
+        if (builder.Errors.Count > 0)
+        {
+            _output.WriteLine("Errors:");
+            foreach (var error in builder.Errors.SelectMany(i => i.Value))
+            {
+                _output.WriteLine(error.Message);
+            }
+
+            _output.WriteLine("");
+        }
+
         _output.WriteLine("Instructions:");
         _output.WriteLine(builder.ToString());
 
         var mock = Mock.Of<Handler>();
         var cpu = CpuBuilder.Create(mock)
-            .WithMemory()
+            .WithMemory(0xFFFF)
             .WithProgram(builder)
             .Create();
 
@@ -443,5 +454,46 @@ public class AssemblerTest
         cpu.Run();
 
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Struct(bool @const)
+    {
+        var code = $$"""
+            struct Test {
+                int a
+                int b
+            }
+
+            {{(@const ? "const " : "")}}var pointer = create_pointer(4095, Test)
+            var first = pointer[0]
+            first.a = 1
+            first.b = 2
+
+            var offset = 1
+            var second = pointer[offset]
+            second.a = 3
+            second.b = 4
+
+            var value = pointer[0].a + pointer[0].b + pointer[offset].a + pointer[1].b
+            """;
+
+        var builder = new YabalBuilder();
+        builder.CompileCode(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(4095, cpu.Memory[builder.GetVariable("first").Pointer.Address]);
+        Assert.Equal(1, cpu.Memory[4095]);
+        Assert.Equal(2, cpu.Memory[4096]);
+
+        Assert.Equal(4097, cpu.Memory[builder.GetVariable("second").Pointer.Address]);
+        Assert.Equal(3, cpu.Memory[4097]);
+        Assert.Equal(4, cpu.Memory[4098]);
+
+        Assert.Equal(10, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
     }
 }

@@ -28,10 +28,40 @@ public record AssignExpression(SourceRange Range, Expression Object, Expression 
                 return BuildIdentifier(builder, expression, value);
             case ArrayAccessExpression arrayAccess:
                 return BuildArrayAccess(builder, arrayAccess, value, isVoid);
+            case MemberExpression memberExpression:
+                return BuildMember(builder, memberExpression, value, isVoid);
             default:
                 builder.AddError(ErrorLevel.Error, @object.Range, ErrorMessages.InvalidAssignmentTarget);
                 return VisitValue(builder, value);
         }
+    }
+
+    private static LanguageType BuildMember(
+        YabalBuilder builder,
+        MemberExpression memberExpression,
+        Either<Func<LanguageType>, Expression> value,
+        bool isVoid)
+    {
+        var fieldType = memberExpression.StoreAddressInA(builder);
+
+        using var address = builder.GetTemporaryVariable();
+        builder.StoreA(address);
+        var type = VisitValue(builder, value);
+        builder.LoadB(address);
+        builder.SwapA_B();
+        builder.StoreB_ToAddressInA();
+
+        if (type != fieldType)
+        {
+            builder.AddError(ErrorLevel.Error, value.Right?.Range ?? SourceRange.Zero, ErrorMessages.InvalidType(fieldType, type));
+        }
+
+        if (!isVoid)
+        {
+            builder.SwapA_B();
+        }
+
+        return type;
     }
 
     private static LanguageType BuildArrayAccess(

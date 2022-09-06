@@ -2,7 +2,7 @@ using Astro8.Instructions;
 
 namespace Astro8.Yabal.Ast;
 
-public record CreatePointerExpression(SourceRange Range, Expression Value) : Expression(Range), IConstantValue
+public record CreatePointerExpression(SourceRange Range, Expression Value, LanguageType Type) : Expression(Range), IConstantValue
 {
     public override LanguageType BuildExpression(YabalBuilder builder, bool isVoid)
     {
@@ -14,11 +14,11 @@ public record CreatePointerExpression(SourceRange Range, Expression Value) : Exp
             builder.SetA(0);
         }
 
-        return LanguageType.Pointer(LanguageType.Integer);
+        return LanguageType.Array(Type);
     }
 
     object? IConstantValue.Value { get; } = Value is IConstantValue { Value: int value }
-        ? RawAddress.From(value)
+        ? RawAddress.From(value, Type)
         : null;
 
     public override bool OverwritesB => Value.OverwritesB;

@@ -15,6 +15,8 @@ public class StringAddress : IAddress
 
     public int? Length => Value.Length;
 
+    public LanguageType Type => LanguageType.Integer;
+
     public int? GetValue(int offset)
     {
         return offset < Value.Length ? Character.CharToInt[Value[offset]] : null;

@@ -40,6 +40,11 @@
                     var builder = new YabalBuilder();
                     builder.CompileCode(await _editor.GetValue());
 
+                    foreach (var error in builder.Errors.SelectMany(i => i.Value))
+                    {
+                        Console.WriteLine($"{error.Range.StartLine}:{error.Range.StartColumn} {error.Message}");
+                    }
+
                     using var memory = new MemoryStream();
                     await using var writer = new StreamWriter(memory);
                     builder.ToLogisimFile(writer);

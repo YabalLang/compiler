@@ -1,6 +1,13 @@
 ﻿namespace Astro8.Yabal.Ast;
 
-public record LanguageType(StaticType StaticType, LanguageType? ElementType = null)
+public record LanguageStructField(string Name, LanguageType Type, int Offset);
+
+public record LanguageStruct(string Name, List<LanguageStructField> Fields)
+{
+    public int Size => Fields.Max(f => f.Offset + f.Type.Size);
+}
+
+public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null)
 {
     public static readonly LanguageType Integer = new(StaticType.Integer);
     public static readonly LanguageType Boolean = new(StaticType.Boolean);
@@ -8,6 +15,22 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Assembly = new(StaticType.Assembly);
 
     public static LanguageType Pointer(LanguageType elementType) => new(StaticType.Pointer, elementType);
+
+    public static LanguageType Array(LanguageType elementType) => new(StaticType.Array, elementType);
+
+    public static LanguageType Struct(LanguageStruct structReference) => new(StaticType.Struct, null, structReference);
+
+    public int Size => StaticType switch
+    {
+        StaticType.Integer => 1,
+        StaticType.Boolean => 1,
+        StaticType.Void => 0,
+        StaticType.Assembly => 0,
+        StaticType.Array => ElementType!.Size,
+        StaticType.Pointer => ElementType!.Size,
+        StaticType.Struct => StructReference?.Size ?? 0,
+        _ => throw new ArgumentOutOfRangeException()
+    };
 
     public override int GetHashCode()
     {
@@ -27,7 +50,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public override string ToString()
     {
-        if (StaticType == StaticType.Pointer)
+        if (StaticType == StaticType.Array)
         {
             return $"{ElementType}[]";
         }

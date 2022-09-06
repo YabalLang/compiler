@@ -110,6 +110,7 @@ public class BlockCompileStack
 
 public class YabalVisitor : YabalParserBaseVisitor<Node>
 {
+    private readonly TypeVisitor _typeVisitor = new();
     private BlockCompileStack _block = new();
 
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
@@ -179,7 +180,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             name,
             expression,
-            TypeVisitor.Instance.Visit(context.type())
+            _typeVisitor.Visit(context.type())
         );
     }
 
@@ -326,11 +327,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new FunctionDeclarationStatement(
             context,
             context.identifierName().GetText(),
-            TypeVisitor.Instance.Visit(context.returnType()),
+            _typeVisitor.Visit(context.returnType()),
             context.functionParameterList().functionParameter()
                 .Select(p => new FunctionParameter(
                     p.identifierName().GetText(),
-                    TypeVisitor.Instance.Visit(p.type())
+                    _typeVisitor.Visit(p.type())
                 ))
                 .ToList(),
             VisitFunctionBody(context.functionBody())
@@ -680,7 +681,8 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new CreatePointerExpression(
             context,
-            VisitExpression(context.expression())
+            VisitExpression(context.expression()),
+            context.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Array(LanguageType.Integer)
         );
     }
 
@@ -771,5 +773,45 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitGotoStatement(YabalParser.GotoStatementContext context)
     {
         return new GotoStatement(context, context.identifierName().GetText());
+    }
+
+    public override Node VisitStructDeclaration(YabalParser.StructDeclarationContext context)
+    {
+        var fields = new List<LanguageStructField>();
+        var offset = 0;
+
+        foreach (var item in context.structItem())
+        {
+            if (item.structField() is { } field)
+            {
+                var type = _typeVisitor.VisitType(field.type());
+
+                fields.Add(new LanguageStructField(
+                    field.identifierName().GetText(),
+                    type,
+                    offset
+                ));
+
+                offset += type.Size;
+            }
+        }
+
+        var reference = new LanguageStruct(
+            context.identifierName().GetText(),
+            fields
+        );
+
+        _typeVisitor.Structs[reference.Name] = reference;
+
+        return new StructDeclarationStatement(context, reference);
+    }
+
+    public override Node VisitMemberExpression(YabalParser.MemberExpressionContext context)
+    {
+        return new MemberExpression(
+            context,
+            VisitExpression(context.expression()),
+            context.identifierName().GetText()
+        );
     }
 }

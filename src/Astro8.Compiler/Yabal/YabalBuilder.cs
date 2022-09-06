@@ -99,6 +99,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionLabel _returnLabel;
     private readonly List<InstructionPointer> _stack;
     private readonly Dictionary<string, Function> _functions = new();
+    private readonly Dictionary<string, LanguageStruct> _structs = new();
     private readonly Dictionary<string, InstructionPointer> _strings;
     private readonly Dictionary<(string, FileType type), InstructionPointer> _files;
     private readonly List<InstructionPointer> _globals;
@@ -281,6 +282,32 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         if (!TryGetFunction(name, out var function))
         {
             throw new KeyNotFoundException($"Function '{name}' not found");
+        }
+
+        return function;
+    }
+
+    public bool TryGetStruct(string name, [NotNullWhen(true)] out LanguageStruct? @struct)
+    {
+        if (_structs.TryGetValue(name, out @struct))
+        {
+            return true;
+        }
+
+        if (_parent != null)
+        {
+            return _parent.TryGetStruct(name, out @struct);
+        }
+
+        @struct = default;
+        return false;
+    }
+
+    public LanguageStruct GetStruct(string name)
+    {
+        if (!TryGetStruct(name, out var function))
+        {
+            throw new KeyNotFoundException($"Struct '{name}' not found");
         }
 
         return function;
@@ -612,6 +639,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public void DeclareFunction(Function statement)
     {
         _functions.Add(statement.Name, statement);
+    }
+
+    public void DeclareStruct(LanguageStruct value)
+    {
+        _structs.Add(value.Name, value);
     }
 
     public void SetComment(string comment)

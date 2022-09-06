@@ -7,9 +7,9 @@ program
     ;
 
 rawType
-    : Int           # IntType
-    | Bool          # BoolType
-    | Identifier    # ClassType
+    : Int            # IntType
+    | Bool           # BoolType
+    | identifierName # StructType
     ;
 
 type
@@ -23,10 +23,11 @@ returnType
     ;
 
 expression
-	: CreatePointer expression                                          # CreatePointerExpression
+	: CreatePointer OpenBrace expression (Comma type)? CloseBrace       # CreatePointerExpression
 	| IncludeBytes expression                                           # IncludeBytesExpression
 	| IncludeImage expression                                           # IncludeImageExpression
 	| SizeOf expression                                                 # SizeOfExpression
+	| expression Dot identifierName                                     # MemberExpression
 	| Incr expression												    # IncrementLeftExpression
 	| expression Incr												    # IncrementRightExpression
 	| Decr expression												    # DecrementLeftExpression
@@ -79,6 +80,7 @@ underscore
 // Statements
 statement
     : variableDeclaration
+    | structDeclaration
 	| returnStatement
 	| whileStatement
 	| forStatement
@@ -88,6 +90,23 @@ statement
 	| expressionStatement
 	| gotoStatement
 	| labelStatement
+    ;
+
+structDeclaration
+    : Struct identifierName OpenCurly (structItem (eos structItem)*)? eos? CloseCurly
+    ;
+
+structItem
+    : structField
+    | structFunction
+    ;
+
+structFunction
+    : returnType identifierName functionParameterList functionBody
+    ;
+
+structField
+    : type identifierName
     ;
 
 labelStatement

@@ -18,6 +18,10 @@ public class ErrorMessages
     public const string ReturnOutsideFunction = "Return statement outside of function";
     public const string VariableTypeNotSpecified = "Variable type not specified";
     public const string ValueIsNotAnArray = "Value is not an array";
+    public const string MemberAccessOnNonStruct = "Member access can only be used on structs";
+
+    public static string MemberNotFound(string name)
+        => $"Member '{name}' not found";
 
     public static string ExpectedBoolean(LanguageType type)
         => $"Expected boolean, got {type}";

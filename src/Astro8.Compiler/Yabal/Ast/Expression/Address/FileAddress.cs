@@ -24,6 +24,8 @@ public class FileAddress : IAddress
         }
     }
 
+    public LanguageType Type => LanguageType.Integer;
+
     public int? GetValue(int offset)
     {
         var (contentOffset, content) = FileContent.Get(_path, _type);

@@ -17,7 +17,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
         builder.LoadA(variable.Pointer);
 
         builder.SetComment(
-            variable.Type.StaticType == StaticType.Pointer
+            variable.Type.StaticType == StaticType.Array
                 ? $"load pointer address from variable '{Name}'"
                 : $"load variable '{Name}'"
         );
