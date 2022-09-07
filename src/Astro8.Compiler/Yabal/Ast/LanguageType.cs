@@ -16,8 +16,6 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Void = new(StaticType.Void);
     public static readonly LanguageType Assembly = new(StaticType.Assembly);
     public static readonly LanguageType Unknown = new(StaticType.Unknown);
-    public static readonly LanguageType Char = new(StaticType.Char);
-    public static readonly LanguageType String = new(StaticType.String, Char);
 
     public static LanguageType Array(LanguageType elementType) => new(StaticType.Array, elementType);
 

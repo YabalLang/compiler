@@ -4,14 +4,15 @@ namespace Astro8.Yabal.Ast;
 
 public class StringAddress : IAddress
 {
-    private StringAddress(string value)
+    private StringAddress(string value, Pointer pointer)
     {
         Value = value;
+        Pointer = pointer;
     }
 
     public string Value { get; }
 
-    public Pointer? Pointer => throw new NotImplementedException();
+    public Pointer? Pointer { get; }
 
     public int? Length => Value.Length;
 
@@ -22,5 +23,5 @@ public class StringAddress : IAddress
         return offset < Value.Length ? Character.CharToInt[Value[offset]] : null;
     }
 
-    public static IAddress From(string value) => new StringAddress(value);
+    public static IAddress From(string value, Pointer pointer) => new StringAddress(value, pointer);
 }

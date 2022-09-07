@@ -1,5 +1,8 @@
-var chars = create_pointer(0xD12A, 1)
+int[] chars = create_pointer(0xD12A, 1)
+var message = "Hello world"
 
 while(true) {
-    chars[0] = 1
+    for (int i = 0; i < sizeof(message); i++) {
+        chars[i] = message[i]
+    }
 }

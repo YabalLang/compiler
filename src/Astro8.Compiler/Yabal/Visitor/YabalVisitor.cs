@@ -303,7 +303,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new ArrayAccessExpression(
             context,
-            VisitExpression(context.expression()[0]),
+            VisitAddressExpression(context.expression()[0]),
             VisitExpression(context.expression()[1])
         );
     }

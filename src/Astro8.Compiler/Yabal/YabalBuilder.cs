@@ -567,11 +567,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         else if (size == 1)
         {
             expression.BuildExpression(this, false);
-            StoreA_Large(pointer);
+
+            if (pointer.Bank == 0)
+            {
+                StoreA_Large(pointer);
+            }
+            else
+            {
+                SwapA_B();
+                SetA_Large(pointer);
+
+                SetBank(pointer.Bank);
+                StoreB_ToAddressInA();
+                SetBank(0);
+            }
+
         }
         else
         {
             throw new NotImplementedException();
         }
+
     }
 }

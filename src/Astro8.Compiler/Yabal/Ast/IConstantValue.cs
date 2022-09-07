@@ -2,7 +2,13 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record struct Address(int Bank, int Offset);
+public record struct Address(int Bank, int Offset)
+{
+    public override string ToString()
+    {
+        return Offset.ToString();
+    }
+}
 
 public interface IConstantValue
 {
@@ -43,13 +49,22 @@ public abstract class Pointer
         LoadToA(builder, offset);
         builder.SetComment("load value");
 
-        if (pointer.IsSmall)
+        if (pointer.Bank == 0 && pointer.IsSmall)
         {
             builder.StoreA(pointer.Add(offset));
         }
-        else
+        else if (pointer.Bank == 0)
         {
             builder.StoreA_Large(pointer.Add(offset));
+        }
+        else
+        {
+            builder.SwapA_B();
+            builder.SetA_Large(pointer.Add(offset));
+
+            if (pointer.Bank > 0) builder.SetBank(pointer.Bank);
+            builder.StoreB_ToAddressInA();
+            if (pointer.Bank > 0) builder.SetBank(0);
         }
 
         builder.SetComment("store value");

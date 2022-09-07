@@ -38,7 +38,7 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
 
     public override bool OverwritesB => false;
 
-    public override LanguageType Type => LanguageType.Char;
+    public override LanguageType Type => LanguageType.Integer;
 
     bool IExpressionToB.OverwritesA => false;
 

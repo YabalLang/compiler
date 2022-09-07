@@ -4,6 +4,8 @@ namespace Astro8.Yabal.Ast;
 
 public interface INode
 {
+    SourceRange Range { get; }
+
     void Initialize(YabalBuilder builder);
 }
 
@@ -31,6 +33,8 @@ public interface IAddressExpression : IAssignExpression
 {
     Pointer? Pointer { get; }
 
+    int? Bank { get; }
+
     void StoreAddressInA(YabalBuilder builder);
 
     void IAssignExpression.StoreA(YabalBuilder builder)
@@ -49,7 +53,10 @@ public interface IAddressExpression : IAssignExpression
             builder.SwapA_B();
             StoreAddressInA(builder);
             builder.SwapA_B();
+
+            if (Bank > 0) builder.SetBank(Bank.Value);
             builder.StoreB_ToAddressInA();
+            if (Bank > 0) builder.SetBank(0);
         }
         else
         {
@@ -57,7 +64,10 @@ public interface IAddressExpression : IAssignExpression
             builder.StoreA(temp);
             StoreAddressInA(builder);
             builder.LoadB(temp);
+
+            if (Bank > 0) builder.SetBank(Bank.Value);
             builder.StoreB_ToAddressInA();
+            if (Bank > 0) builder.SetBank(0);
         }
     }
 
@@ -84,7 +94,11 @@ public interface IAddressExpression : IAssignExpression
                     throw new NotSupportedException();
                 }
 
+                if (Bank > 0) builder.SetBank(Bank.Value);
+
                 builder.StoreB_ToAddressInA();
+
+                if (Bank > 0) builder.SetBank(0);
             }
             else if (expression is IAddressExpression { Pointer: {} valuePointer })
             {
@@ -119,7 +133,7 @@ public interface IAddressExpression : IAssignExpression
     }
 }
 
-public record ArrayAccessExpression(SourceRange Range, Expression Array, Expression Key) : Expression(Range), IAddressExpression
+public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array, Expression Key) : Expression(Range), IAddressExpression
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -169,7 +183,7 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
     {
         get
         {
-            if (Array is not IAddressExpression {Pointer: { } pointer} ||
+            if (Array is not {Pointer: { } pointer} ||
                 Key is not IConstantValue {Value: int index})
             {
                 return null;
@@ -180,11 +194,13 @@ public record ArrayAccessExpression(SourceRange Range, Expression Array, Express
         }
     }
 
+    public int? Bank => Array.Bank;
+
     public void StoreAddressInA(YabalBuilder builder)
     {
         var elementSize = Array.Type.ElementType?.Size ?? 1;
 
-        if (Array is IAddressExpression { Pointer: {} pointer } &&
+        if (Array is { Pointer: {} pointer } &&
             Key is IConstantValue { Value: int constantKey })
         {
             builder.SetA_Large(pointer.Add(constantKey * elementSize));

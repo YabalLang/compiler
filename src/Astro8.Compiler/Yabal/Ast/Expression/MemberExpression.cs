@@ -28,6 +28,8 @@ public record MemberExpression(SourceRange Range, IAddressExpression Expression,
         ? pointer.Add(Field.Offset)
         : null;
 
+    public int? Bank => Expression.Bank;
+
     public void StoreAddressInA(YabalBuilder builder)
     {
         Expression.StoreAddressInA(builder);

@@ -33,6 +33,8 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
 
     bool IExpressionToB.OverwritesA => false;
 
+    public int? Bank => Pointer?.Bank;
+
     public void StoreAddressInA(YabalBuilder builder)
     {
         builder.SetA(Variable.Pointer);

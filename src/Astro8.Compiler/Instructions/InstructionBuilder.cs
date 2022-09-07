@@ -91,6 +91,11 @@ public abstract class InstructionBuilderBase
 
     public void StoreA_Large(PointerOrData address)
     {
+        if (address.Left?.Bank > 0)
+        {
+            throw new InvalidOperationException();
+        }
+
         Emit("STLGE");
         EmitRaw(address);
     }

@@ -19,6 +19,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
     public override void OnBuild(YabalBuilder builder)
     {
         var expression = Expression.Optimize();
+
         var next = builder.CreateLabel();
         var body = builder.CreateLabel();
         var end = builder.CreateLabel();
@@ -27,9 +28,13 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
         Block.Break = end;
 
         builder.Mark(next);
-        expression.CreateComparison(builder, end, body);
 
-        builder.Mark(body);
+        if (expression is not IConstantValue {Value: true})
+        {
+            expression.CreateComparison(builder, end, body);
+            builder.Mark(body);
+        }
+
         Body.Build(builder);
         builder.Jump(next);
         builder.Mark(end);
