@@ -5,11 +5,13 @@ namespace Astro8.Yabal.Ast;
 
 public record IdentifierExpression(SourceRange Range, string Name) : Expression(Range), IExpressionToB, IAddressExpression, IConstantValue
 {
-    public Variable Variable { get; private set; } = null!;
+    private Variable? _variable;
+
+    private Variable Variable => _variable ?? throw new InvalidOperationException("Variable not set");
 
     public override void Initialize(YabalBuilder builder)
     {
-        Variable = builder.GetVariable(Name);
+        _variable = builder.GetVariable(Name);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
@@ -31,12 +33,14 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
 
     public override LanguageType Type => Variable.Type;
 
+
     bool IExpressionToB.OverwritesA => false;
 
     public int? Bank => Pointer?.Bank;
 
     public void StoreAddressInA(YabalBuilder builder)
     {
+        Variable.Usages++;
         builder.SetA(Variable.Pointer);
     }
 
@@ -45,8 +49,10 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
         return Name;
     }
 
-    public object? Value => Variable is { Constant: true, ConstantValue: {} constantValue }
-        ? constantValue.Value
+    public object? Value => _variable is { Constant: true, Initializer: {} initializer }
+        ? initializer.Optimize() is IConstantValue { Value: var value }
+            ? value
+            : null
         : null;
 
 
@@ -54,14 +60,45 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
     {
         get
         {
+            Variable.Usages++;
+
             if (Variable.Type.StaticType == StaticType.Array)
             {
-                return Variable.Constant
-                    ? (Variable.ConstantValue?.Value as IAddress)?.Pointer
-                    : null;
+                return (Value as IAddress)?.Pointer;
             }
 
             return Variable.Pointer;
         }
     }
+
+    public override Expression Optimize()
+    {
+        if (_variable == null)
+        {
+            return this;
+        }
+
+        _variable.HasBeenUsed = true;
+
+        switch (Value)
+        {
+            case int intValue:
+                return new IntegerExpression(Range, intValue);
+            case bool boolValue:
+                return new BooleanExpression(Range, boolValue);
+            default:
+                _variable.Usages++;
+                return this;
+        }
+    }
+
+    public override IdentifierExpression CloneExpression()
+    {
+        return new IdentifierExpression(Range, Name)
+        {
+            _variable = _variable
+        };
+    }
+
+    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

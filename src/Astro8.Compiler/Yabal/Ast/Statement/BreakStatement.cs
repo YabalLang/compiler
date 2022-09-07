@@ -16,4 +16,8 @@ public record BreakStatement(SourceRange Range) : Statement(Range)
     {
         builder.Jump(builder.Block.Break);
     }
+
+    public override Statement CloneStatement() => this;
+
+    public override Statement Optimize() => this;
 }

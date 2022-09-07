@@ -100,6 +100,7 @@ public sealed partial class Cpu<THandler> : IDisposable
         }
 
         var steps = 0;
+        var i = 0;
 
         fetch_memory:
         var activeBankId = _context.Bank;
@@ -122,9 +123,7 @@ public sealed partial class Cpu<THandler> : IDisposable
                 // Store current values on the stack
                 context.Cpu = _context;
 
-                int i;
-
-                for (i = 0; i < amount && !_halt; i++)
+                for (; i < amount && !_halt; i++)
                 {
                     context.Cpu.MemoryIndex = context.Cpu.ProgramCounter;
 

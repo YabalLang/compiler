@@ -14,4 +14,8 @@ public record GotoStatement(SourceRange Range, string Name) : Statement(Range)
 
         builder.Jump(label);
     }
+
+    public override Statement CloneStatement() => this;
+
+    public override Statement Optimize() => this;
 }

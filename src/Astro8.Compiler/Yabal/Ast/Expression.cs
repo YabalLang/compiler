@@ -22,4 +22,6 @@ public abstract record Expression(SourceRange Range) : Node(Range), IExpression
     public abstract bool OverwritesB { get; }
 
     public abstract LanguageType Type { get; }
+
+    public abstract Expression CloneExpression();
 }

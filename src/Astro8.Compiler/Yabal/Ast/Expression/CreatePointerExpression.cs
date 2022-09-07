@@ -27,4 +27,9 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
     public override bool OverwritesB => Value.OverwritesB;
 
     public override LanguageType Type => LanguageType.Array(ElementType);
+
+    public override Expression CloneExpression()
+    {
+        return new CreatePointerExpression(Range, Value.CloneExpression(), Bank, ElementType);
+    }
 }

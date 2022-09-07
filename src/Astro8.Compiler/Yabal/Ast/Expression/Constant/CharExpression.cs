@@ -46,4 +46,9 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
     {
         return $"'{Value}'";
     }
+
+    public override Expression CloneExpression()
+    {
+        return this;
+    }
 }

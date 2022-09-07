@@ -24,6 +24,8 @@ public interface IAssignExpression : IExpression
 
     void StoreA(YabalBuilder builder);
 
+    IAssignExpression Clone();
+
     void MarkModified()
     {
     }
@@ -36,6 +38,10 @@ public interface IAddressExpression : IAssignExpression
     int? Bank { get; }
 
     void StoreAddressInA(YabalBuilder builder);
+
+    new IAddressExpression Clone();
+
+    IAssignExpression IAssignExpression.Clone() => Clone();
 
     void IAssignExpression.StoreA(YabalBuilder builder)
     {
@@ -255,4 +261,14 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
     {
         return $"{Array}[{Key}]";
     }
+
+    public override ArrayAccessExpression CloneExpression()
+    {
+        return new ArrayAccessExpression(
+            Range,
+            Array.Clone(),
+            Key.CloneExpression());
+    }
+
+    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

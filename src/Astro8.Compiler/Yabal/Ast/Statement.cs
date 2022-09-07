@@ -8,16 +8,20 @@ public abstract record Statement(SourceRange Range) : Node(Range)
     public virtual void Declare(YabalBuilder builder)
     {
     }
+
+    public abstract Statement CloneStatement();
+
+    public abstract Statement Optimize();
 }
 
-public record ScopeStatement(SourceRange Range) : Statement(Range)
+public abstract record ScopeStatement(SourceRange Range) : Statement(Range)
 {
     private BlockStack? _block;
 
     protected BlockStack Block
     {
         get => _block ?? throw new InvalidOperationException("Block not set");
-        private set => _block = value;
+        set => _block = value;
     }
 
     protected virtual BlockStack CreateBlock(YabalBuilder builder)

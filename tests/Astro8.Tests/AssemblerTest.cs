@@ -32,7 +32,7 @@ public class AssemblerTest
 
         var mock = Mock.Of<Handler>();
         var cpu = CpuBuilder.Create(mock)
-            .WithMemory(0, 0xFFFF)
+            .WithMemory(0xFFFF)
             .WithProgram(builder)
             .Create();
 

@@ -157,13 +157,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
-    public Variable CreateVariable(string name, LanguageType type, IConstantValue? constantValue = null)
+    public Variable CreateVariable(string name, LanguageType type, Expression? initializer = null)
     {
         var pointer = Block.IsGlobal
             ? Globals.GetNext(Block, type)
             : Stack.GetNext(Block, type);
 
-        var variable = new Variable(name, pointer, type, constantValue);
+        var variable = new Variable(name, pointer, type, initializer);
         Block.DeclareVariable(name, variable);
         pointer.AssignedVariables.Add(variable);
         return variable;
@@ -223,6 +223,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         program.Declare(this);
         program.Initialize(this);
+        program = program.Optimize();
         program.Build(this);
     }
 
@@ -393,7 +394,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return _builder.ToString();
     }
 
-    private InstructionBuildResult Build(int offset = 0)
+    public InstructionBuildResult Build(int offset = 0)
     {
         var builder = new InstructionBuilder();
 
@@ -409,7 +410,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         if (Globals.Count == 0 &&
             Temporary.Count == 0 &&
             Stack.Count == 0 &&
-            _functions.Count == 0 &&
             !_hasCall)
         {
             return;
@@ -434,7 +434,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
-        if (_hasCall || _functions.Count > 0)
+        if (_hasCall)
         {
             builder.Mark(ReturnValue);
             builder.EmitRaw(0, "return value");

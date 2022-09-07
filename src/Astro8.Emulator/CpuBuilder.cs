@@ -18,9 +18,13 @@ public class CpuBuilder<THandler>
         _config = config;
     }
 
-    public CpuBuilder<THandler> WithMemory(int bank = 0, int? size = null)
+    public CpuBuilder<THandler> WithMemory(int? size = null)
     {
-        _memory[bank] = new CpuMemory<THandler>(size ?? _config.Memory.Size);
+        for (var i = 0; i < _memory.Length; i++)
+        {
+            _memory[i] = new CpuMemory<THandler>(size ?? _config.Memory.Size);
+        }
+
         return this;
     }
 
@@ -39,9 +43,9 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithProgramFile(int bank, string? file = null, int? address = null)
+    public CpuBuilder<THandler> WithProgramFile(string? file = null, int? address = null)
     {
-        var memory = _memory[bank];
+        var memory = _memory[0];
 
         if (memory == null)
         {

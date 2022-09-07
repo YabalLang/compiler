@@ -52,4 +52,9 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
     public override bool OverwritesB => false;
 
     public override LanguageType Type => LanguageType.Integer;
+
+    public override Expression CloneExpression()
+    {
+        return this;
+    }
 }

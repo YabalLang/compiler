@@ -10,6 +10,16 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
         Alternate?.Declare(builder);
     }
 
+    public override Statement CloneStatement()
+    {
+        return new IfStatement(
+            Range,
+            Expression.CloneExpression(),
+            Consequent.CloneStatement(),
+            Alternate?.CloneStatement()
+        );
+    }
+
     public override void Initialize(YabalBuilder builder)
     {
         Expression.Initialize(builder);
@@ -19,20 +29,6 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
 
     public override void Build(YabalBuilder builder)
     {
-        if (Expression.Optimize() is IConstantValue { Value: bool value })
-        {
-            if (value)
-            {
-                Consequent.Build(builder);
-            }
-            else
-            {
-                Alternate?.Build(builder);
-            }
-
-            return;
-        }
-
         var consequentLabel = builder.CreateLabel();
         var alternateLabel = Alternate != null ? builder.CreateLabel() : null;
         var end = builder.CreateLabel();
@@ -66,5 +62,19 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
         }
 
         builder.Mark(end);
+    }
+
+    public override Statement Optimize()
+    {
+        var expression = Expression.Optimize();
+        var consequent = Consequent.Optimize();
+        var alternate = Alternate?.Optimize();
+
+        if (expression is IConstantValue { Value: bool value })
+        {
+            return value ? consequent : alternate ?? new EmptyStatement(Range);
+        }
+
+        return new IfStatement(Range, expression, consequent, alternate);
     }
 }

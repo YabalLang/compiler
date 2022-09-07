@@ -51,4 +51,9 @@ public record UpdateExpression(SourceRange Range, IAssignExpression Value, bool 
     public override bool OverwritesB => true;
 
     public override LanguageType Type => LanguageType.Integer;
+
+    public override Expression CloneExpression()
+    {
+        return new UpdateExpression(Range, Value.Clone(), Prefix, Operator);
+    }
 }

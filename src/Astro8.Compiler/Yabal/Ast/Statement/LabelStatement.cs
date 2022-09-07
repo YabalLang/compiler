@@ -16,4 +16,8 @@ public record LabelStatement(SourceRange Range, string Name) : Statement(Range)
 
         builder.Mark(label);
     }
+
+    public override Statement CloneStatement() => this;
+
+    public override Statement Optimize() => this;
 }

@@ -80,4 +80,9 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         UnaryOperator.Minus => LanguageType.Integer,
         _ => throw new InvalidOperationException()
     };
+
+    public override Expression CloneExpression()
+    {
+        return new UnaryExpression(Range, Value.CloneExpression(), Operator);
+    }
 }

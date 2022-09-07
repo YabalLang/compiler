@@ -10,11 +10,12 @@ window.emulator = (function() {
         emulator.execute = async function(data) {
             /** @type {ArrayBuffer} **/ const buffer = await data.arrayBuffer();
 
+            console.debug('Sending program to worker');
             worker.postMessage(['program', buffer], [buffer]);
         };
 
         // Screen
-        const imageData = ctx.createImageData(64, 64);
+        const imageData = ctx.createImageData(108, 108);
         const data = imageData.data;
         let screenChanged = false;
 
@@ -36,12 +37,13 @@ window.emulator = (function() {
 
         requestAnimationFrame(updateScreen);
 
-        var a = 0;
-        var b = 0;
-        var c = 0;
-        var expansionPort = 0;
-        var counter = 0;
-        var updateValue = false;
+        let a = 0;
+        let b = 0;
+        let c = 0;
+        let expansionPort = 0;
+        let bank = 0;
+        let counter = 0;
+        let updateValue = false;
 
         setInterval(function() {
             if (!updateValue) {
@@ -49,7 +51,7 @@ window.emulator = (function() {
             }
 
             updateValue = false;
-            control.invokeMethodAsync('UpdateValue', a, b, c, expansionPort, counter);
+            control.invokeMethodAsync('UpdateValue', a, b, c, expansionPort, counter, bank);
         }, 100);
 
         worker.addEventListener("message", function(msg) {
@@ -70,6 +72,10 @@ window.emulator = (function() {
                     break;
                 case 'update_expansion_port':
                     expansionPort = parameter[0];
+                    updateValue = true;
+                    break;
+                case 'update_bank':
+                    bank = parameter[0];
                     updateValue = true;
                     break;
                 case 'update_counter':
@@ -156,7 +162,7 @@ window.emulator = (function() {
             lastKey = e.key;
 
             let code = keyMapping[e.key] ?? keyMapping[e.code] ?? 168;
-            console.log(code)
+            console.debug('Sending expansion value', code, 'to worker');
             worker.postMessage(['exp', code]);
         });
 
@@ -165,6 +171,7 @@ window.emulator = (function() {
                 return
             }
 
+            console.debug('Sending expansion value', 168, 'to worker');
             worker.postMessage(['exp', 168]);
             lastKey = null;
         });

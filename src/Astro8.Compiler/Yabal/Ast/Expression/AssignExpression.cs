@@ -21,4 +21,14 @@ public record AssignExpression(SourceRange Range, IAssignExpression Object, Expr
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Value.Type;
+
+    public override Expression CloneExpression()
+    {
+        return new AssignExpression(Range, Object.Clone(), Value.CloneExpression());
+    }
+
+    public override Expression Optimize()
+    {
+        return new AssignExpression(Range, Object, Value.Optimize());
+    }
 }

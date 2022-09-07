@@ -201,9 +201,9 @@ functionBody
 
 // Variable
 variableDeclaration
-    : Const? type identifierName (Assign expression)?               # DefaultVariableDeclaration
-    | Const? Var identifierName Assign expression                   # AutoVariableDeclaration
-    | returnType identifierName functionParameterList functionBody  # FunctionDeclaration
+    : Const? type identifierName (Assign expression)?                           # DefaultVariableDeclaration
+    | Const? Var identifierName Assign expression                               # AutoVariableDeclaration
+    | Inline?  returnType identifierName functionParameterList functionBody     # FunctionDeclaration
     ;
 
 // Identifier

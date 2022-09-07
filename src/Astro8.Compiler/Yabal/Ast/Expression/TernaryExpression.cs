@@ -33,4 +33,14 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Consequent.Type;
+
+    public override Expression CloneExpression()
+    {
+        return new TernaryExpression(
+            Range,
+            Expression.CloneExpression(),
+            Consequent.CloneExpression(),
+            Alternate.CloneExpression()
+        );
+    }
 }

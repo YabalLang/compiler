@@ -8,7 +8,8 @@ Module.instantiateWasm = async (info, receiveInstance) => {
         UpdateA: 'update_a',
         UpdateB: 'update_b',
         UpdateC: 'update_c',
-        UpdateExpansionPort: 'update_expansion_port'
+        UpdateExpansionPort: 'update_expansion_port',
+        UpdateBank: 'update_bank'
     };
 
     for (const [key, methodName] of Object.entries(mappings)) {

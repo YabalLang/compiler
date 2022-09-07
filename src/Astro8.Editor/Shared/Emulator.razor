@@ -2,7 +2,7 @@
 @implements IDisposable
 
 <div class="m-2 d-flex align-items-center flex-column">
-    <canvas id="emulator" class="emulator-screen" width="64" height="64"></canvas>
+    <canvas id="emulator" class="emulator-screen" width="108" height="108"></canvas>
 
     @if (ShowRegisters)
     {
@@ -25,7 +25,9 @@
                 <div class="col">
                     <RegisterValue Name="Counter" Value="_counter"/>
                 </div>
-                <div class="col"></div>
+                <div class="col">
+                    <RegisterValue Name="Bank" Value="_bank"/>
+                </div>
             </div>
         </div>
     }
@@ -38,6 +40,7 @@
     private int _c;
     private int _expansionPort;
     private int _counter;
+    private int _bank;
     private DotNetObjectReference<Emulator>? _objRef;
 
     [Parameter]
@@ -70,13 +73,14 @@
     }
 
     [JSInvokable]
-    public Task UpdateValue(int a, int b, int c, int expansionPort, int counter)
+    public Task UpdateValue(int a, int b, int c, int expansionPort, int counter, int bank)
     {
         _a = a;
         _b = b;
         _c = c;
         _expansionPort = expansionPort;
         _counter = counter;
+        _bank = bank;
 
         if (ShowRegisters)
         {

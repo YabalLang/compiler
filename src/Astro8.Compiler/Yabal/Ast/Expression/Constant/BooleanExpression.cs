@@ -23,4 +23,9 @@ public record BooleanExpression(SourceRange Range, bool Value) : Expression(Rang
     public override LanguageType Type => LanguageType.Boolean;
 
     bool IExpressionToB.OverwritesA => false;
+
+    public override Expression CloneExpression()
+    {
+        return this;
+    }
 }

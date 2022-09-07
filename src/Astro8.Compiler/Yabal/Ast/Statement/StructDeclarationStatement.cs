@@ -11,4 +11,8 @@ public record StructDeclarationStatement(SourceRange Range, LanguageStruct Struc
     public override void Build(YabalBuilder builder)
     {
     }
+
+    public override Statement CloneStatement() => this;
+
+    public override Statement Optimize() => this;
 }

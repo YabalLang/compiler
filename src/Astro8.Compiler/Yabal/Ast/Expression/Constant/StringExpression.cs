@@ -26,4 +26,9 @@ public record StringExpression(SourceRange Range, string Value) : Expression(Ran
     {
         return $"\"{Value}\"";
     }
+
+    public override Expression CloneExpression()
+    {
+        return this;
+    }
 }

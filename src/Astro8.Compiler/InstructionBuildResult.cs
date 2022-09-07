@@ -16,48 +16,140 @@ public class InstructionBuildResult
         (_pointerOffsets, _length) = GetPointers(_references, offset);
     }
 
-    public void ToAssembly(TextWriter writer, bool addComments = false)
+    public void ToAssembly(TextWriter writer, bool addComments = false, bool htmlHighlight = false)
     {
+        var i = 0;
+
         foreach (var either in _references)
         {
             if (either is { IsLeft: true })
             {
+                if (addComments)
+                {
+                    if (htmlHighlight)
+                    {
+                        writer.Write(@"<div class=""asm-line asm-pointer-line"">");
+                        writer.Write(@"<span class=""asm-line-number""></span>");
+                        writer.Write(@"<span class=""asm-comment"">");
+                    }
+
+                    writer.Write(", ");
+                    writer.Write(either.Left is InstructionLabel ? "label " : "reference ");
+                    writer.WriteLine(either.Left.ToString());
+
+                    if (htmlHighlight)
+                    {
+                        writer.Write(@"</span>");
+                        writer.Write(@"</div>");
+                    }
+                }
+
                 continue;
             }
 
-            var (instruction, pointer, raw, comment) = either.Right;
+            i++;
 
-            if (!instruction.HasValue)
+            if (htmlHighlight)
+            {
+                writer.Write(@"<div class=""asm-line asm-instruction-line"">");
+
+                writer.Write(@"<span class=""asm-line-number"">");
+                writer.Write(i.ToString());
+                writer.Write(@"</span>");
+            }
+
+            var (instructionRef, pointer, raw, comment) = either.Right;
+
+            if (!instructionRef.HasValue)
             {
                 if (pointer is null)
                 {
                     throw new InvalidOperationException("Invalid instruction");
                 }
 
-                writer.Write($"HERE {pointer.Get(_pointerOffsets)}");
-            }
-            else if (pointer is null)
-            {
-                writer.Write(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
+                if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
+
+                writer.Write("HERE ");
+
+                if (htmlHighlight) writer.Write(@"</span>");
+                if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
+
+                writer.Write(pointer.Get(_pointerOffsets));
+
+                if (htmlHighlight) writer.Write(@"</span>");
             }
             else
             {
-                instruction = instruction.Value with
+                if (pointer is not null)
                 {
-                    Data = pointer.Get(_pointerOffsets)
-                };
+                    instructionRef = instructionRef.Value with
+                    {
+                        Data = pointer.Get(_pointerOffsets)
+                    };
+                }
 
-                writer.Write(raw ? $"HERE {instruction.Value.Raw}" : instruction.Value.ToString());
+                if (raw)
+                {
+                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
+
+                    writer.Write("HERE ");
+
+                    if (htmlHighlight) writer.Write(@"</span>");
+                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
+
+                    writer.Write(instructionRef.Value.Raw);
+
+                    if (htmlHighlight) writer.Write(@"</span>");
+                }
+                else
+                {
+                    var instruction = instructionRef.Value.Instruction;
+
+                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
+
+                    writer.Write(instruction.Name);
+
+                    if (htmlHighlight) writer.Write(@"</span>");
+
+                    if (instruction.MicroInstructions.Any(i => i.IsIR))
+                    {
+                        if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
+
+                        writer.Write(" ");
+                        writer.Write(instructionRef.Value.Data);
+
+                        if (htmlHighlight) writer.Write(@"</span>");
+                    }
+                }
             }
 
-            if (addComments && comment != null)
+
+            if (addComments && (comment != null || pointer != null))
             {
+                if (htmlHighlight) writer.Write(@"<span class=""asm-comment"">");
+
                 writer.Write(" , ");
-                writer.Write(comment);
+                if (pointer != null) writer.Write(pointer.Name);
+
+                if (comment != null)
+                {
+                    if (pointer != null) writer.Write(", ");
+                    writer.Write(comment);
+                }
+
+                if (htmlHighlight) writer.Write(@"</span>");
             }
 
+            if (htmlHighlight) writer.Write(@"</div>");
             writer.WriteLine();
         }
+    }
+
+    public string ToAssembly(bool addComments = false, bool htmlHighlight = false)
+    {
+        using var writer = new StringWriter();
+        ToAssembly(writer, addComments, htmlHighlight);
+        return writer.ToString();
     }
 
     public int[] ToArray()

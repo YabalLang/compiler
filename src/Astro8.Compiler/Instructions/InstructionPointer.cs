@@ -7,14 +7,14 @@ public class InstructionPointer : Pointer
 {
     private int? _address;
 
-    public InstructionPointer(string? name, int size = 1, bool isSmall = false)
+    public InstructionPointer(string name, int size = 1, bool isSmall = false)
     {
         Name = name;
         Size = size;
         IsSmall = isSmall;
     }
 
-    public override string? Name { get; }
+    public override string Name { get; }
 
     public override bool IsSmall { get; }
 
@@ -34,7 +34,7 @@ public class InstructionPointer : Pointer
 
     public override string? ToString()
     {
-        return $"{Name}";
+        return Name;
     }
 
     public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)

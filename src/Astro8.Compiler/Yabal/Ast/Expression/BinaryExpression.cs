@@ -305,4 +305,14 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         BinaryOperator.OrElse => LanguageType.Boolean,
         _ => throw new NotSupportedException()
     };
+
+    public override Expression CloneExpression()
+    {
+        return new BinaryExpression(
+            Range,
+            Operator,
+            Left.CloneExpression(),
+            Right.CloneExpression()
+        );
+    }
 }

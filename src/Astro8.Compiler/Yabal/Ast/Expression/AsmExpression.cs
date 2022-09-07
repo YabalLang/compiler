@@ -128,4 +128,9 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
     public override bool OverwritesB => true;
 
     public override LanguageType Type => LanguageType.Assembly;
+
+    public override Expression CloneExpression()
+    {
+        return this;
+    }
 }

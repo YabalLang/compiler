@@ -12,6 +12,24 @@ public record BlockStatement(SourceRange Range, List<Statement> Statements, bool
         }
     }
 
+    public override BlockStatement CloneStatement()
+    {
+        return new BlockStatement(
+            Range,
+            Statements.Select(s => s.CloneStatement()).ToList(),
+            NewScope
+        );
+    }
+
+    public override BlockStatement Optimize()
+    {
+        return new BlockStatement(
+            Range,
+            Statements.Select(s => s.Optimize()).ToList(),
+            NewScope
+        );
+    }
+
     public override void Initialize(YabalBuilder builder)
     {
         foreach (var statement in Statements)

@@ -18,14 +18,27 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, bool 
             throw new Exception("Variable type is not specified");
         }
 
-        Variable = builder.CreateVariable(Name, type, Value as IConstantValue);
+        Variable = builder.CreateVariable(Name, type, Value);
     }
 
     public override void Build(YabalBuilder builder)
     {
-        if (Value != null)
+        if (Value != null && !Variable.CanBeRemoved)
         {
             builder.SetValue(Variable.Pointer, Value);
         }
+    }
+
+    public override Statement CloneStatement()
+    {
+        return new VariableDeclarationStatement(Range, Name, Constant, Value?.CloneExpression(), Type);
+    }
+
+    public override Statement Optimize()
+    {
+        return new VariableDeclarationStatement(Range, Name, Constant, Value?.Optimize(), Type)
+        {
+            Variable = Variable
+        };
     }
 }

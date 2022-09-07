@@ -19,6 +19,8 @@ public readonly record struct InstructionReference
         _data = BitRange(raw, 0, 11);
     }
 
+    public Instruction Instruction => Instruction.Default[Id];
+
     public int Id
     {
         get => _id;

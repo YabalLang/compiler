@@ -1,0 +1,21 @@
+inline void set_char(int offset, int value) {
+    var address = offset + 53546
+    
+    asm {
+        AIN @address
+        BIN @value
+
+        BNK 1
+        STAOUT
+        BNK 0
+    }
+}
+
+
+while (true) {
+    set_char(0, 'H')
+    set_char(1, 'E')
+    set_char(2, 'L')
+    set_char(3, 'L')
+    set_char(4, 'O')
+}

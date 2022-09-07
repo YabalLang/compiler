@@ -70,6 +70,7 @@ IncludeBytes        : 'include_bytes';
 IncludeImage        : 'include_image';
 Goto                : 'goto';
 Struct              : 'struct';
+Inline              : 'inline';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

@@ -38,7 +38,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new InvalidOperationException($"{context.GetType().Name} is not supported.");
         }
 
-        return result.Optimize();
+        return result;
     }
 
     private IAssignExpression VisitAssignExpression(IParseTree context)
@@ -220,7 +220,8 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                     _typeVisitor.Visit(p.type())
                 ))
                 .ToList(),
-            VisitFunctionBody(context.functionBody())
+            VisitFunctionBody(context.functionBody()),
+            context.Inline() != null
         );
     }
 

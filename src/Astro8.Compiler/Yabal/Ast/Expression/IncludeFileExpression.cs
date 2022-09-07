@@ -17,6 +17,10 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
 
     public object Value => FileAddress.From(Path, FileType);
 
+    public override Expression CloneExpression()
+    {
+        return new IncludeFileExpression(Range, Path, FileType);
+    }
 }
 
 public enum FileType

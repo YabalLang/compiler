@@ -9,6 +9,6 @@ public class InstructionLabel : InstructionPointer
 
     public override string? ToString()
     {
-        return $"{Name}:";
+        return Name;
     }
 }

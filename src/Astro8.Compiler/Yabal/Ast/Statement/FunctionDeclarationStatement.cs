@@ -6,20 +6,21 @@ namespace Astro8.Yabal.Ast;
 
 public record FunctionParameter(string Name, LanguageType Type);
 
-public record Function(
-    string Name,
+public record Function(string Name,
     InstructionLabel Label,
     LanguageType ReturnType,
-    List<Variable> Parameters,
-    YabalBuilder Builder
-);
+    YabalBuilder Builder,
+    bool Inline,
+    BlockStatement Body,
+    List<FunctionParameter> Parameters);
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
     string Name,
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
-    BlockStatement Body
+    BlockStatement Body,
+    bool Inline
 ) : ScopeStatement(Range)
 {
     private Function? _function;
@@ -27,39 +28,71 @@ public record FunctionDeclarationStatement(
     public override void OnDeclare(YabalBuilder builder)
     {
         var functionBuilder = new YabalBuilder(builder);
-        functionBuilder.PushBlock(this);
-
-        var parameters = new List<Variable>();
-
-        foreach (var parameter in Parameters)
-        {
-            parameters.Add(functionBuilder.CreateVariable(parameter.Name, parameter.Type));
-        }
 
         _function = new Function(
             Name,
             builder.CreateLabel(Name),
             ReturnType,
-            parameters,
-            functionBuilder
+            functionBuilder,
+            Inline,
+            Body,
+            Parameters
         );
 
         builder.DeclareFunction(_function);
 
-        Body.Declare(builder);
+        if (!Inline)
+        {
+            functionBuilder.PushBlock(this);
+
+            foreach (var parameter in Parameters)
+            {
+                functionBuilder.CreateVariable(parameter.Name, parameter.Type);
+            }
+
+            Body.Declare(builder);
+        }
     }
 
     public override void OnInitialize(YabalBuilder builder)
     {
         Debug.Assert(_function != null);
 
-        Body.Initialize(_function.Builder);
+        if (!Inline) Body.Initialize(_function.Builder);
     }
 
     public override void OnBuild(YabalBuilder _)
     {
         Debug.Assert(_function != null);
 
-        Body.Build(_function.Builder);
+        if (!Inline) Body.Build(_function.Builder);
+    }
+
+    public override Statement CloneStatement()
+    {
+        return new FunctionDeclarationStatement(
+            Range,
+            Name,
+            ReturnType,
+            Parameters,
+            Body.CloneStatement(),
+            Inline
+        );
+    }
+
+    public override Statement Optimize()
+    {
+        return new FunctionDeclarationStatement(
+            Range,
+            Name,
+            ReturnType,
+            Parameters,
+            Body.Optimize(),
+            Inline
+        )
+        {
+            Block = Block,
+            _function = _function
+        };
     }
 }

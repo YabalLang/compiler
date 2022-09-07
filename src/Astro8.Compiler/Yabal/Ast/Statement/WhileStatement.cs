@@ -39,4 +39,17 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
         builder.Jump(next);
         builder.Mark(end);
     }
+
+    public override Statement CloneStatement()
+    {
+        return new WhileStatement(Range, Expression.CloneExpression(), Body.CloneStatement());
+    }
+
+    public override Statement Optimize()
+    {
+        return new WhileStatement(Range, Expression.Optimize(), Body.Optimize())
+        {
+            Block = Block
+        };
+    }
 }

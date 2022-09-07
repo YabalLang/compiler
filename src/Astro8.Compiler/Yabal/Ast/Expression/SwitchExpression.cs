@@ -59,4 +59,14 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Default?.Type ?? Items[0].Value.Type;
+
+    public override Expression CloneExpression()
+    {
+        return new SwitchExpression(
+            Range,
+            Value.CloneExpression(),
+            Items.Select(i => new SwitchItem(i.Cases.Select(c => c.CloneExpression()).ToList(), i.Value.CloneExpression())).ToList(),
+            Default.CloneExpression()
+        );
+    }
 }

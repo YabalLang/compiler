@@ -21,13 +21,33 @@ html, body, #app {
 
 
 :root {
-    --scale: 7;
+    --scale: 4;
 }
 
-@media (max-width: 576px) {
-    :root {
-        --scale: 5;
-    }
+.asm-comment {
+    color: #999;
+}
+
+.asm-instruction {
+    color: #0277BD;
+}
+
+.asm-instruction-data {
+    color: #000;
+}
+
+.asm-line-number {
+    display: inline-block;
+    color: #999;
+    width: 3em;
+    text-align: right;
+    margin-right: 0.5em;
+    padding-right: 0.5em;
+    border-right: 1px solid #999;
+}
+
+.asm-pointer-line {
+    margin-top: 0.5em;
 }
 
 @media (max-width: 360px) {
@@ -37,8 +57,8 @@ html, body, #app {
 }
 
 .emulator-screen {
-    width: calc(64px * var(--scale));
-    height: calc(64px * var(--scale));
+    width: calc(108px * var(--scale));
+    height: calc(108px * var(--scale));
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;

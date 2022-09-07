@@ -46,4 +46,29 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 
         builder.Mark(end);
     }
+
+    public override Statement CloneStatement()
+    {
+        return new ForStatement(
+            Range,
+            Init?.CloneStatement(),
+            Update?.CloneStatement(),
+            Test.CloneExpression(),
+            Body.CloneStatement()
+        );
+    }
+
+    public override Statement Optimize()
+    {
+        return new ForStatement(
+            Range,
+            Init?.Optimize(),
+            Update?.Optimize(),
+            Test.Optimize(),
+            Body.Optimize()
+        )
+        {
+            Block = Block
+        };
+    }
 }

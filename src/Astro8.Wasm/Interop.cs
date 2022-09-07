@@ -12,6 +12,7 @@ public static class Interop
     private static int _lastB;
     private static int _lastC;
     private static int _lastExp;
+    private static int _lastBank;
     private static Cpu<WasmHandler>? _cpu;
 
     [UnmanagedCallersOnly(EntryPoint = "Compile")]
@@ -26,8 +27,8 @@ public static class Interop
 
         _cpu = CpuBuilder.Create<WasmHandler>()
             .WithMemory(0, data)
-            .WithScreen(0xEFFF)
-            .WithCharacter(0xEF6E)
+            .WithScreen()
+            .WithCharacter()
             .Create();
     }
 
@@ -86,6 +87,12 @@ public static class Interop
             UpdateExpansionPort(cpu.ExpansionPort);
             _lastExp = cpu.ExpansionPort;
         }
+
+        if (_lastBank != context.Bank)
+        {
+            UpdateBank(context.Bank);
+            _lastBank = context.Bank;
+        }
     }
 
     [DllImport("NativeLib")]
@@ -102,4 +109,7 @@ public static class Interop
 
     [DllImport("NativeLib")]
     public static extern void UpdateExpansionPort(int value);
+
+    [DllImport("NativeLib")]
+    public static extern void UpdateBank(int value);
 }

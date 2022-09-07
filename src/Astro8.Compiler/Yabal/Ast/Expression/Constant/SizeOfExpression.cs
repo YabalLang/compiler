@@ -23,4 +23,9 @@ public record SizeOfExpression(SourceRange Range, Expression Expression) : Integ
     {
         return $"sizeof({Expression})";
     }
+
+    public override Expression CloneExpression()
+    {
+        return new SizeOfExpression(Range, Expression.CloneExpression());
+    }
 }

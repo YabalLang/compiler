@@ -24,6 +24,7 @@ public record MemberExpression(SourceRange Range, IAddressExpression Expression,
 
     public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
 
+
     public Pointer? Pointer => Expression is { Pointer: {} pointer }
         ? pointer.Add(Field.Offset)
         : null;
@@ -41,4 +42,11 @@ public record MemberExpression(SourceRange Range, IAddressExpression Expression,
     {
         return $"{Expression}.{Name}";
     }
+
+    public override MemberExpression CloneExpression()
+    {
+        return new MemberExpression(Range, Expression.Clone(), Name);
+    }
+
+    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

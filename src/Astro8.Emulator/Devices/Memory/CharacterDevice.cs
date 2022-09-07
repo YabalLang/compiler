@@ -26,7 +26,7 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
         _writeToConsole = writeToConsole;
         _width = screenWidth / RENDER_WIDTH;
         _height = screenHeight / RENDER_WIDTH;
-        _values = new int[(_width + 1) * (_height + 1)];
+        _values = new int[_width * _height];
 
         data ??= Default;
 
@@ -52,6 +52,11 @@ public sealed class CharacterDevice<THandler> : MemoryDevice
 
     public override void Write(int address, int value)
     {
+        if (address < 0 || address >= _values.Length)
+        {
+            return;
+        }
+
         if (_values[address] == value)
         {
             return;

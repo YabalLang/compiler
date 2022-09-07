@@ -13,4 +13,14 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
     {
         Expression.BuildExpression(builder, false);
     }
+
+    public override Statement CloneStatement()
+    {
+        return new ReturnStatement(Range, Expression.CloneExpression());
+    }
+
+    public override Statement Optimize()
+    {
+        return new ReturnStatement(Range, Expression.Optimize());
+    }
 }
