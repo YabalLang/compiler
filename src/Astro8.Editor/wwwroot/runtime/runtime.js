@@ -4,14 +4,25 @@ window.emulator = (function() {
     emulator.init = function(id, control) {
         const canvas = document.getElementById(id);
         const ctx = canvas.getContext('2d');
-        const worker = new Worker('/runtime/worker.js');
+        let worker;
 
         // Program
         emulator.execute = async function(data) {
+            if (worker) {
+                worker.postMessage(['pause']);
+                worker.terminate();
+            }
+
             /** @type {ArrayBuffer} **/ const buffer = await data.arrayBuffer();
 
             console.debug('Sending program to worker');
-            worker.postMessage(['program', buffer], [buffer]);
+            worker = new Worker('/runtime/worker.js');
+            worker.addEventListener("message", handle);
+            worker.addEventListener("message", (e) => {
+                if (e.data[0] === 'ready') {
+                    worker.postMessage(['program', buffer], [buffer]);
+                }
+            });
         };
 
         // Screen
@@ -37,66 +48,30 @@ window.emulator = (function() {
 
         requestAnimationFrame(updateScreen);
 
-        let a = 0;
-        let b = 0;
-        let c = 0;
-        let expansionPort = 0;
-        let bank = 0;
-        let counter = 0;
-        let updateValue = false;
+        function handle(msg) {
+            const [code, p1, p2] = msg.data;
 
-        setInterval(function() {
-            if (!updateValue) {
-                return;
+            if (typeof p1 !== 'number') {
+                return
             }
-
-            updateValue = false;
-            control.invokeMethodAsync('UpdateValue', a, b, c, expansionPort, counter, bank);
-        }, 100);
-
-        worker.addEventListener("message", function(msg) {
-            const [code, ...parameter] = msg.data;
 
             switch (code) {
-                case 'update_a':
-                    a = parameter[0];
-                    updateValue = true;
-                    break;
-                case 'update_b':
-                    b = parameter[0];
-                    updateValue = true;
-                    break;
-                case 'update_c':
-                    c = parameter[0];
-                    updateValue = true;
-                    break;
-                case 'update_expansion_port':
-                    expansionPort = parameter[0];
-                    updateValue = true;
-                    break;
-                case 'update_bank':
-                    bank = parameter[0];
-                    updateValue = true;
-                    break;
-                case 'update_counter':
-                    counter = isNaN(parameter[0]) ? 0 : parameter[0];
-                    updateValue = true;
-                    break;
                 case 'update_pixel':
-                    const [address, color] = parameter;
-                    const offset = address * 4;
+                    if (typeof p2 === 'number') {
+                        const offset = p1 * 4;
 
-                    data[offset] = bitRange(color, 10, 5) * 8;
-                    data[offset + 1] = bitRange(color, 5, 5) * 8;
-                    data[offset + 2] = bitRange(color, 0, 5) * 8;
-                    data[offset + 3] = 255;
+                        data[offset] = bitRange(p2, 10, 5) * 8;
+                        data[offset + 1] = bitRange(p2, 5, 5) * 8;
+                        data[offset + 2] = bitRange(p2, 0, 5) * 8;
+                        data[offset + 3] = 255;
 
-                    screenChanged = true;
+                        screenChanged = true;
+                    }
                     break;
             }
-        });
+        }
 
-        // Input
+        // Keyboard
         const keyMapping = {
             Space: 0,
             F1: 1,
@@ -163,7 +138,7 @@ window.emulator = (function() {
 
             let code = keyMapping[e.key] ?? keyMapping[e.code] ?? 168;
             console.debug('Sending expansion value', code, 'to worker');
-            worker.postMessage(['exp', code]);
+            worker?.postMessage(['exp', 0, code]);
         });
 
         window.addEventListener('keyup', function(e) {
@@ -172,8 +147,39 @@ window.emulator = (function() {
             }
 
             console.debug('Sending expansion value', 168, 'to worker');
-            worker.postMessage(['exp', 168]);
+            worker?.postMessage(['exp', 0, 168]);
             lastKey = null;
+        });
+
+        // Mouse
+        let mouse = 0b0000000000000000;
+
+        canvas.addEventListener('mousemove', (e) => {
+            const scale = parseInt(getComputedStyle(canvas).getPropertyValue('--scale'));
+            const x = Math.floor(e.offsetX / scale);
+            const y = Math.floor(e.offsetY / scale);
+
+            mouse = ((x & 0b1111111) << 7) | (y & 0b1111111) | (mouse & 0b1100000000000000);
+            console.log(mouse.toString(2))
+            worker?.postMessage(['exp', 1, mouse]);
+        })
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                mouse |= 0b0100000000000000;
+            } else if (e.button === 2) {
+                mouse |= 0b1000000000000000;
+            }
+
+            worker?.postMessage(['exp', 1, mouse]);
+        })
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                mouse &= ~0b0100000000000000;
+            } else if (e.button === 2) {
+                mouse &= ~0b1000000000000000;
+            }
         });
 
         emulator.enableInput = function(value) {

@@ -2,22 +2,9 @@ var Module = {}
 
 let compile, step, setExpansionPort;
 let autoStep = true;
+let ready = false;
 
 Module.instantiateWasm = async (info, receiveInstance) => {
-    const mappings = {
-        UpdateA: 'update_a',
-        UpdateB: 'update_b',
-        UpdateC: 'update_c',
-        UpdateExpansionPort: 'update_expansion_port',
-        UpdateBank: 'update_bank'
-    };
-
-    for (const [key, methodName] of Object.entries(mappings)) {
-        info.env[key] = (value) => {
-            self.postMessage([methodName, value]);
-        };
-    }
-
     info.env.UpdatePixel = (address, color) => {
         self.postMessage(['update_pixel', address, color]);
     };
@@ -53,30 +40,34 @@ function loop() {
         return;
     }
 
-    self.postMessage(['update_counter', step(128)]);
+    step(64);
     setImmediate(loop);
 }
 
 Module.onRuntimeInitialized = _ => {
     compile = Module.cwrap('Compile', null, ['array', 'number']);
     step = Module.cwrap('Step', "number", ['number']);
-    setExpansionPort = Module.cwrap('SetExpansionPort', null, ['number']);
+    setExpansionPort = Module.cwrap('SetExpansionPort', null, ['number', 'number']);
 
     const corertInit = Module.cwrap('CoreRT_StaticInitialization', 'number', []);
     corertInit();
+
+    ready = true;
     self.postMessage(['ready']);
 
     loop();
 };
 
 self.onmessage = function handleMessageFromMain(msg) {
-    const [code, parameter] = msg.data;
+    if (!ready) return;
+
+    const [code, p1, p2] = msg.data;
 
     switch (code) {
         case 'program':
             console.time('Compiling program');
             try {
-                const array = new Uint8Array(parameter);
+                const array = new Uint8Array(p1);
                 const runCode = Module.cwrap('Compile', null, ['array', 'number']);
                 runCode(array, array.length);
             } finally {
@@ -84,7 +75,7 @@ self.onmessage = function handleMessageFromMain(msg) {
             }
             break;
         case 'exp':
-            setExpansionPort(parameter);
+            setExpansionPort(p1, p2);
             break;
         case 'pause':
             autoStep = false;
@@ -94,7 +85,7 @@ self.onmessage = function handleMessageFromMain(msg) {
             loop();
             break;
         case 'step':
-            self.postMessage(['update_counter', step(parameter ? parseInt(parameter) : 1)]);
+            step(typeof p1 === 'number' ? p1 : 1);
             break;
     }
 };

@@ -317,7 +317,7 @@ async Task Execute(InvocationContext ctx)
                     cpu.ExpansionPorts[0] = 168;
                     break;
                 case SDL_MOUSEMOTION:
-                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) + (e.motion.y & 0b1111111) + (cpu.ExpansionPorts[1] & 0b1100000000000000);
+                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) | (e.motion.y & 0b1111111) | (cpu.ExpansionPorts[1] & 0b1100000000000000);
                     break;
                 case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_LEFT:
                     cpu.ExpansionPorts[1] |= 0b0100000000000000;

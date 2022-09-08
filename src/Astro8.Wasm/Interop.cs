@@ -8,11 +8,6 @@ namespace Astro8.Wasm;
 
 public static class Interop
 {
-    private static int _lastA;
-    private static int _lastB;
-    private static int _lastC;
-    private static int[] _lastExp = Array.Empty<int>();
-    private static int _lastBank;
     private static Cpu<WasmHandler>? _cpu;
 
     [UnmanagedCallersOnly(EntryPoint = "Compile")]
@@ -25,14 +20,11 @@ public static class Interop
         var data = new int[0xFFFF];
         HexFile.Load(code, data);
 
-        var cpu = CpuBuilder.Create<WasmHandler>()
+        _cpu = CpuBuilder.Create<WasmHandler>()
             .WithMemory(0, data)
             .WithScreen()
             .WithCharacter()
             .Create();
-
-        _lastExp = new int[cpu.ExpansionPorts.Length];
-        _cpu = cpu;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Step")]
@@ -44,7 +36,6 @@ public static class Interop
         }
 
         cpu.Step(amount);
-        UpdateContext();
 
         return cpu.ProgramCounter;
     }
@@ -58,64 +49,6 @@ public static class Interop
         }
     }
 
-    private static void UpdateContext()
-    {
-        if (_cpu is not {} cpu)
-        {
-            return;
-        }
-
-        var context = cpu.Context;
-
-        if (_lastA != context.A)
-        {
-            UpdateA(context.A);
-            _lastA = context.A;
-        }
-
-        if (_lastB != context.B)
-        {
-            UpdateB(context.B);
-            _lastB = context.B;
-        }
-
-        if (_lastC != context.C)
-        {
-            UpdateC(context.C);
-            _lastC = context.C;
-        }
-
-        for (int i = 0; i < _lastExp.Length; i++)
-        {
-            if (_lastExp[i] != cpu.ExpansionPorts[i])
-            {
-                UpdateExpansionPort(i, cpu.ExpansionPorts[i]);
-                _lastExp[i] = cpu.ExpansionPorts[i];
-            }
-        }
-
-        if (_lastBank != context.Bank)
-        {
-            UpdateBank(context.Bank);
-            _lastBank = context.Bank;
-        }
-    }
-
     [DllImport("NativeLib")]
     public static extern void UpdatePixel(int address, int color);
-
-    [DllImport("NativeLib")]
-    public static extern void UpdateA(int value);
-
-    [DllImport("NativeLib")]
-    public static extern void UpdateB(int value);
-
-    [DllImport("NativeLib")]
-    public static extern void UpdateC(int value);
-
-    [DllImport("NativeLib")]
-    public static extern void UpdateExpansionPort(int id, int value);
-
-    [DllImport("NativeLib")]
-    public static extern void UpdateBank(int value);
 }

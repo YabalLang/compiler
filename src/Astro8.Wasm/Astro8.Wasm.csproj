@@ -11,7 +11,7 @@
         <TargetArchitecture>wasm</TargetArchitecture>
         <PlatformTarget>AnyCPU</PlatformTarget>
         <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
-        <EmccExtraArgs>-s EXPORTED_FUNCTIONS=_Compile,_Step,_SetExpansionPort,_UpdateA,_UpdateB,_UpdateC,_UpdateExpansionPort,_UpdateBank,_CoreRT_StaticInitialization -s EXPORTED_RUNTIME_METHODS=cwrap</EmccExtraArgs>
+        <EmccExtraArgs>-s EXPORTED_FUNCTIONS=_Compile,_Step,_SetExpansionPort,_CoreRT_StaticInitialization -s EXPORTED_RUNTIME_METHODS=cwrap</EmccExtraArgs>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <InvariantGlobalization>true</InvariantGlobalization>
         <IlcTrimMetadata>true</IlcTrimMetadata>
