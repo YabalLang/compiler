@@ -52,7 +52,7 @@ public interface IAddressExpression : IAssignExpression
     {
         if (Pointer is {} pointer)
         {
-            builder.SetValue(pointer, expression);
+            builder.SetValue(Type, pointer, expression);
         }
         else if (expression is IExpressionToB { OverwritesA: false } expressionToB)
         {
@@ -61,15 +61,7 @@ public interface IAddressExpression : IAssignExpression
             if (size == 1)
             {
                 StoreAddressInA(builder);
-
-                if (expression is not IConstantValue { Value: 0 })
-                {
-                    expressionToB.BuildExpressionToB(builder);
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+                expressionToB.BuildExpressionToB(builder);
 
                 if (Bank > 0) builder.SetBank(Bank.Value);
 

@@ -62,10 +62,19 @@ expression
 	| integer                       								    # IntegerExpression
 	| boolean                       								    # BooleanExpression
 	| identifierName										            # IdentifierExpression
+	| initStruct                                                        # InitStructExpression
+    ;
+
+initStructItem
+    : (identifierName Colon)? expression
+    ;
+
+initStruct
+    : type? OpenCurly (initStructItem (Comma initStructItem)*)? CloseCurly
     ;
 
 createPointer
-    : CreatePointer OpenBrace expression (Comma integer)? (Comma type)? CloseBrace
+    : CreatePointer (Less type Greater)? OpenBrace expression (Comma integer)? CloseBrace
     ;
 
 inlineSwitch
@@ -201,7 +210,7 @@ functionBody
 
 // Variable
 variableDeclaration
-    : Const? type identifierName (Assign expression)?                           # DefaultVariableDeclaration
+    : Const? type identifierName (Assign (expression|initStruct))?              # DefaultVariableDeclaration
     | Const? Var identifierName Assign expression                               # AutoVariableDeclaration
     | Inline?  returnType identifierName functionParameterList functionBody     # FunctionDeclaration
     ;

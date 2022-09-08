@@ -9,14 +9,14 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
         Array.Initialize(builder);
         Key.Initialize(builder);
 
-        if (Array.Type.StaticType != StaticType.Array)
+        if (Array.Type.StaticType != StaticType.Pointer)
         {
             builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ValueIsNotAnArray);
         }
 
         if (Key.Type.StaticType != StaticType.Integer)
         {
-            builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ArrayOnlyIntegerKey);
+            builder.AddError(ErrorLevel.Error, Key.Range, ErrorMessages.ArrayOnlyIntegerKey);
         }
     }
 
@@ -80,7 +80,7 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
 
         Array.BuildExpression(builder, false);
 
-        if (Key is IntegerExpressionBase { Value: var intValue })
+        if (Key is IConstantValue { Value: int intValue })
         {
             var offset = intValue * elementSize;
 

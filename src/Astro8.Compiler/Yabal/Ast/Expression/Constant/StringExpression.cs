@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record StringExpression(SourceRange Range, string Value) : Expression(Range), IConstantValue
+public record StringExpression(SourceRange Range, string Value) : Expression(Range), IConstantValue, IAddressExpression
 {
     private InstructionPointer _pointer = null!;
 
@@ -16,9 +16,14 @@ public record StringExpression(SourceRange Range, string Value) : Expression(Ran
         builder.SetA_Large(_pointer);
     }
 
+    public void StoreAddressInA(YabalBuilder builder)
+    {
+        builder.SetA_Large(_pointer);
+    }
+
     public override bool OverwritesB => false;
 
-    public override LanguageType Type => LanguageType.Array(LanguageType.Integer);
+    public override LanguageType Type => LanguageType.Pointer(LanguageType.Integer);
 
     object IConstantValue.Value => StringAddress.From(Value, _pointer);
 
@@ -27,8 +32,14 @@ public record StringExpression(SourceRange Range, string Value) : Expression(Ran
         return $"\"{Value}\"";
     }
 
-    public override Expression CloneExpression()
+    public override StringExpression CloneExpression()
     {
         return this;
     }
+
+    public Pointer Pointer => _pointer;
+
+    public int? Bank => 0;
+
+    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

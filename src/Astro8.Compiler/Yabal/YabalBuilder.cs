@@ -534,55 +534,94 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return new TemporaryVariable(pointer, Block);
     }
 
-    public void SetValue(Pointer pointer, Expression expression)
+    public void SetValue(LanguageType type, Pointer pointer, Expression expression)
     {
+        if (expression is InitStructExpression initStruct)
+        {
+            InitStruct(type, pointer, initStruct);
+            return;
+        }
+
         var size = expression.Type.Size;
 
         if (expression is IAddressExpression addressExpression)
         {
-            if (addressExpression.Pointer is { } valuePointer)
+            if (expression.Type.StaticType == StaticType.Pointer)
             {
-                for (var i = 0; i < size; i++)
-                {
-                    valuePointer.CopyTo(this, pointer, i);
-                }
+                expression.BuildExpression(this, false);
+                StorePointer(pointer);
             }
             else
             {
-                for (var i = 0; i < size; i++)
+                if (addressExpression.Pointer is { } valuePointer)
                 {
-                    addressExpression.StoreAddressInA(this);
-                    SetB(i);
-                    Add();
-                    LoadA_FromAddressUsingA();
+                    for (var i = 0; i < size; i++)
+                    {
+                        valuePointer.CopyTo(this, pointer, i);
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < size; i++)
+                    {
+                        addressExpression.StoreAddressInA(this);
 
-                    StoreA_Large(pointer.Add(i));
+                        if (i > 0)
+                        {
+                            SetB(i);
+                            Add();
+                        }
+
+                        LoadA_FromAddressUsingA();
+                        StorePointer(pointer.Add(i));
+                    }
                 }
             }
         }
         else if (size == 1)
         {
             expression.BuildExpression(this, false);
-
-            if (pointer.Bank == 0)
-            {
-                StoreA_Large(pointer);
-            }
-            else
-            {
-                SwapA_B();
-                SetA_Large(pointer);
-
-                SetBank(pointer.Bank);
-                StoreB_ToAddressInA();
-                SetBank(0);
-            }
-
+            StorePointer(pointer);
         }
         else
         {
             throw new NotImplementedException();
         }
 
+    }
+
+    public void StorePointer(Pointer pointer)
+    {
+        if (pointer.Bank == 0)
+        {
+            StoreA_Large(pointer);
+        }
+        else
+        {
+            SwapA_B();
+            SetA_Large(pointer);
+
+            SetBank(pointer.Bank);
+            StoreB_ToAddressInA();
+            SetBank(0);
+        }
+    }
+
+    private void InitStruct(LanguageType type, Pointer pointer, InitStructExpression initStruct)
+    {
+        if (type is not { StaticType: StaticType.Struct, StructReference: { } structRef })
+        {
+            throw new InvalidOperationException();
+        }
+
+        for (var i = 0; i < initStruct.Items.Count; i++)
+        {
+            var (name, expression) = initStruct.Items[i];
+            var field = name != null
+                ? structRef.Fields.First(f => f.Name == name)
+                : structRef.Fields[i];
+
+            SetValue(field.Type, pointer.Add(field.Offset), expression);
+        }
     }
 }

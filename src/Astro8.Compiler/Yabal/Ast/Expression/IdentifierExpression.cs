@@ -61,7 +61,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
         {
             Variable.Usages++;
 
-            if (Variable.Type.StaticType == StaticType.Array)
+            if (Variable.Type.StaticType == StaticType.Pointer)
             {
                 return (Value as IAddress)?.Pointer;
             }

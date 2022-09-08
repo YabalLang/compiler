@@ -59,7 +59,7 @@ public record CallExpression(
             {
                 if (!variable.CanBeRemoved)
                 {
-                    builder.SetValue(variable.Pointer, expression);
+                    builder.SetValue(variable.Type, variable.Pointer, expression);
                 }
             }
 

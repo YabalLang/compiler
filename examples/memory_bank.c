@@ -17,7 +17,7 @@ If you want to point to the graphics memory, you can specify the memory bank as 
 Now the pointer points to address 53546 in the graphics memory.
 */
 
-int[] chars = create_pointer(0xD12A, 1)
+var chars = create_pointer(0xD12A, 1)
 var message = "Hello world"
 
 while(true) {

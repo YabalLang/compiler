@@ -13,9 +13,7 @@ public record SizeOfExpression(SourceRange Range, Expression Expression) : Integ
 
     public override int Value
     {
-        get => Expression is IConstantValue { Value: IAddress { Length: {} length }}
-            ? length
-            : Type.Size;
+        get => Type.Size;
         init => throw new NotSupportedException();
     }
 
@@ -27,5 +25,10 @@ public record SizeOfExpression(SourceRange Range, Expression Expression) : Integ
     public override Expression CloneExpression()
     {
         return new SizeOfExpression(Range, Expression.CloneExpression());
+    }
+
+    public override Expression Optimize()
+    {
+        return new IntegerExpression(Range, Value);
     }
 }

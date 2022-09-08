@@ -17,9 +17,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Assembly = new(StaticType.Assembly);
     public static readonly LanguageType Unknown = new(StaticType.Unknown);
 
-    public static LanguageType Array(LanguageType elementType) => new(StaticType.Array, elementType);
-
-    public static LanguageType Address(LanguageType elementType) => new(StaticType.Address, elementType);
+    public static LanguageType Pointer(LanguageType elementType) => new(StaticType.Pointer, elementType);
 
     public static LanguageType Struct(LanguageStruct structReference) => new(StaticType.Struct, null, structReference);
 
@@ -29,20 +27,14 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Boolean => 1,
         StaticType.Void => 0,
         StaticType.Assembly => 0,
-        StaticType.Array => 1,
-        StaticType.Address => ElementType?.Size ?? 0,
+        StaticType.Pointer => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };
 
     public override string ToString()
     {
-        if (StaticType == StaticType.Array)
-        {
-            return $"{ElementType}[]";
-        }
-
-        if (StaticType == StaticType.Address)
+        if (StaticType == StaticType.Pointer)
         {
             return $"*{ElementType}";
         }

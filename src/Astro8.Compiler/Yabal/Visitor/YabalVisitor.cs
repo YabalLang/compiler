@@ -15,6 +15,10 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
     {
+        var discover = new TypeDiscover(_typeVisitor);
+        var walker = new ParseTreeWalker();
+        walker.Walk(discover, context);
+
         return new ProgramStatement(
             context,
             context.statement().Select(VisitStatement).ToList()
@@ -574,7 +578,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(createPointer.expression()),
             createPointer.integer() is {} integer ? ParseInt(integer.GetText()) : 0,
-            createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Array(LanguageType.Integer)
+            createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Pointer(LanguageType.Integer)
         );
     }
 
@@ -668,9 +672,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         var offset = 0;
 
-        var reference = new LanguageStruct(
-            context.identifierName().GetText()
-        );
+        var reference = _typeVisitor.Structs[context.identifierName().GetText()];
 
         foreach (var item in context.structItem())
         {
@@ -699,6 +701,19 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitAddressExpression(context.expression()),
             context.identifierName().GetText()
+        );
+    }
+
+    public override Node VisitInitStructExpression(YabalParser.InitStructExpressionContext context)
+    {
+        var init = context.initStruct();
+
+        return new InitStructExpression(
+            context,
+            init.initStructItem()
+                .Select(i => new InitStructItem(i.identifierName()?.GetText(), VisitExpression(i.expression())))
+                .ToList(),
+            init.type() is {} type ? _typeVisitor.VisitType(type) : null
         );
     }
 }

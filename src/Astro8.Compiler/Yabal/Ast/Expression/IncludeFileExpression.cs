@@ -18,7 +18,7 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
 
     public override bool OverwritesB => false;
 
-    public override LanguageType Type { get; } = LanguageType.Array(LanguageType.Integer);
+    public override LanguageType Type { get; } = LanguageType.Pointer(LanguageType.Integer);
 
     public object Value => FileAddress.From(Path, FileType, _pointer);
 
