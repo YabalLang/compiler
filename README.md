@@ -6,6 +6,8 @@ This repository houses two Astro-8 projects:
 ## Yabal
 Yabal is a custom language that compiles into valid Astro-8 assembly.
 
+For examples of Yabal, see the [examples](examples) folder.
+
 ### Features
 - ✅ Variables
 - ✅ Functions (with parameters and call stack)
@@ -74,35 +76,6 @@ astro build -f ha source.yabal # Compile aexe and asm
 
 astro build -f aexe source.yabal # Compile aexe 
 astro build -f aexe,asm source.yabal # Compile aexe and asm
-```
-
-## Example programs
-### Write string to the character memory
-```c
-const var chars = create_pointer(16382)
-const var message = "ASTRO-8"
-
-while (true) {
-    for (var i = 0; i < sizeof(message); i++) {
-        chars[i] = message[i]
-    }
-}
-```
-
-### Write the value of the expension port to the character memory
-```c
-const var chars = create_pointer(16382)
-
-var value = 0;
-
-while (true) {
-    asm {
-        RDEXP
-        STA @value
-    }
-
-    chars[0] = value
-}
 ```
 
 ## Development
