@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record UpdateExpression(SourceRange Range, IAssignExpression Value, bool Prefix, BinaryOperator Operator) : Expression(Range)
+public record UpdateExpression(SourceRange Range, AssignableExpression Value, bool Prefix, BinaryOperator Operator) : Expression(Range)
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -54,6 +54,6 @@ public record UpdateExpression(SourceRange Range, IAssignExpression Value, bool 
 
     public override Expression CloneExpression()
     {
-        return new UpdateExpression(Range, Value.Clone(), Prefix, Operator);
+        return new UpdateExpression(Range, Value.CloneExpression(), Prefix, Operator);
     }
 }

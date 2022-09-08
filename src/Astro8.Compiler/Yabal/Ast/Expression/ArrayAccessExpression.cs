@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array, Expression Key) : Expression(Range), IAddressExpression
+public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, Expression Key) : AddressExpression(Range)
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -50,7 +50,7 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
         return new ArrayAccessExpression(Range, Array, key);
     }
 
-    public Pointer? Pointer
+    public override Pointer? Pointer
     {
         get
         {
@@ -65,9 +65,9 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
         }
     }
 
-    public int? Bank => Array.Bank;
+    public override int? Bank => Array.Bank;
 
-    public void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder)
     {
         var elementSize = Array.Type.ElementType?.Size ?? 1;
 
@@ -131,9 +131,7 @@ public record ArrayAccessExpression(SourceRange Range, IAddressExpression Array,
     {
         return new ArrayAccessExpression(
             Range,
-            Array.Clone(),
+            Array.CloneExpression(),
             Key.CloneExpression());
     }
-
-    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

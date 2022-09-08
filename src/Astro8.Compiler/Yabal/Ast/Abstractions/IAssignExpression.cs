@@ -2,15 +2,15 @@
 
 namespace Astro8.Yabal.Ast;
 
-public interface IAssignExpression : IExpression
+public abstract record AssignableExpression(SourceRange Range) : Expression(Range)
 {
-    void Assign(YabalBuilder builder, Expression expression);
+    public abstract void Assign(YabalBuilder builder, Expression expression);
 
-    void AssignRegisterA(YabalBuilder builder);
+    public abstract void AssignRegisterA(YabalBuilder builder);
 
-    IAssignExpression Clone();
+    public abstract override AssignableExpression CloneExpression();
 
-    void MarkModified()
+    public virtual void MarkModified()
     {
     }
 }

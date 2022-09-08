@@ -12,7 +12,7 @@ public abstract class Pointer
 
     public abstract int Get(IReadOnlyDictionary<InstructionPointer, int> mappings);
 
-    public void LoadToA(YabalBuilder builder, int offset)
+    public void LoadToA(YabalBuilder builder, int offset = 0)
     {
         if (IsSmall)
         {
@@ -21,6 +21,18 @@ public abstract class Pointer
         else
         {
             builder.LoadA_Large(this.Add(offset));
+        }
+    }
+
+    public void StoreA(YabalBuilder builder, int offset = 0)
+    {
+        if (IsSmall)
+        {
+            builder.StoreA(this.Add(offset));
+        }
+        else
+        {
+            builder.StoreA_Large(this.Add(offset));
         }
     }
 

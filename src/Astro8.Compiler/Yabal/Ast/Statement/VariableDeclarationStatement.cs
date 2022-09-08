@@ -25,7 +25,7 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, bool 
     {
         if (Value != null && !Variable.CanBeRemoved)
         {
-            builder.SetValue(Variable.Type, Variable.Pointer, Value);
+            builder.SetValue(Variable.Pointer, Variable.Type, Value);
         }
     }
 

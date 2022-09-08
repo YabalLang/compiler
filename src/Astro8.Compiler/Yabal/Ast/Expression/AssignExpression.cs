@@ -3,7 +3,7 @@ using Astro8.Instructions;
 
 namespace Astro8.Yabal.Ast;
 
-public record AssignExpression(SourceRange Range, IAssignExpression Object, Expression Value) : Expression(Range)
+public record AssignExpression(SourceRange Range, AssignableExpression Object, Expression Value) : Expression(Range)
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -24,7 +24,7 @@ public record AssignExpression(SourceRange Range, IAssignExpression Object, Expr
 
     public override Expression CloneExpression()
     {
-        return new AssignExpression(Range, Object.Clone(), Value.CloneExpression());
+        return new AssignExpression(Range, Object.CloneExpression(), Value.CloneExpression());
     }
 
     public override Expression Optimize()

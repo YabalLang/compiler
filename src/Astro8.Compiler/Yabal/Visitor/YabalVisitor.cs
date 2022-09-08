@@ -47,15 +47,15 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return result;
     }
 
-    private IAssignExpression VisitAssignExpression(IParseTree context)
+    private AssignableExpression VisitAssignExpression(IParseTree context)
     {
-        return VisitExpression(context) as IAssignExpression ??
+        return VisitExpression(context) as AssignableExpression ??
                throw new InvalidOperationException($"Cannot assign to {context.GetType().Name}.");
     }
 
-    private IAddressExpression VisitAddressExpression(IParseTree context)
+    private AddressExpression VisitAddressExpression(IParseTree context)
     {
-        return VisitExpression(context) as IAddressExpression ??
+        return VisitExpression(context) as AddressExpression ??
                throw new InvalidOperationException($"Cannot assign to {context.GetType().Name}.");
     }
 
@@ -673,20 +673,40 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         var offset = 0;
 
         var reference = _typeVisitor.Structs[context.identifierName().GetText()];
+        var bitOffset = 0;
 
         foreach (var item in context.structItem())
         {
             if (item.structField() is { } field)
             {
                 var type = _typeVisitor.VisitType(field.type());
+                var bitSize = field.integer() is { } integer ? (int?) ParseInt(integer.GetText()) : null;
 
                 reference.Fields.Add(new LanguageStructField(
                     field.identifierName().GetText(),
                     type,
-                    offset
+                    offset,
+                    bitSize.HasValue ? new Bit(bitOffset, bitSize.Value) : null
                 ));
 
-                offset += type.Size;
+                if (bitSize is { } size)
+                {
+                    bitOffset += size;
+
+                    if (bitOffset > 16)
+                    {
+                        throw new NotSupportedException("Bitfields cannot span more than 16 bits");
+                    }
+
+                    if (bitOffset == 16)
+                    {
+                        offset++;
+                    }
+                }
+                else
+                {
+                    offset++;
+                }
             }
         }
 

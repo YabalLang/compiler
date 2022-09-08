@@ -514,7 +514,7 @@ public class AssemblerTest
                 int b
             }
 
-            {{(@const ? "const " : "")}}var pointer = create_pointer(4095, Test)
+            {{(@const ? "const " : "")}}var pointer = create_pointer<Test>(4095)
 
             Test first
             first.a = 1
@@ -549,7 +549,7 @@ public class AssemblerTest
                 int b
             }
 
-            var pointer = create_pointer(4095, Test)
+            var pointer = create_pointer<Test>(4095)
 
             var first = pointer[0]
             var a = first.a
@@ -637,5 +637,67 @@ public class AssemblerTest
         Assert.Equal(2, cpu.Memory[address + 1]);
         Assert.Equal(3, cpu.Memory[address + 2]);
         Assert.Equal(4, cpu.Memory[address + 3]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructBit(bool @const)
+    {
+        var code = $$"""
+            int x
+            x = 1
+
+            MouseInput input
+            input.y = 2
+            input.x = {{(@const ? "1" : "x")}}
+
+            struct MouseInput {
+                int y : 7;
+                int x : 7;
+                int left : 1;
+                int right : 1;
+            };
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        const int expected = 0b0_0_0000001_0000010;
+
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("input").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructBitInitializer(bool @const)
+    {
+        var code = $$"""
+            int x
+            x = 1
+
+            MouseInput input = { y: 2, x: {{(@const ? "1" : "x")}} }
+
+            struct MouseInput {
+                int y : 7;
+                int x : 7;
+                int left : 1;
+                int right : 1;
+            };
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        const int expected = 0b0_0_0000001_0000010;
+
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("input").Pointer.Address]);
     }
 }

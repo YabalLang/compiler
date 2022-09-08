@@ -534,7 +534,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return new TemporaryVariable(pointer, Block);
     }
 
-    public void SetValue(LanguageType type, Pointer pointer, Expression expression)
+    public void SetValue(Pointer pointer, LanguageType type, Expression expression)
     {
         if (expression is InitStructExpression initStruct)
         {
@@ -544,7 +544,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         var size = expression.Type.Size;
 
-        if (expression is IAddressExpression addressExpression)
+        if (expression is AddressExpression addressExpression)
         {
             if (expression.Type.StaticType == StaticType.Pointer)
             {
@@ -621,7 +621,97 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 ? structRef.Fields.First(f => f.Name == name)
                 : structRef.Fields[i];
 
-            SetValue(field.Type, pointer.Add(field.Offset), expression);
+            var fieldPointer = pointer.Add(field.Offset);
+
+            if (field.Bit is { } bit)
+            {
+                StoreBit(fieldPointer, expression, bit);
+            }
+            else
+            {
+                SetValue(fieldPointer, field.Type, expression);
+            }
         }
+    }
+
+    public void StoreBit(Either<Pointer, AddressExpression> target, Expression expression, Bit bit)
+    {
+        if (expression is IConstantValue {Value: int intValue})
+        {
+            var bits = (1 << bit.Size) - 1;
+
+            LoadA(target);
+            SwapA_B();
+
+            SetA_Large(~(bits << bit.Offset) & 0xFFFF);
+            And();
+
+            SetB((intValue & bits) << bit.Offset);
+            Or();
+
+            StoreA(target);
+        }
+        else
+        {
+            expression.BuildExpression(this, false);
+            StoreBitInA(target, bit);
+        }
+    }
+
+    private void StoreA(Either<Pointer, AddressExpression> target)
+    {
+        if (target.IsLeft)
+        {
+            target.Left.StoreA(this);
+        }
+        else
+        {
+            SwapA_B();
+            target.Right.StoreAddressInA(this);
+            StoreB_ToAddressInA();
+        }
+    }
+
+    private void LoadA(Either<Pointer, AddressExpression> target)
+    {
+        if (target.IsLeft)
+        {
+            target.Left.LoadToA(this);
+        }
+        else
+        {
+            target.Right.StoreAddressInA(this);
+            LoadA_FromAddressUsingA();
+        }
+    }
+
+    public void StoreBitInA(Either<Pointer, AddressExpression> target, Bit bit)
+    {
+        using var value = GetTemporaryVariable(global: true);
+        var bits = (1 << bit.Size) - 1;
+
+        // Remove invalid bits
+        SetB(bits);
+        And();
+
+        // Move to correct position
+        SetB(bit.Offset);
+        BitShiftLeft();
+
+        StoreA(value);
+
+        // Get current value
+        LoadA(target);
+        SwapA_B();
+
+        // Clear rest of the bits
+        SetA_Large(~(bits << bit.Offset) & 0xFFFF);
+        And();
+
+        LoadB(value);
+        Or();
+
+        // Store the result
+        StoreA(target);
     }
 }

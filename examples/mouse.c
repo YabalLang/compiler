@@ -10,16 +10,22 @@ inline int get_color(int r, int g, int b) {
 }
 
 while (true) {
-    int value = asm { RDEXP 1 };
-    var x = value >> 7 & mask(7);
-    var y = value & mask(7);
-    var mouseLeft = value >> 14 & 1;
-    var mouseRight = value >> 15 & 1;
-    var offset = y * screen_width + x;
+    MouseInput input = asm { RDEXP 1 };
 
-    if (mouseLeft == 1) {
+    input.x = 10;
+
+    var offset = input.y * screen_width + input.x;
+
+    if (input.left == 1) {
         screen[offset] = get_color(255, 255, 255);
-    } else if (mouseRight == 1) {
+    } else if (input.right == 1) {
         screen[offset] = get_color(0, 0, 0);
     }
 }
+
+struct MouseInput {
+    int y : 7;
+    int x : 7;
+    int left : 1;
+    int right : 1;
+};

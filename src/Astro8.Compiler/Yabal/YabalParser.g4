@@ -119,7 +119,7 @@ structFunction
     ;
 
 structField
-    : type identifierName
+    : type identifierName (Colon integer)?
     ;
 
 labelStatement

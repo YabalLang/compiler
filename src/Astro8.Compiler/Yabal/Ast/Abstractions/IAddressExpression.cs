@@ -2,19 +2,15 @@
 
 namespace Astro8.Yabal.Ast;
 
-public interface IAddressExpression : IAssignExpression
+public abstract record AddressExpression(SourceRange Range) : AssignableExpression(Range)
 {
-    Pointer? Pointer { get; }
+    public abstract Pointer? Pointer { get; }
 
-    int? Bank { get; }
+    public abstract int? Bank { get; }
 
-    void StoreAddressInA(YabalBuilder builder);
+    public abstract void StoreAddressInA(YabalBuilder builder);
 
-    new IAddressExpression Clone();
-
-    IAssignExpression IAssignExpression.Clone() => Clone();
-
-    void IAssignExpression.AssignRegisterA(YabalBuilder builder)
+    public override void AssignRegisterA(YabalBuilder builder)
     {
         if (Type.Size > 1)
         {
@@ -48,11 +44,11 @@ public interface IAddressExpression : IAssignExpression
         }
     }
 
-    void IAssignExpression.Assign(YabalBuilder builder, Expression expression)
+    public override void Assign(YabalBuilder builder, Expression expression)
     {
         if (Pointer is {} pointer)
         {
-            builder.SetValue(Type, pointer, expression);
+            builder.SetValue(pointer, Type, expression);
         }
         else if (expression is IExpressionToB { OverwritesA: false } expressionToB)
         {
@@ -69,7 +65,7 @@ public interface IAddressExpression : IAssignExpression
 
                 if (Bank > 0) builder.SetBank(0);
             }
-            else if (expression is IAddressExpression { Pointer: {} valuePointer })
+            else if (expression is AddressExpression { Pointer: {} valuePointer })
             {
                 for (var i = 0; i < size; i++)
                 {
@@ -100,4 +96,6 @@ public interface IAddressExpression : IAssignExpression
             AssignRegisterA(builder);
         }
     }
+
+    public abstract override AddressExpression CloneExpression();
 }

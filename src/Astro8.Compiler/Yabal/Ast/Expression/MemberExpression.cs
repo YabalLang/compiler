@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record MemberExpression(SourceRange Range, IAddressExpression Expression, string Name) : Expression(Range), IAddressExpression
+public record MemberExpression(SourceRange Range, AddressExpression Expression, string Name) : AddressExpression(Range)
 {
     public LanguageStructField Field { get; set; } = null!;
 
@@ -14,27 +14,65 @@ public record MemberExpression(SourceRange Range, IAddressExpression Expression,
         Field = field ?? throw new InvalidOperationException($"Struct {Expression.Type} does not contain a field named {Name}");
     }
 
+    public override void AssignRegisterA(YabalBuilder builder)
+    {
+        if (Field.Bit is {} bit)
+        {
+            builder.StoreBitInA(Expression, bit);
+            return;
+        }
+
+        base.AssignRegisterA(builder);
+    }
+
+    public override void Assign(YabalBuilder builder, Expression expression)
+    {
+        if (Field.Bit is {} bit)
+        {
+            builder.StoreBit(Expression, expression, bit);
+            return;
+        }
+
+        base.Assign(builder, expression);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         StoreAddressInA(builder);
         builder.LoadA_FromAddressUsingA();
+
+        if (Field.Bit is {} bit)
+        {
+            if (bit.Offset > 0)
+            {
+                builder.SetB(bit.Offset);
+                builder.BitShiftRight();
+            }
+
+            builder.SetB((1 << bit.Size) - 1);
+            builder.And();
+        }
     }
 
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
 
-    public Pointer? Pointer => Expression is { Pointer: {} pointer }
+    public override Pointer? Pointer => Expression is { Pointer: {} pointer } && !Field.Bit.HasValue
         ? pointer.Add(Field.Offset)
         : null;
 
-    public int? Bank => Expression.Bank;
+    public override int? Bank => Expression.Bank;
 
-    public void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder)
     {
         Expression.StoreAddressInA(builder);
-        builder.SetB(Field.Offset);
-        builder.Add();
+
+        if (Field.Offset > 0)
+        {
+            builder.SetB(Field.Offset);
+            builder.Add();
+        }
     }
 
     public override string ToString()
@@ -44,8 +82,6 @@ public record MemberExpression(SourceRange Range, IAddressExpression Expression,
 
     public override MemberExpression CloneExpression()
     {
-        return new MemberExpression(Range, Expression.Clone(), Name);
+        return new MemberExpression(Range, Expression.CloneExpression(), Name);
     }
-
-    IAddressExpression IAddressExpression.Clone() => CloneExpression();
 }

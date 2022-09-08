@@ -1,6 +1,8 @@
 ﻿namespace Astro8.Yabal.Ast;
 
-public record LanguageStructField(string Name, LanguageType Type, int Offset);
+public record struct Bit(int Offset, int Size);
+
+public record LanguageStructField(string Name, LanguageType Type, int Offset, Bit? Bit);
 
 public record LanguageStruct(string Name)
 {
