@@ -10,16 +10,32 @@ public record AsmInteger(int Value) : AsmArgument;
 
 public record AsmLabel(string Name) : AsmArgument;
 
-public record AsmInstruction(SourceRange Range, string Name, AsmArgument? Argument) : AsmStatement(Range);
+public record AsmInstruction(SourceRange Range, string Name, AsmArgument? Value) : AsmStatement(Range), IAsmArgument;
 
 public record AsmDefineLabel(SourceRange Range, string Name) : AsmStatement(Range);
 
-public record AsmRawValue(SourceRange Range, AsmArgument Value) : AsmStatement(Range);
+public record AsmRawValue(SourceRange Range, AsmArgument Value) : AsmStatement(Range), IAsmArgument;
 
-public record AsmStatement(SourceRange Range);
+public abstract record AsmStatement(SourceRange Range);
+
+public interface IAsmArgument
+{
+    AsmArgument? Value { get; }
+}
 
 public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : Expression(Range)
 {
+    public override void Initialize(YabalBuilder builder)
+    {
+        foreach (var statement in Statements.OfType<IAsmArgument>())
+        {
+            if (statement.Value is AsmVariable value && builder.TryGetVariable(value.Name, out var variable))
+            {
+                variable.Constant = false;
+            }
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         var labels = new Dictionary<string, InstructionPointer>();
