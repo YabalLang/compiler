@@ -152,8 +152,8 @@ public record Instruction(
 		"cin( 2=aw,ir & 3=wc,rm & 4=ei", // LoadC
 		"ldia( 2=wa,ir & 3=ei", // Load immediate A <val>
 		"ldib( 2=wb,ir & 3=ei", // Load immediate B <val>
-		"rdexp( 2=wa,re & 3=ei", // Read from expansion port to register A
-		"wrexp( 2=ra,we & 3=ei", // Write from reg A to expansion port
+		"rdexp( 2=ir,exi & 3=wa,re & 4=ei", // Read from expansion port <index> to register A
+		"wrexp( 2=ir,exi & 3=ra,we & 4=ei", // Write from reg A to expansion port <index>
 		"sta( 2=aw,ir & 3=ra,wm & 4=ei", // Store A <addr>
 		"add( 2=wa,eo,fl & 3=ei", // Add
 		"sub( 2=wa,eo,su,fl & 3=ei", // Subtract

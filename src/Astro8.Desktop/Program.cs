@@ -265,7 +265,7 @@ async Task Execute(InvocationContext ctx)
                     {
                         if (Character.CharToInt.TryGetValue(key.KeyChar, out var value))
                         {
-                            cpu.ExpansionPort = value;
+                            cpu.ExpansionPorts[0] = value;
                         }
 
                         break;
@@ -292,28 +292,45 @@ async Task Execute(InvocationContext ctx)
                 break;
             }
 
-            if (e.type is SDL_KEYDOWN)
+            switch (e.type)
             {
-                switch (e.key.keysym.scancode)
-                {
-                    case SDL_Scancode.SDL_SCANCODE_F11 when statePath != null:
+                case SDL_KEYDOWN:
+                    switch (e.key.keysym.scancode)
                     {
-                        SaveState();
-                        break;
+                        case SDL_Scancode.SDL_SCANCODE_F11 when statePath != null:
+                        {
+                            SaveState();
+                            break;
+                        }
+                        case SDL_Scancode.SDL_SCANCODE_F12 when statePath != null:
+                        {
+                            LoadState();
+                            break;
+                        }
+                        default:
+                            cpu.ExpansionPorts[0] = Keyboard.ConvertAsciiToSdcii((int)e.key.keysym.scancode);
+                            break;
                     }
-                    case SDL_Scancode.SDL_SCANCODE_F12 when statePath != null:
-                    {
-                        LoadState();
-                        break;
-                    }
-                    default:
-                        cpu.ExpansionPort = Keyboard.ConvertAsciiToSdcii((int)e.key.keysym.scancode);
-                        break;
-                }
-            }
-            else if (e.type is SDL_KEYUP)
-            {
-                cpu.ExpansionPort = 168;
+
+                    break;
+                case SDL_KEYUP:
+                    cpu.ExpansionPorts[0] = 168;
+                    break;
+                case SDL_MOUSEMOTION:
+                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) + (e.motion.y & 0b1111111) + (cpu.ExpansionPorts[1] & 0b1100000000000000);
+                    break;
+                case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_LEFT:
+                    cpu.ExpansionPorts[1] |= 0b0100000000000000;
+                    break;
+                case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_LEFT:
+                    cpu.ExpansionPorts[1] &= ~0b0100000000000000;
+                    break;
+                case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_RIGHT:
+                    cpu.ExpansionPorts[1] |= 0b1000000000000000;
+                    break;
+                case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_RIGHT:
+                    cpu.ExpansionPorts[1] &= ~0b1000000000000000;
+                    break;
             }
         }
     }

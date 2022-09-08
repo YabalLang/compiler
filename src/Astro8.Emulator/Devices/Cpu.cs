@@ -57,7 +57,7 @@ public sealed partial class Cpu<THandler> : IDisposable
         set => _context = _context with { Bank = value };
     }
 
-    public int ExpansionPort { get; set; }
+    public int[] ExpansionPorts { get; } = new int[4];
 
     public CpuContext Context => _context;
 
@@ -181,7 +181,13 @@ public sealed partial class Cpu<THandler> : IDisposable
         writer.Write(A);
         writer.Write(B);
         writer.Write(C);
-        writer.Write(ExpansionPort);
+
+        writer.Write(ExpansionPorts.Length);
+        foreach (var value in ExpansionPorts)
+        {
+            writer.Write(value);
+        }
+
         writer.Write(_halt);
 
         foreach (var memory in _banks)
@@ -199,7 +205,13 @@ public sealed partial class Cpu<THandler> : IDisposable
         A = reader.ReadInt32();
         B = reader.ReadInt32();
         C = reader.ReadInt32();
-        ExpansionPort = reader.ReadInt32();
+
+        var length = reader.ReadInt32();
+        for (var i = 0; i < Math.Min(length, ExpansionPorts.Length); i++)
+        {
+            ExpansionPorts[i] = reader.ReadInt32();
+        }
+
         _halt = reader.ReadBoolean();
 
         foreach (var memory in _banks)

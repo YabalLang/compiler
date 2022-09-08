@@ -11,7 +11,7 @@ public static class Interop
     private static int _lastA;
     private static int _lastB;
     private static int _lastC;
-    private static int _lastExp;
+    private static int[] _lastExp = Array.Empty<int>();
     private static int _lastBank;
     private static Cpu<WasmHandler>? _cpu;
 
@@ -25,11 +25,14 @@ public static class Interop
         var data = new int[0xFFFF];
         HexFile.Load(code, data);
 
-        _cpu = CpuBuilder.Create<WasmHandler>()
+        var cpu = CpuBuilder.Create<WasmHandler>()
             .WithMemory(0, data)
             .WithScreen()
             .WithCharacter()
             .Create();
+
+        _lastExp = new int[cpu.ExpansionPorts.Length];
+        _cpu = cpu;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Step")]
@@ -47,11 +50,11 @@ public static class Interop
     }
 
     [UnmanagedCallersOnly(EntryPoint = "SetExpansionPort")]
-    public static void SetExpansionPort(int value)
+    public static void SetExpansionPort(int id, int value)
     {
         if (_cpu is {} cpu)
         {
-            cpu.ExpansionPort = value;
+            cpu.ExpansionPorts[id] = value;
         }
     }
 
@@ -82,10 +85,13 @@ public static class Interop
             _lastC = context.C;
         }
 
-        if (_lastExp != cpu.ExpansionPort)
+        for (int i = 0; i < _lastExp.Length; i++)
         {
-            UpdateExpansionPort(cpu.ExpansionPort);
-            _lastExp = cpu.ExpansionPort;
+            if (_lastExp[i] != cpu.ExpansionPorts[i])
+            {
+                UpdateExpansionPort(i, cpu.ExpansionPorts[i]);
+                _lastExp[i] = cpu.ExpansionPorts[i];
+            }
         }
 
         if (_lastBank != context.Bank)
@@ -108,7 +114,7 @@ public static class Interop
     public static extern void UpdateC(int value);
 
     [DllImport("NativeLib")]
-    public static extern void UpdateExpansionPort(int value);
+    public static extern void UpdateExpansionPort(int id, int value);
 
     [DllImport("NativeLib")]
     public static extern void UpdateBank(int value);

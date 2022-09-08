@@ -32,6 +32,7 @@ public readonly record struct MicroInstruction
     public const int AW =  0b0000010000000000;
     public const int WE =  0b0000010010000000;
     public const int BNK = 0b0000010100000000;
+    public const int EXI = 0b0000010110000000;
 
     private const int MiscMask = 0b1111100000000000;
     public const int FL = 0b0000100000000000;
@@ -73,6 +74,7 @@ public readonly record struct MicroInstruction
             ["SL"] = SL,
             ["SR"] = SR,
             ["BNK"] = BNK,
+            ["EXI"] = EXI,
         };
 
     private readonly int _valueAlu;
@@ -116,6 +118,7 @@ public readonly record struct MicroInstruction
         IsAW = _valueWrite == AW;
         IsWE = _valueWrite == WE;
         IsBNK = _valueWrite == BNK;
+        IsEXI = _valueWrite == EXI;
 
         IsEO = (_valueMisc & EO) == EO;
         IsCE = (_valueMisc & CE) == CE;
@@ -260,6 +263,8 @@ public readonly record struct MicroInstruction
     /// Change bank, changes the memory bank register to the value
     /// </summary>
     public bool IsBNK { get; }
+
+    public bool IsEXI { get; }
 
     #endregion
 

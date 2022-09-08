@@ -56,7 +56,7 @@ public partial class Cpu<THandler>
             context.Cpu.Bus = context.Cpu.ProgramCounter;
         {{- else if step.MicroInstruction.IsRE }}
             // RE
-            context.Cpu.Bus = ExpansionPort;
+            context.Cpu.Bus = ExpansionPorts[context.Cpu.Bus];
         {{- end -}}
 
         {{-func checkOverflow}}
@@ -185,7 +185,7 @@ public partial class Cpu<THandler>
             context.Cpu.MemoryIndex = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsWE }}
             // WE
-            ExpansionPort = context.Cpu.Bus;
+            ExpansionPorts[context.Cpu.Bus] = context.Cpu.Bus;
         {{- else if step.MicroInstruction.IsBNK }}
             // BNK
             context.Cpu.Bank = context.Cpu.Bus;
