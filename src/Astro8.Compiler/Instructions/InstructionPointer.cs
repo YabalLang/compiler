@@ -1,4 +1,5 @@
-﻿using Astro8.Yabal.Ast;
+﻿using Astro8.Yabal;
+using Astro8.Yabal.Ast;
 using Astro8.Yabal.Visitor;
 
 namespace Astro8.Instructions;

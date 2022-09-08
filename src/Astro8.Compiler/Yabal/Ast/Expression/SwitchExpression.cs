@@ -58,7 +58,7 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
 
     public override bool OverwritesB => true;
 
-    public override LanguageType Type => Default?.Type ?? Items[0].Value.Type;
+    public override LanguageType Type => Default.Type;
 
     public override Expression CloneExpression()
     {
@@ -68,5 +68,27 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             Items.Select(i => new SwitchItem(i.Cases.Select(c => c.CloneExpression()).ToList(), i.Value.CloneExpression())).ToList(),
             Default.CloneExpression()
         );
+    }
+
+    public override Expression Optimize()
+    {
+        var value = Value.Optimize();
+        var items = Items.Select(i => new SwitchItem(i.Cases.Select(c => c.Optimize()).ToList(), i.Value.Optimize())).ToList();
+        var defaultValue = Default.Optimize();
+
+        if (value is IConstantValue { Value: { } constantValue } &&
+            items.All(i => i.Cases.All(c => c is IConstantValue )))
+        {
+            var item = items.FirstOrDefault(i => i.Cases.Any(c => c is IConstantValue { Value: { } caseValue } && Equals(caseValue, constantValue)));
+
+            if (item is not null)
+            {
+                return item.Value;
+            }
+
+            return defaultValue;
+        }
+
+        return this;
     }
 }

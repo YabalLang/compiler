@@ -1,8 +1,0 @@
-int[] chars = create_pointer(0xD12A, 1)
-var message = "Hello world"
-
-while(true) {
-    for (int i = 0; i < sizeof(message); i++) {
-        chars[i] = message[i]
-    }
-}

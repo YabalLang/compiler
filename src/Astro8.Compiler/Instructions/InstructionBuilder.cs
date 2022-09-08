@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Astro8.Yabal;
 using Astro8.Yabal.Ast;
 
 namespace Astro8.Instructions;

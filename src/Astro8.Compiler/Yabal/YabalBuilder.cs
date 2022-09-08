@@ -90,24 +90,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public InstructionPointer GetFile(string path, FileType type)
     {
-        path = Path.GetFullPath(path);
-
-        var key = (path, type);
-
-        if (_files.TryGetValue(key, out var pointer))
-        {
-            return pointer;
-        }
-
-        var info = new FileInfo(path);
-
-        if (!info.Exists)
-        {
-            throw new InvalidOperationException($"File '{path}' does not exist");
-        }
-
-        pointer = _builder.CreatePointer(name: $"File:{type}:{_files.Count}");
-        _files.Add(key, pointer);
+        var pointer = _builder.CreatePointer(name: $"File:{type}:{_files.Count}");
+        _files.Add((path, type), pointer);
         return pointer;
     }
 
@@ -207,7 +191,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public void CompileCode(string code)
+    public async ValueTask CompileCodeAsync(string code)
     {
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
@@ -218,13 +202,25 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             // ErrorHandler = new BailErrorStrategy(),
         };
 
-        var listener = new YabalVisitor();
-        var program = listener.VisitProgram(parser.program());
+        try
+        {
+            var listener = new YabalVisitor();
+            var program = listener.VisitProgram(parser.program());
 
-        program.Declare(this);
-        program.Initialize(this);
-        program = program.Optimize();
-        program.Build(this);
+            foreach (var (path, type) in listener.Files)
+            {
+                await FileContent.LoadAsync(path, type);
+            }
+
+            program.Declare(this);
+            program.Initialize(this);
+            program = program.Optimize();
+            program.Build(this);
+        }
+        catch
+        {
+            throw;
+        }
     }
 
     private void CreateCall(InstructionBuilderBase builder)

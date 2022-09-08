@@ -102,7 +102,7 @@ var rootCommand = new RootCommand
     build
 };
 
-void Build(InvocationContext ctx)
+async Task Build(InvocationContext ctx)
 {
     var path = ctx.ParseResult.GetValueForArgument(filePathOption);
 
@@ -121,7 +121,7 @@ void Build(InvocationContext ctx)
 
     var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
-    builder.CompileCode(code);
+    await builder.CompileCodeAsync(code);
     PrintErrors(builder.Errors, code);
 
     if (string.IsNullOrEmpty(outPath))
@@ -171,7 +171,7 @@ void Build(InvocationContext ctx)
     }
 }
 
-void Execute(InvocationContext ctx)
+async Task Execute(InvocationContext ctx)
 {
     var path = ctx.ParseResult.GetValueForArgument(filePathOption);
 
@@ -179,6 +179,10 @@ void Execute(InvocationContext ctx)
     {
         return;
     }
+
+    var builder = new YabalBuilder();
+    var code = File.ReadAllText(path.FullName);
+    await builder.CompileCodeAsync(code);
 
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);
     var disableCharacters = ctx.ParseResult.GetValueForOption(disableCharactersOption);
@@ -218,9 +222,6 @@ void Execute(InvocationContext ctx)
         }
     }
 
-    var builder = new YabalBuilder();
-    var code = File.ReadAllText(path.FullName);
-    builder.CompileCode(code);
     PrintErrors(builder.Errors, code);
     Console.WriteLine(builder.ToString());
 

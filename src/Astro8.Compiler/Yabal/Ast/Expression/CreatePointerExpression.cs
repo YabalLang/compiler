@@ -21,7 +21,7 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
     }
 
     object? IConstantValue.Value { get; } = Value is IConstantValue { Value: int value }
-        ? RawAddress.From(new Address(Bank, value), ElementType)
+        ? RawAddress.From(ElementType, new AbsolutePointer(value, Bank))
         : null;
 
     public override bool OverwritesB => Value.OverwritesB;

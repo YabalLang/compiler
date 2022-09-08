@@ -7,13 +7,14 @@ public class FileAddress : IAddress
     private readonly string _path;
     private readonly FileType _type;
 
-    public FileAddress(string path, FileType type)
+    public FileAddress(string path, FileType type, Pointer pointer)
     {
         _path = path;
         _type = type;
+        Pointer = pointer;
     }
 
-    public Pointer? Pointer => throw new NotImplementedException();
+    public Pointer? Pointer { get; }
 
     public int? Length
     {
@@ -32,5 +33,5 @@ public class FileAddress : IAddress
         return content[contentOffset + offset];
     }
 
-    public static IAddress From(string path, FileType type) => new FileAddress(path, type);
+    public static IAddress From(string path, FileType type, Pointer pointer) => new FileAddress(path, type, pointer);
 }

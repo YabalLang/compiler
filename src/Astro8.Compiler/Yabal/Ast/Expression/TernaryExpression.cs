@@ -30,6 +30,25 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         builder.Mark(end);
     }
 
+    public override Expression Optimize()
+    {
+        var expression = Expression.Optimize();
+        var consequent = Consequent.Optimize();
+        var alternate = Alternate.Optimize();
+
+        if (expression is IConstantValue { Value: bool value })
+        {
+            return value ? consequent : alternate;
+        }
+
+        return this with
+        {
+            Expression = expression,
+            Consequent = consequent,
+            Alternate = alternate
+        };
+    }
+
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Consequent.Type;

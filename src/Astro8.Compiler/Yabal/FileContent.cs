@@ -7,29 +7,54 @@ namespace Astro8.Instructions;
 
 public record FileContent(int Offset, int[] Data)
 {
-    private static readonly ConcurrentDictionary<(string, FileType), FileContent> Cache = new();
+    private static readonly Dictionary<(string, FileType), FileContent> Cache = new();
 
     public static FileContent Get(string path, FileType type)
     {
-        return Cache.GetOrAdd((path, type), FileContentFactory);
+        if (!Cache.TryGetValue((path, type), out var fileContent))
+        {
+            throw new InvalidOperationException("File was not loaded");
+        }
+
+        return fileContent;
     }
 
-    private static FileContent FileContentFactory((string, FileType) key)
+    public static async ValueTask LoadAsync(string path, FileType type)
     {
-        var (path, type) = key;
-        using var stream = File.OpenRead(path);
+        var key = (path, type);
+
+        if (Cache.ContainsKey(key))
+        {
+            return;
+        }
+
+        byte[] bytes;
+
+        if (path.StartsWith("http"))
+        {
+            using var client = new HttpClient();
+            using var response = await client.GetAsync(path);
+            bytes = await response.Content.ReadAsByteArrayAsync();
+        }
+        else
+        {
+            bytes = await File.ReadAllBytesAsync(path);
+        }
+
         var i = 0;
 
         int[] content;
+
+        FileContent fileContent;
 
         switch (type)
         {
             case FileType.Image:
             {
-                using var image = Image.Load<Rgba32>(stream);
+                using var image = Image.Load<Rgba32>(bytes);
 
-                var width = (byte) image.Width;
-                var height = (byte) image.Height;
+                var width = (byte)image.Width;
+                var height = (byte)image.Height;
 
                 content = new int[width * height + 1];
                 content[i++] = (width << 8) | height;
@@ -39,25 +64,27 @@ public record FileContent(int Offset, int[] Data)
                     for (var x = 0; x < width; x++)
                     {
                         var pixel = image[x, y];
-                        var value = (pixel.A / 16 << 15) | (pixel.R / 8 << 10) | (pixel.G / 8 << 5) | (pixel.B / 8);
+                        var a = pixel.A > 0 ? 1 : 0;
+                        var value = (a << 15) | (pixel.R / 8 << 10) | (pixel.G / 8 << 5) | (pixel.B / 8);
 
                         content[i++] = value;
                     }
                 }
 
-                return new FileContent(1, content);
+                fileContent = new FileContent(1, content);
+                break;
             }
             case FileType.Byte:
             {
-                content = new int[stream.Length / 2 + 1];
-                content[i++] = (int) (stream.Length / 2);
+                content = new int[bytes.Length / 2 + 1];
+                content[i++] = bytes.Length / 2;
 
                 var memory = new byte[2];
                 int length;
 
-                while ((length = stream.Read(memory, 0, 2)) > 0)
+                for (var j = 0; j < bytes.Length; j += 2)
                 {
-                    if (length == 1)
+                    if (j + 1 < bytes.Length)
                     {
                         content[i++] = memory[0] << 8;
                     }
@@ -67,10 +94,13 @@ public record FileContent(int Offset, int[] Data)
                     }
                 }
 
-                return new FileContent(1, content);
+                fileContent = new FileContent(1, content);
+                break;
             }
             default:
                 throw new NotSupportedException();
         }
+
+        Cache[key] = fileContent;
     }
 }

@@ -1,0 +1,57 @@
+/*
+In Yabal it's possible to include images files with "include_image".
+
+Every pixel in the image is converted to a single uint16:
+
+    | Alpha (1) | Red (5) | Green (5) | Blue (5) |
+    | 0         | 00000   | 00000     | 00000    |
+
+To convert the pixel value to seperate variables in Yabal, you can do the following:
+
+    var file = include_image("file.png")
+    var pixel = file[0]
+    var a = pixel >> 15
+    var r = pixel >> 10 & 0b11111
+    var g = pixel >> 5 & 0b11111
+    var b = pixel & 0b11111
+
+The structure is almost the same as the video pixel color data. The only difference is that the graphics ignores the alpha channel.
+So in code, you have to check the alpha channel for youself before copying it to the graphics buffer.
+
+In front of the pointer, there is a uint16 that contains the width and height of the image.
+
+    | Width (8) | Height (8) |
+    | 00000000  | 00000000   |
+
+To get the width and height in Yabal, you can do the following:
+
+    var file = include_image("file.png")
+    var meta = file[-1]
+    var width = meta >> 8 & 0xFF
+    var height = meta & 0xFF
+
+In the following example, the image "image_apple.webp" is loaded and displayed.
+*/
+
+var file = include_image("image_apple.webp")
+var screen = create_pointer(53871, 1)
+
+var meta = file[-1]
+var width = meta >> 8 & 0xFF
+var height = meta & 0xFF
+
+while(true) {
+    for (var x = 0; x < width; x++) {
+        for (var y = 0; y < height; y++) {
+            var screenOffset = (y * 108) + x
+            var pixelOffset = (y * width) + x
+
+            var pixel = file[pixelOffset]
+            var a = pixel >> 15
+
+            if (a == 1) {
+                screen[screenOffset] = pixel
+            }
+        }
+    }
+}

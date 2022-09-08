@@ -62,11 +62,13 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
     public override Expression Optimize()
     {
+        var value = Value.Optimize();
+
         return Operator switch
         {
-            UnaryOperator.Negate when Value is IConstantValue { Value: bool value } => new BooleanExpression(Range, !value),
-            UnaryOperator.Not when Value is IConstantValue { Value: int value } => new IntegerExpression(Range, ~value),
-            UnaryOperator.Minus when Value is IConstantValue { Value: int value } => new IntegerExpression(Range, -value),
+            UnaryOperator.Negate when value is IConstantValue { Value: bool b } => new BooleanExpression(Range, !b),
+            UnaryOperator.Not when value is IConstantValue { Value: int i } => new IntegerExpression(Range, ~i),
+            UnaryOperator.Minus when value is IConstantValue { Value: int i } => new IntegerExpression(Range, -i),
             _ => this
         };
     }

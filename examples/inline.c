@@ -1,0 +1,25 @@
+/*
+The following example shows an inline function
+Every time the function is called, the compiler will copy the code of the function and paste it in the place where the function is called
+*/
+
+inline int get_color(int r, int g, int b) {
+    return (r / 8 << 10) + (g / 8 << 5) + (b / 8)
+}
+
+int[] screen = create_pointer(53871, 1)
+
+while(true) {
+    screen[0] = get_color(255, 0, 0)
+
+    /*
+    The compiler will replace the function call with the following code:
+
+        screen[0] = (255 / 8 << 10) + (0 / 8 << 5) + (0 / 8)
+
+    After that the compiler will try to optimize the code.
+    Because all the values are constants, the compiler will replace the code with: 
+
+        screen[0] = 31744
+    */
+}

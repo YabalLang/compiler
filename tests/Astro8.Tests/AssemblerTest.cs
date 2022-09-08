@@ -40,7 +40,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void Push()
+    public async Task Push()
     {
         var builder = new YabalBuilder();
 
@@ -87,13 +87,13 @@ public class AssemblerTest
     [InlineData("|", 0b10, 0b11, 0b11)]
     [InlineData("<<", 0b1, 1, 0b10)]
     [InlineData(">>", 0b10, 1, 0b1)]
-    public void Binary(string type, int left, int right, int expected)
+    public async Task Binary(string type, int left, int right, int expected)
     {
         var code = $$"""
-            const var leftConstant = {{ left }}
-            const var rightConstant = {{ right }}
-            var left = {{ left }}
-            var right = {{ right }}
+            var leftConstant = {{ left }}
+            var rightConstant = {{ right }}
+            int left; left = {{ left }}
+            int right; right = {{ right }}
             var optimized = {{ left }} {{ type }} {{ right }}
             var constant = leftConstant {{ type }} rightConstant
             var fast = left {{ type }} {{ right }}
@@ -101,7 +101,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -117,7 +117,7 @@ public class AssemblerTest
     [InlineData("-=", 0)]
     [InlineData("*=", 4)]
     [InlineData("/=", 1)]
-    public void BinaryEqual(string type, int expected)
+    public async Task BinaryEqual(string type, int expected)
     {
         var code = $"""
             var a = 2;
@@ -126,7 +126,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -136,7 +136,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void Function()
+    public async Task Function()
     {
         const string code = """
             var a = 0
@@ -158,7 +158,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -168,7 +168,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void FunctionArgument()
+    public async Task FunctionArgument()
     {
         const string code = """
             var called = 0
@@ -182,7 +182,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -192,7 +192,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void FunctionReturn()
+    public async Task FunctionReturn()
     {
         const string code = """
             int get_offset(int x, int y) {
@@ -213,7 +213,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -231,7 +231,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void InlineAsm()
+    public async Task InlineAsm()
     {
         const string code = """
             var result = 0
@@ -252,7 +252,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -264,7 +264,7 @@ public class AssemblerTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void Array(bool @const)
+    public async Task Array(bool @const)
     {
         var code = $$"""
             var index = 1
@@ -276,7 +276,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -303,7 +303,7 @@ public class AssemblerTest
 
     [InlineData("==", 10, -1, 10, 9)]
     [InlineData("!=", 10, -1, 0, 0)]
-    public void While(string type, int start, int increment, int end, int expected)
+    public async Task While(string type, int start, int increment, int end, int expected)
     {
         var code = $$"""
             var value = {{ start }}
@@ -318,7 +318,7 @@ public class AssemblerTest
         _output.WriteLine("");
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -327,7 +327,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void WhileVariable()
+    public async Task WhileVariable()
     {
         const string code = $$"""
             var run = true
@@ -340,7 +340,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -361,7 +361,7 @@ public class AssemblerTest
     [InlineData("true", "||", "false", 1)]
     [InlineData("false", "||", "false", 0)]
     [InlineData("false", "||", "true", 1)]
-    public void Compare(object left, string type, object right, int expected)
+    public async Task Compare(object left, string type, object right, int expected)
     {
         var code = $$"""
             const var leftConstant = {{ left }}
@@ -379,7 +379,7 @@ public class AssemblerTest
         _output.WriteLine("");
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -391,7 +391,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void For()
+    public async Task For()
     {
         const string code = $$"""
             var value = 0
@@ -402,7 +402,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -411,16 +411,17 @@ public class AssemblerTest
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    public void If(int step)
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, false)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    public async Task If(int step, bool optimized)
     {
         var code = $$"""
             var result = 0
-            var value = 0
-
-            value = {{step}}
+            var value = {{(optimized ? "" : "0; value =")}} {{step}}
 
             if (value == 1) {
                 result = 1
@@ -436,7 +437,7 @@ public class AssemblerTest
         _output.WriteLine("");
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -445,17 +446,56 @@ public class AssemblerTest
     }
 
     [Theory]
-    [InlineData("true", 0)]
-    [InlineData("false", 1)]
-    public void Negate(string input, int expected)
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, false)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    public async Task Switch(int step, bool optimized)
+    {
+        var code = $$"""
+            var result = 0
+            var value = {{(optimized ? "" : "0; value = ") + step}}
+
+            var result = value switch {
+                1 => 1,
+                2 => 2,
+                _ => 3
+            }
+            """;
+
+        _output.WriteLine("Code:");
+        _output.WriteLine(code);
+        _output.WriteLine("");
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(step, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData("true", 0, false)]
+    [InlineData("true", 0, true)]
+    [InlineData("false", 1, false)]
+    [InlineData("false", 1, true)]
+    public async Task Negate(string input, int expected, bool optimized)
     {
         var code = $"""
-            var value = {input}
+            bool value{(optimized ? $" = {input}" : $"; value = {input}")}
             var result = !value
             """;
 
+        _output.WriteLine("Code:");
+        _output.WriteLine(code);
+        _output.WriteLine("");
+
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -466,7 +506,7 @@ public class AssemblerTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void StructToArray(bool @const)
+    public async Task StructToArray(bool @const)
     {
         var code = $$"""
             struct Test {
@@ -488,7 +528,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -501,7 +541,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void ArrayToStruct()
+    public async Task ArrayToStruct()
     {
         const string code = $$"""
             struct Test {
@@ -523,7 +563,7 @@ public class AssemblerTest
             """ ;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Memory[4095] = 1;
@@ -540,7 +580,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void Struct()
+    public async Task Struct()
     {
         const string code = $$"""
             struct Test {
@@ -554,7 +594,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -565,7 +605,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public void StructDeep()
+    public async Task StructDeep()
     {
         const string code = $$"""
             struct Position {
@@ -587,7 +627,7 @@ public class AssemblerTest
             """;
 
         var builder = new YabalBuilder();
-        builder.CompileCode(code);
+        await builder.CompileCodeAsync(code);
 
         var cpu = Create(builder);
         cpu.Run();

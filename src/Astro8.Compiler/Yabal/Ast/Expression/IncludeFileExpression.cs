@@ -1,25 +1,33 @@
 ﻿using Astro8.Instructions;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Astro8.Yabal.Ast;
 
 public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue
 {
+    private InstructionPointer _pointer = null!;
+
+    public override void Initialize(YabalBuilder builder)
+    {
+        _pointer = builder.GetFile(Path, FileType);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
-        builder.SetA(builder.GetFile(Path, FileType));
+        builder.SetA_Large(_pointer);
     }
 
     public override bool OverwritesB => false;
 
     public override LanguageType Type { get; } = LanguageType.Array(LanguageType.Integer);
 
-    public object Value => FileAddress.From(Path, FileType);
+    public object Value => FileAddress.From(Path, FileType, _pointer);
 
-    public override Expression CloneExpression()
+    public override IncludeFileExpression CloneExpression()
     {
-        return new IncludeFileExpression(Range, Path, FileType);
+        return new IncludeFileExpression(Range, Path, FileType)
+        {
+            _pointer = _pointer
+        };
     }
 }
 

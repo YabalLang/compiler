@@ -11,6 +11,8 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     private readonly TypeVisitor _typeVisitor = new();
     private BlockCompileStack _block = new();
 
+    public List<(string, FileType)> Files { get; } = new();
+
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
     {
         return new ProgramStatement(
@@ -613,12 +615,9 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new NotSupportedException("IncludeBytes only supports string literals");
         }
 
-        var path = Path.GetFullPath(stringExpression.Value);
+        var path = stringExpression.Value;
 
-        if (!File.Exists(path))
-        {
-            throw new FileNotFoundException($"File {path} does not exist");
-        }
+        Files.Add((path, type));
 
         return new IncludeFileExpression(
             context,

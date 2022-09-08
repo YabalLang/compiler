@@ -1,0 +1,2 @@
+This directory contains examples for Yabal.  
+The examples uses the extension `.c` so GitHub shows the code with syntax highlighting, however it's recommended to use the extensions `.yabal` when making your own programs.

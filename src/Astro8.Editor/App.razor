@@ -42,7 +42,7 @@
                 try
                 {
                     var builder = new YabalBuilder();
-                    builder.CompileCode(await _editor.GetValue());
+                    await builder.CompileCodeAsync(await _editor.GetValue());
 
                     foreach (var error in builder.Errors.SelectMany(i => i.Value))
                     {

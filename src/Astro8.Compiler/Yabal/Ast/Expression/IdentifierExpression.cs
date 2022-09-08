@@ -55,7 +55,6 @@ public record IdentifierExpression(SourceRange Range, string Name) : Expression(
             : null
         : null;
 
-
     public Pointer? Pointer
     {
         get
