@@ -11,9 +11,6 @@ inline int get_color(int r, int g, int b) {
 
 while (true) {
     MouseInput input = asm { RDEXP 1 };
-
-    input.x = 10;
-
     var offset = input.y * screen_width + input.x;
 
     if (input.left == 1) {
