@@ -14,7 +14,7 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
 {
     public abstract int Value { get; init; }
 
-    public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxDataLength;
+    public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxData;
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {

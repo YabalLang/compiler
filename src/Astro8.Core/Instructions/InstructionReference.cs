@@ -3,59 +3,30 @@
 namespace Astro8.Instructions;
 
 [StructLayout(LayoutKind.Explicit, Size = 12)]
-public readonly record struct InstructionReference
+public readonly struct InstructionReference
 {
-    public const int MaxInstructionId = 63;
-    public const int MaxDataLength = 2047;
+    public const int MaxId = 0b11111;
+    public const int MaxData = 0b11111111111;
 
-    [FieldOffset(0)] private readonly int _id;
-    [FieldOffset(4)] private readonly int _data;
-    [FieldOffset(8)] private readonly int _raw;
+    [FieldOffset(0)] public readonly int Id;
+    [FieldOffset(4)] public readonly int Data;
+    [FieldOffset(8)] public readonly int Raw;
 
     public InstructionReference(int raw)
     {
-        _raw = raw;
-        _id = BitRange(raw, 11, 5);
-        _data = BitRange(raw, 0, 11);
+        Raw = raw;
+        Id = raw >> 11;
+        Data = raw & MaxData;
+    }
+
+    public InstructionReference(int id, int data)
+    {
+        Id = id;
+        Data = data;
+        Raw = ((id & MaxId) << 11) | (data & MaxData);
     }
 
     public Instruction Instruction => Instruction.Default[Id];
-
-    public int Id
-    {
-        get => _id;
-        init
-        {
-            _id = value;
-            Raw = (Id << 11) | Data;
-        }
-    }
-
-    public int Data
-    {
-        get => _data;
-        init
-        {
-            if (value >= MaxDataLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), value, $"Data length must be less than {MaxDataLength}.");
-            }
-
-            _data = value;
-            Raw = (_id << 11) | value;
-        }
-    }
-
-    public int Raw
-    {
-        get => _raw;
-        init
-        {
-            _raw = value;
-            _id = BitRange(value, 11, 5);
-            _data = BitRange(value, 0, 11);
-        }
-    }
 
     public override string ToString()
     {
@@ -81,17 +52,15 @@ public readonly record struct InstructionReference
         return $"{instruction.Name} {Data}";
     }
 
-    public static int BitRange(int value, int offset, int n)
-    {
-        value >>= offset;
-        var mask = (1 << n) - 1;
-        return value & mask;
-    }
-
     public static InstructionReference Create(int id, int data = 0)
     {
-        return new InstructionReference((id << 11) | data);
+        return new InstructionReference(id, data);
     }
 
     public static implicit operator int(InstructionReference value) => value.Raw;
+
+    public InstructionReference WithData(int value)
+    {
+        return new InstructionReference(Id, value);
+    }
 }

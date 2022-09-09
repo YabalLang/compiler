@@ -82,10 +82,7 @@ public class InstructionBuildResult : IProgram
             {
                 if (pointer is not null)
                 {
-                    instructionRef = instructionRef.Value with
-                    {
-                        Data = pointer.Get(_pointerOffsets)
-                    };
+                    instructionRef = instructionRef.Value.WithData(pointer.Get(_pointerOffsets));
                 }
 
                 if (raw)
@@ -245,10 +242,7 @@ public class InstructionBuildResult : IProgram
             }
             else
             {
-                yield return instruction.Value with
-                {
-                    Data = pointer.Get(_pointerOffsets)
-                };
+                yield return instruction.Value.WithData(pointer.Get(_pointerOffsets));
             }
         }
     }

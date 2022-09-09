@@ -219,7 +219,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public override void Emit(string name, PointerOrData data = default, int? index = null)
     {
-        if (data.IsRight && data.Right > InstructionReference.MaxDataLength)
+        if (data.IsRight && data.Right > InstructionReference.MaxData)
         {
             throw new ArgumentOutOfRangeException(nameof(data));
         }

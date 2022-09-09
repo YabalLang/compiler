@@ -1,17 +1,7 @@
 namespace Astro8.Devices;
 
-public record struct CpuContext
+public readonly record struct CpuContext(int A, int B, int C, int Bus, int MemoryIndex, bool FlagA, bool FlagB, int ProgramCounter, int Bank)
 {
-    public int A;
-    public int B;
-    public int C;
-    public int Bus;
-    public int MemoryIndex;
-    public bool FlagA;
-    public bool FlagB;
-    public int ProgramCounter;
-    public int Bank;
-
     public void Save(BinaryWriter writer)
     {
         writer.Write(A);
@@ -28,16 +18,16 @@ public record struct CpuContext
     public static CpuContext Load(BinaryReader reader)
     {
         return new CpuContext
-        {
-            A = reader.ReadInt32(),
-            B = reader.ReadInt32(),
-            C = reader.ReadInt32(),
-            Bus = reader.ReadInt32(),
-            MemoryIndex = reader.ReadInt32(),
-            FlagA = reader.ReadBoolean(),
-            FlagB = reader.ReadBoolean(),
-            ProgramCounter = reader.ReadInt32(),
-            Bank = reader.ReadInt32()
-        };
+        (
+            reader.ReadInt32(),
+            reader.ReadInt32(),
+            reader.ReadInt32(),
+            reader.ReadInt32(),
+            reader.ReadInt32(),
+            reader.ReadBoolean(),
+            reader.ReadBoolean(),
+            reader.ReadInt32(),
+            reader.ReadInt32()
+        );
     }
 }

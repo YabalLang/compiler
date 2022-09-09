@@ -22,7 +22,7 @@ public class CpuBuilder<THandler>
     {
         for (var i = 0; i < _memory.Length; i++)
         {
-            _memory[i] = new CpuMemory<THandler>(size ?? _config.Memory.Size);
+            _memory[i] = new CpuMemory<THandler>(i, size ?? _config.Memory.Size);
         }
 
         return this;
@@ -64,7 +64,7 @@ public class CpuBuilder<THandler>
 
     public CpuBuilder<THandler> WithMemory(int bank, int[] memory)
     {
-        _memory[bank] = new CpuMemory<THandler>(memory);
+        _memory[bank] = new CpuMemory<THandler>(bank, memory);
         return this;
     }
 
@@ -97,7 +97,7 @@ public class CpuBuilder<THandler>
     {
         for (var i = 0; i < _memory.Length; i++)
         {
-            _memory[i] ??= new CpuMemory<THandler>();
+            _memory[i] ??= new CpuMemory<THandler>(i, 0xFFFF);
         }
 
         var cpu = new Cpu<THandler>(_memory!, _handler);

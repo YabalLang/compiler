@@ -13,16 +13,27 @@ public sealed class CpuMemory<THandler>
     private int _characterDeviceStart;
     private int _characterDeviceEnd;
 
-    public CpuMemory(int[] data)
+    public CpuMemory(int bank, int[] data)
     {
         Data = data;
-        Instruction = new InstructionReference[0xEF6E];
+        Bank = bank;
+        Instruction = new InstructionReference[data.Length];
 
         UpdateInstructions();
     }
 
+    public CpuMemory(int bank, int size)
+        : this(bank, new int[size])
+    {
+    }
+
     public void UpdateInstructions()
     {
+        if (Bank != 0)
+        {
+            return;
+        }
+
         var data = Data.AsSpan();
         var instructions = Instruction.AsSpan();
 
@@ -32,10 +43,7 @@ public sealed class CpuMemory<THandler>
         }
     }
 
-    public CpuMemory(int size = 0xFFFF)
-        : this(new int[size])
-    {
-    }
+    public int Bank { get; }
 
     public int[] Data { get; }
 

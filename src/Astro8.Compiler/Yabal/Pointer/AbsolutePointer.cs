@@ -14,7 +14,7 @@ public class AbsolutePointer : Pointer
 
     public override string Name => _address.ToString();
 
-    public override bool IsSmall => _address < InstructionReference.MaxDataLength;
+    public override bool IsSmall => _address < InstructionReference.MaxData;
 
     public override int Bank { get; }
 
