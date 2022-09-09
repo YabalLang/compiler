@@ -26,6 +26,8 @@ public abstract class InstructionBuilderBase
 
     public void SetBank(int value) => Emit("BNK", value);
 
+    public void SetBank_FromC() => Emit("BNKC");
+
     public void LoadA(PointerOrData address) => Emit("AIN", address);
 
     public void LoadB(PointerOrData address) => Emit("BIN", address);
@@ -213,6 +215,8 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         Add(pointer);
     }
 
+    public int DisallowC { get; set; }
+
     public override void Emit(string name, PointerOrData data = default, int? index = null)
     {
         if (data.IsRight && data.Right > InstructionReference.MaxDataLength)
@@ -223,6 +227,11 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         if (!_instructions.TryGetValue(name, out var instruction))
         {
             throw new ArgumentException($"Unknown instruction '{name}'", nameof(name));
+        }
+
+        if (DisallowC > 0 && instruction.MicroInstructions.Any(i => i.IsWC))
+        {
+            throw new InvalidOperationException("C is not allowed");
         }
 
         // Register
@@ -271,9 +280,9 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         return -1;
     }
 
-    public void CopyTo(int[] array, int offset)
+    public void CopyTo(int[] array)
     {
-        Build(offset).CopyTo(array);
+        Build().CopyTo(array);
     }
 
     public override string ToString()

@@ -29,7 +29,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Boolean => 1,
         StaticType.Void => 0,
         StaticType.Assembly => 1,
-        StaticType.Pointer => 1,
+        StaticType.Pointer => 2,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };

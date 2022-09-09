@@ -2,5 +2,5 @@
 
 public interface IProgram
 {
-    void CopyTo(int[] array, int offset);
+    void CopyTo(int[] array);
 }

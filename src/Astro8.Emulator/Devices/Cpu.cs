@@ -8,7 +8,6 @@ public sealed partial class Cpu<THandler> : IDisposable
     where THandler : Handler
 {
     private readonly Stopwatch _stopwatch;
-    private readonly CpuMemory<THandler>[] _banks;
     private readonly THandler _handler;
     private int _steps;
     private bool _halt;
@@ -16,7 +15,7 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public Cpu(CpuMemory<THandler>[] banks, THandler handler)
     {
-        _banks = banks;
+        Banks = banks;
         _handler = handler;
         _stopwatch = Stopwatch.StartNew();
     }
@@ -25,7 +24,9 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public bool Running => !_halt;
 
-    public CpuMemory<THandler> Memory => _banks[_context.Bank];
+    public CpuMemory<THandler>[] Banks { get; }
+
+    public CpuMemory<THandler> Memory => Banks[_context.Bank];
 
     public int A
     {
@@ -104,8 +105,8 @@ public sealed partial class Cpu<THandler> : IDisposable
 
         fetch_memory:
         var activeBankId = _context.Bank;
-        var activeBank = _banks[activeBankId];
-        var programMemory = _banks[0];
+        var activeBank = Banks[activeBankId];
+        var programMemory = Banks[0];
         var instructionLength = programMemory.Instruction.Length;
 
         fixed (int* bankPointer = activeBank.Data)
@@ -190,7 +191,7 @@ public sealed partial class Cpu<THandler> : IDisposable
 
         writer.Write(_halt);
 
-        foreach (var memory in _banks)
+        foreach (var memory in Banks)
         {
             memory.Save(writer);
         }
@@ -214,7 +215,7 @@ public sealed partial class Cpu<THandler> : IDisposable
 
         _halt = reader.ReadBoolean();
 
-        foreach (var memory in _banks)
+        foreach (var memory in Banks)
         {
             memory.Load(reader);
         }

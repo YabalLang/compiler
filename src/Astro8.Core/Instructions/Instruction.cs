@@ -19,7 +19,7 @@ public record Instruction(
 
     private static Instruction Parse(string value, int id, Instruction? parent = null)
     {
-        const int microInstructionLength = 64;
+        const int microInstructionLength = 32;
         Span<bool?> flags = stackalloc bool?[Flags.Length];
         Span<bool> definedOffsets = stackalloc bool[microInstructionLength];
 
@@ -177,6 +177,7 @@ public record Instruction(
 		"or( 2=or,wa,eo,fl & 3=ei", // Logical OR operation on register A and register B, with result put back into register A
 		"not( 2=not,wa,eo,fl & 3=ei", // Logical NOT operation on register A, with result put back into register A
 		"bnk( 2=bnk,ir & 3=ei", // Change bank, changes the memory bank register to the value specified <val>
+        "bnkc( 2=rc,bnk & 3=ei", // Change bank, changes the memory bank register to the value in register C
     };
 
     private static IReadOnlyList<Instruction>? _default;

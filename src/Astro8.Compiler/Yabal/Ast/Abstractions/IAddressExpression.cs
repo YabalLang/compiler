@@ -10,6 +10,11 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 
     public abstract void StoreAddressInA(YabalBuilder builder);
 
+    public virtual void StoreBankInC(YabalBuilder builder)
+    {
+        throw new NotImplementedException();
+    }
+
     public override void AssignRegisterA(YabalBuilder builder)
     {
         if (Type.Size > 1)
@@ -56,14 +61,35 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 
             if (size == 1)
             {
+                if (!Bank.HasValue)
+                {
+                    StoreBankInC(builder);
+                    builder.DisallowC++;
+                }
+
                 StoreAddressInA(builder);
+                builder.SetComment("load address");
+
                 expressionToB.BuildExpressionToB(builder);
+                builder.SetComment("set value in B");
 
-                if (Bank > 0) builder.SetBank(Bank.Value);
-
-                builder.StoreB_ToAddressInA();
-
-                if (Bank > 0) builder.SetBank(0);
+                if (Bank is not {} bank)
+                {
+                    builder.DisallowC--;
+                    builder.SetBank_FromC();
+                    builder.StoreB_ToAddressInA();
+                    builder.SetBank(0);
+                }
+                else if (bank == 0)
+                {
+                    builder.StoreB_ToAddressInA();
+                }
+                else
+                {
+                    builder.SetBank(bank);
+                    builder.StoreB_ToAddressInA();
+                    builder.SetBank(0);
+                }
             }
             else if (expression is AddressExpression { Pointer: {} valuePointer })
             {

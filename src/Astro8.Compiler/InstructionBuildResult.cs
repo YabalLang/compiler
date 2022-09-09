@@ -2,7 +2,7 @@
 
 namespace Astro8;
 
-public class InstructionBuildResult
+public class InstructionBuildResult : IProgram
 {
     private readonly int _offset;
     private readonly ReferenceList _references;

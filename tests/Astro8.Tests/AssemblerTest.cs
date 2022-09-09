@@ -28,7 +28,7 @@ public class AssemblerTest
         }
 
         _output.WriteLine("Instructions:");
-        _output.WriteLine(builder.ToString());
+        _output.WriteLine(builder.Build().ToAssembly(addComments: true));
 
         var mock = Mock.Of<Handler>();
         var cpu = CpuBuilder.Create(mock)
@@ -269,11 +269,15 @@ public class AssemblerTest
         var code = $$"""
             var index = 1
             var value = 2
-            {{(@const ? "const " : "")}}var memory = create_pointer(4095)
+            int[] memory{{(@const ? " " : "; memory ")}}= create_pointer(4095)
 
             memory[index] = value
             value = memory[index]
             """;
+
+        _output.WriteLine("Code:");
+        _output.WriteLine(code);
+        _output.WriteLine("");
 
         var builder = new YabalBuilder();
         await builder.CompileCodeAsync(code);
@@ -288,6 +292,32 @@ public class AssemblerTest
 
         Assert.Equal(2, cpu.Memory[4096]);
         Assert.Equal(2, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
+    }
+
+    [Fact]
+    public async Task ArrayBank()
+    {
+        const string code = $$"""
+            var memory = create_pointer(4095, 1)
+
+            void set_inner(int[] memory, int index, int value) {
+                memory[index] = value
+            }
+
+            void set(int[] memory, int index, int value) {
+                set_inner(memory, index, value)
+            }
+
+            set(memory, 0, 1)
+            """ ;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Banks[1][4095]);
     }
 
     [Theory]

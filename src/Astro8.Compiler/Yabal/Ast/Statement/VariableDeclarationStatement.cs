@@ -23,7 +23,20 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, bool 
 
     public override void Build(YabalBuilder builder)
     {
-        if (Value != null && !Variable.CanBeRemoved)
+        if (Value == null || Variable.CanBeRemoved)
+        {
+            return;
+        }
+
+        if (Value is CreatePointerExpression createPointer)
+        {
+            createPointer.BuildExpression(builder, false);
+            builder.StoreA(Variable.Pointer);
+
+            builder.SetA(createPointer.BankValue);
+            builder.StoreA(Variable.Pointer.Add(1));
+        }
+        else
         {
             builder.SetValue(Variable.Pointer, Variable.Type, Value);
         }

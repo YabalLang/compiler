@@ -222,10 +222,12 @@ async Task Execute(InvocationContext ctx)
         }
     }
 
+    var program = builder.Build();
     PrintErrors(builder.Errors, code);
-    Console.WriteLine(builder.ToString());
 
-    cpuBuilder.WithProgram(builder);
+    Console.WriteLine(program.ToAssembly(addComments: true));
+
+    cpuBuilder.WithProgram(program);
 
     var cpu = cpuBuilder.Create();
 

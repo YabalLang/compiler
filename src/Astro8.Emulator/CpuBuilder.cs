@@ -37,7 +37,7 @@ public class CpuBuilder<THandler>
             throw new InvalidOperationException("Memory must be configured before program");
         }
 
-        builder.CopyTo(memory.Data, 0);
+        builder.CopyTo(memory.Data);
         memory.UpdateInstructions();
 
         return this;

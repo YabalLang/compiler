@@ -276,13 +276,22 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             _builder.Mark(setArguments);
 
+            var sizes = new Dictionary<int, int>();
+
             for (var i = 0; i < arguments!.Count; i++)
             {
                 var argument = arguments[i];
-                var variable = Stack.Get(i, argument.Type.Size);
+                var size = argument.Type.Size;
 
-                argument.BuildExpression(this, false);
-                _builder.StoreA(variable);
+                if (!sizes.TryGetValue(size, out var offset))
+                {
+                    offset = 0;
+                }
+
+                var variable = Stack.Get(offset, argument.Type.Size);
+                SetValue(variable, argument.Type, argument);
+
+                sizes[size] = offset + 1;
             }
 
             _builder.Jump(address);
@@ -339,6 +348,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public override int Count => _builder.Count;
 
+    public int DisallowC
+    {
+        get => _builder.DisallowC;
+        set => _builder.DisallowC = value;
+    }
+
     public override InstructionLabel CreateLabel(string? name = null)
     {
         return _builder.CreateLabel(name);
@@ -364,10 +379,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _builder.EmitRaw(value, comment);
     }
 
-    public void CopyTo(int[] array, int offset)
+    public void CopyTo(int[] array)
     {
-        var builder = Build(offset);
-        builder.CopyTo(array);
+        Build().CopyTo(array);
     }
 
     public void ToAssembly(StreamWriter writer, bool addComments = false)
@@ -548,8 +562,31 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             if (expression.Type.StaticType == StaticType.Pointer)
             {
-                expression.BuildExpression(this, false);
-                StorePointer(pointer);
+                if (addressExpression is IdentifierExpression {Variable: var variable})
+                {
+                    _builder.SetA(pointer);
+                    _builder.LoadB(variable.Pointer);
+                    _builder.StoreB_ToAddressInA();
+
+                    _builder.SetA(pointer.Add(1));
+                    _builder.LoadB(variable.Pointer.Add(1));
+                    _builder.StoreB_ToAddressInA();
+                }
+                else if (addressExpression.Pointer is { } valuePointer)
+                {
+                    _builder.SetA_Large(valuePointer);
+                    _builder.SetB(pointer);
+                    _builder.SwapA_B();
+                    _builder.StoreB_ToAddressInA();
+
+                    _builder.SetA(pointer.Add(1));
+                    _builder.SetB(valuePointer.Bank);
+                    _builder.StoreB_ToAddressInA();
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
             else
             {
@@ -604,6 +641,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             SetBank(pointer.Bank);
             StoreB_ToAddressInA();
             SetBank(0);
+
+            SwapA_B();
         }
     }
 

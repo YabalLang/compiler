@@ -96,7 +96,15 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
             return;
         }
 
-        if (!Key.OverwritesB && elementSize == 1)
+        if (Key is IExpressionToB expressionToB)
+        {
+            expressionToB.BuildExpressionToB(builder);
+            builder.Add();
+            builder.SetComment("add to pointer address");
+            return;
+        }
+
+        if (builder.DisallowC == 0 && !Key.OverwritesB && elementSize == 1)
         {
             builder.SwapA_B();
             Key.BuildExpression(builder, false);
@@ -120,6 +128,16 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         builder.Add();
 
         builder.SetComment("add to pointer address");
+    }
+
+    public override void StoreBankInC(YabalBuilder builder)
+    {
+        Array.StoreAddressInA(builder);
+        builder.SetB(1);
+        builder.Add();
+        builder.LoadA_FromAddressUsingA();
+        builder.SwapA_C();
+        builder.SetComment("store bank in C");
     }
 
     public override string ToString()

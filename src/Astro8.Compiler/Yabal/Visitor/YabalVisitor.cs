@@ -578,7 +578,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context,
             VisitExpression(createPointer.expression()),
             createPointer.integer() is {} integer ? ParseInt(integer.GetText()) : 0,
-            createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Pointer(LanguageType.Integer)
+            createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Integer
         );
     }
 

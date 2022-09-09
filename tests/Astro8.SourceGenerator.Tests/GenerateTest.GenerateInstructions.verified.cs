@@ -115,6 +115,9 @@ public partial class Cpu<THandler>
             case 30:
                 BNK(ref context);
                 break;
+            case 31:
+                BNKC(ref context);
+                break;
         }
     }
 
@@ -209,8 +212,13 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Cpu.Bus = context.Instruction.Data;
+        }
+        // Step 3
+        {
             // RE
-            context.Cpu.Bus = ExpansionPort;
+            context.Cpu.Bus = ExpansionPorts[context.Cpu.Bus];
             // WA
             context.Cpu.A = context.Cpu.Bus;
         }
@@ -221,10 +229,15 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Cpu.Bus = context.Instruction.Data;
+        }
+        // Step 3
+        {
             // RA
             context.Cpu.Bus = context.Cpu.A;
             // WE
-            ExpansionPort = context.Cpu.Bus;
+            ExpansionPorts[context.Cpu.Bus] = context.Cpu.Bus;
         }
     }
 
@@ -793,6 +806,18 @@ public partial class Cpu<THandler>
         {
             // IR
             context.Cpu.Bus = context.Instruction.Data;
+            // BNK
+            context.Cpu.Bank = context.Cpu.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BNKC(ref StepContext context)
+    {
+        // Step 2
+        {
+            // RC
+            context.Cpu.Bus = context.Cpu.C;
             // BNK
             context.Cpu.Bank = context.Cpu.Bus;
         }

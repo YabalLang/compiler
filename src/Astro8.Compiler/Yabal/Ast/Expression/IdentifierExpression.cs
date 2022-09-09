@@ -7,7 +7,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : AddressExpr
 {
     private Variable? _variable;
 
-    private Variable Variable => _variable ?? throw new InvalidOperationException("Variable not set");
+    public Variable Variable => _variable ?? throw new InvalidOperationException("Variable not set");
 
     public override void Initialize(YabalBuilder builder)
     {
