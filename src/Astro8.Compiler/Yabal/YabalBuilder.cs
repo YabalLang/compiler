@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 using Astro8.Yabal;
 using Astro8.Yabal.Ast;
 using Astro8.Yabal.Visitor;
@@ -222,7 +223,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             program.Build(this);
         }
-        catch
+        catch (ParseCanceledException e) when (e.InnerException is InputMismatchException innerException)
+        {
+            throw;
+        }
+        catch (ParseCanceledException e) when (e.InnerException is NoViableAltException innerException)
         {
             throw;
         }

@@ -28,12 +28,12 @@ public record VariableDeclarationStatement(SourceRange Range, string Name, bool 
             return;
         }
 
-        if (Value is CreatePointerExpression createPointer)
+        if (Value is IPointerSource createPointer)
         {
             createPointer.BuildExpression(builder, false);
             builder.StoreA(Variable.Pointer);
 
-            builder.SetA(createPointer.BankValue);
+            builder.SetA(createPointer.Bank);
             builder.StoreA(Variable.Pointer.Add(1));
         }
         else

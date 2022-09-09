@@ -13,7 +13,7 @@ public record SizeOfExpression(SourceRange Range, Expression Expression) : Integ
 
     public override int Value
     {
-        get => Type.Size;
+        get => ((Expression as IConstantValue)?.Value as IAddress)?.Length ?? Type.Size;
         init => throw new NotSupportedException();
     }
 

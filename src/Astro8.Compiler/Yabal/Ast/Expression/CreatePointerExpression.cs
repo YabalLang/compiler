@@ -2,7 +2,7 @@ using Astro8.Instructions;
 
 namespace Astro8.Yabal.Ast;
 
-public record CreatePointerExpression(SourceRange Range, Expression Value, int BankValue, LanguageType ElementType) : AddressExpression(Range), IConstantValue
+public record CreatePointerExpression(SourceRange Range, Expression Value, int BankValue, LanguageType ElementType) : AddressExpression(Range), IConstantValue, IPointerSource
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -37,4 +37,6 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
     public override Pointer? Pointer => Value is IConstantValue { Value: int value }
         ? new AbsolutePointer(value, BankValue)
         : null;
+
+    int IPointerSource.Bank => BankValue;
 }

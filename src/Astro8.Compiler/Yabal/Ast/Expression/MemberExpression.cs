@@ -4,19 +4,19 @@ namespace Astro8.Yabal.Ast;
 
 public record MemberExpression(SourceRange Range, AddressExpression Expression, string Name) : AddressExpression(Range)
 {
-    public LanguageStructField Field { get; set; } = null!;
+    private LanguageStructField _field = null!;
 
     public override void Initialize(YabalBuilder builder)
     {
         Expression.Initialize(builder);
 
         var field = Expression.Type.StructReference?.Fields.FirstOrDefault(f => f.Name == Name);
-        Field = field ?? throw new InvalidOperationException($"Struct {Expression.Type} does not contain a field named {Name}");
+        _field = field ?? throw new InvalidOperationException($"Struct {Expression.Type} does not contain a field named {Name}");
     }
 
     public override void AssignRegisterA(YabalBuilder builder)
     {
-        if (Field.Bit is {} bit)
+        if (_field.Bit is {} bit)
         {
             builder.StoreBitInA(Expression, bit);
             return;
@@ -27,7 +27,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override void Assign(YabalBuilder builder, Expression expression)
     {
-        if (Field.Bit is {} bit)
+        if (_field.Bit is {} bit)
         {
             builder.StoreBit(Expression, expression, bit);
             return;
@@ -41,7 +41,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         StoreAddressInA(builder);
         builder.LoadA_FromAddressUsingA();
 
-        if (Field.Bit is {} bit)
+        if (_field.Bit is {} bit)
         {
             if (bit.Offset > 0)
             {
@@ -58,8 +58,8 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
 
-    public override Pointer? Pointer => Expression is { Pointer: {} pointer } && !Field.Bit.HasValue
-        ? pointer.Add(Field.Offset)
+    public override Pointer? Pointer => Expression is { Pointer: {} pointer } && !_field.Bit.HasValue
+        ? pointer.Add(_field.Offset)
         : null;
 
     public override int? Bank => Expression.Bank;
@@ -68,9 +68,9 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
     {
         Expression.StoreAddressInA(builder);
 
-        if (Field.Offset > 0)
+        if (_field.Offset > 0)
         {
-            builder.SetB(Field.Offset);
+            builder.SetB(_field.Offset);
             builder.Add();
         }
     }

@@ -785,4 +785,37 @@ public class AssemblerTest
         Assert.Equal(1, cpu.Memory[builder.GetVariable("a").Pointer.Address]);
         Assert.Equal(2, cpu.Memory[builder.GetVariable("b").Pointer.Address]);
     }
+
+    [Fact]
+    public async Task WriteChars()
+    {
+        const string code = """
+            var chars = create_pointer(0xD12A, 1)
+            var message = "TEST"
+            var size = sizeof(message)
+
+            for (int i = 0; i < sizeof(message); i++) {
+                chars[i] = message[i]
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var offset = 0xD12A;
+        var bank = cpu.Banks[1];
+        var str = builder.GetString("TEST");
+
+        Assert.Equal(offset, cpu.Memory[builder.GetVariable("chars").Pointer.Address]);
+        Assert.Equal(str.Address, cpu.Memory[builder.GetVariable("message").Pointer.Address]);
+
+        Assert.Equal(4, cpu.Memory[builder.GetVariable("size").Pointer.Address]);
+        Assert.Equal(Character.CharToInt['T'], bank[offset]);
+        Assert.Equal(Character.CharToInt['E'], bank[offset + 1]);
+        Assert.Equal(Character.CharToInt['S'], bank[offset + 2]);
+        Assert.Equal(Character.CharToInt['T'], bank[offset + 3]);
+    }
 }

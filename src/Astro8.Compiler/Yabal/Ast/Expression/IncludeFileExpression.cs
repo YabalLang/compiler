@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue
+public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue, IPointerSource
 {
     private InstructionPointer _pointer = null!;
 
@@ -29,6 +29,8 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
             _pointer = _pointer
         };
     }
+
+    int IPointerSource.Bank => 0;
 }
 
 public enum FileType

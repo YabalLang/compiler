@@ -2,7 +2,7 @@
 
 namespace Astro8.Yabal.Ast;
 
-public record StringExpression(SourceRange Range, string Value) : AddressExpression(Range), IConstantValue
+public record StringExpression(SourceRange Range, string Value) : AddressExpression(Range), IConstantValue, IPointerSource
 {
     private InstructionPointer _pointer = null!;
 
@@ -40,4 +40,6 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
     public override Pointer Pointer => _pointer;
 
     public override int? Bank => 0;
+
+    int IPointerSource.Bank => 0;
 }
