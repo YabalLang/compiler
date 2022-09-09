@@ -17,7 +17,6 @@ public record ContinueStatement(SourceRange Range) : Statement(Range)
         builder.Jump(builder.Block.Continue);
     }
 
-
     public override Statement CloneStatement() => this;
 
     public override Statement Optimize() => this;

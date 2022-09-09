@@ -12,6 +12,7 @@ public record CallExpression(
     private BlockStack _block = null!;
     private (Variable, Expression)[] _variables = null!;
     private BlockStatement? _body;
+    private InstructionLabel _returnLabel = null!;
 
     public Function Function { get; private set; } = null!;
 
@@ -33,6 +34,9 @@ public record CallExpression(
         {
             _body = Function.Body.CloneStatement();
             _block = builder.PushBlock();
+
+            _returnLabel = builder.CreateLabel();
+            _block.Return = _returnLabel;
 
             _variables = new (Variable, Expression)[Arguments.Count];
 
@@ -64,6 +68,7 @@ public record CallExpression(
             }
 
             _body!.Build(builder);
+            builder.Mark(_returnLabel);
 
             builder.PopBlock();
         }
@@ -97,7 +102,8 @@ public record CallExpression(
             _block = _block,
             _variables = _variables,
             _body = _body?.Optimize(),
-            Function = Function
+            Function = Function,
+            _returnLabel = _returnLabel
         };
     }
 }

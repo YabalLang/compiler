@@ -13,7 +13,7 @@ public class ErrorMessages
     public const string SizeOfExpressionMustBeConstant = "size_of can only be used with constant values";
     public const string CannotUpdateNonInteger = "Cannot update a non-integer value";
     public const string InvalidComparison = "Cannot use this operator for comparison";
-    public const string BreakOutsideLoop = "Cannot continue outside of a loop";
+    public const string BreakOutsideLoop = "Cannot break outside of a loop";
     public const string ContinueOutsideLoop = "Cannot continue outside of a loop";
     public const string ReturnOutsideFunction = "Return statement outside of function";
     public const string VariableTypeNotSpecified = "Variable type not specified";

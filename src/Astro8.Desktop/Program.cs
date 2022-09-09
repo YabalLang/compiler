@@ -297,41 +297,42 @@ async Task Execute(InvocationContext ctx)
             switch (e.type)
             {
                 case SDL_KEYDOWN:
+                {
                     switch (e.key.keysym.scancode)
                     {
                         case SDL_Scancode.SDL_SCANCODE_F11 when statePath != null:
-                        {
                             SaveState();
                             break;
-                        }
                         case SDL_Scancode.SDL_SCANCODE_F12 when statePath != null:
-                        {
                             LoadState();
-                            break;
-                        }
-                        default:
-                            cpu.ExpansionPorts[0] = Keyboard.ConvertAsciiToSdcii((int)e.key.keysym.scancode);
                             break;
                     }
 
+                    cpu.ExpansionPorts[0] = Keyboard.Table.TryGetValue((int) e.key.keysym.scancode, out var keyCode)
+                        ? keyCode
+                        : 168;
+
                     break;
+                }
                 case SDL_KEYUP:
+                {
                     cpu.ExpansionPorts[0] = 168;
                     break;
+                }
                 case SDL_MOUSEMOTION:
-                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) | (e.motion.y & 0b1111111) | (cpu.ExpansionPorts[1] & 0b1100000000000000);
+                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) | (e.motion.y & 0b1111111) | (cpu.ExpansionPorts[1] & 0b1100_0000_0000_0000);
                     break;
                 case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_LEFT:
-                    cpu.ExpansionPorts[1] |= 0b0100000000000000;
+                    cpu.ExpansionPorts[1] |= 0b0100_0000_0000_0000;
                     break;
                 case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_LEFT:
-                    cpu.ExpansionPorts[1] &= ~0b0100000000000000;
+                    cpu.ExpansionPorts[1] &= ~0b0100_0000_0000_0000;
                     break;
                 case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_RIGHT:
-                    cpu.ExpansionPorts[1] |= 0b1000000000000000;
+                    cpu.ExpansionPorts[1] |= 0b1000_0000_0000_0000;
                     break;
                 case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_RIGHT:
-                    cpu.ExpansionPorts[1] &= ~0b1000000000000000;
+                    cpu.ExpansionPorts[1] &= ~0b1000_0000_0000_0000;
                     break;
             }
         }

@@ -44,7 +44,7 @@ public abstract record ScopeStatement(SourceRange Range) : Statement(Range)
 
     public sealed override void Initialize(YabalBuilder builder)
     {
-        Block = CreateBlock(builder);
+        _block ??= CreateBlock(builder);
         OnInitialize(builder);
         builder.PopBlock();
     }

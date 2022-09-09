@@ -5,6 +5,10 @@ namespace Astro8.Yabal.Ast;
 
 public record WhileStatement(SourceRange Range, Expression Expression, BlockStatement Body) : ScopeStatement(Range)
 {
+    private InstructionLabel _nextLabel = null!;
+    private InstructionLabel _bodyLabel = null!;
+    private InstructionLabel _endLabel = null!;
+
     public override void OnDeclare(YabalBuilder builder)
     {
         Body.Declare(builder);
@@ -12,6 +16,13 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
 
     public override void OnInitialize(YabalBuilder builder)
     {
+        _nextLabel = builder.CreateLabel();
+        _bodyLabel = builder.CreateLabel();
+        _endLabel = builder.CreateLabel();
+
+        Block.Continue = _nextLabel;
+        Block.Break = _endLabel;
+
         Expression.Initialize(builder);
         Body.Initialize(builder);
     }
@@ -20,24 +31,17 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
     {
         var expression = Expression.Optimize();
 
-        var next = builder.CreateLabel();
-        var body = builder.CreateLabel();
-        var end = builder.CreateLabel();
-
-        Block.Continue = next;
-        Block.Break = end;
-
-        builder.Mark(next);
+        builder.Mark(_nextLabel);
 
         if (expression is not IConstantValue {Value: true})
         {
-            expression.CreateComparison(builder, end, body);
-            builder.Mark(body);
+            expression.CreateComparison(builder, _endLabel, _bodyLabel);
+            builder.Mark(_bodyLabel);
         }
 
         Body.Build(builder);
-        builder.Jump(next);
-        builder.Mark(end);
+        builder.Jump(_nextLabel);
+        builder.Mark(_endLabel);
     }
 
     public override Statement CloneStatement()
@@ -49,7 +53,10 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
     {
         return new WhileStatement(Range, Expression.Optimize(), Body.Optimize())
         {
-            Block = Block
+            Block = Block,
+            _nextLabel = _nextLabel,
+            _bodyLabel = _bodyLabel,
+            _endLabel = _endLabel
         };
     }
 }

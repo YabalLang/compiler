@@ -24,6 +24,7 @@ public record FunctionDeclarationStatement(
 ) : ScopeStatement(Range)
 {
     private Function? _function;
+    private InstructionLabel _returnLabel = null!;
 
     public override void OnDeclare(YabalBuilder builder)
     {
@@ -43,7 +44,7 @@ public record FunctionDeclarationStatement(
 
         if (!Inline)
         {
-            functionBuilder.PushBlock(this);
+            Block = functionBuilder.PushBlock(this);
 
             foreach (var parameter in Parameters)
             {
@@ -58,6 +59,10 @@ public record FunctionDeclarationStatement(
     {
         Debug.Assert(_function != null);
 
+        _returnLabel = builder.CreateLabel(Name);
+
+        Block.Return = _returnLabel;
+
         if (!Inline) Body.Initialize(_function.Builder);
     }
 
@@ -65,7 +70,11 @@ public record FunctionDeclarationStatement(
     {
         Debug.Assert(_function != null);
 
-        if (!Inline) Body.Build(_function.Builder);
+        if (!Inline)
+        {
+            Body.Build(_function.Builder);
+            _function.Builder.Mark(_returnLabel);
+        }
     }
 
     public override Statement CloneStatement()
@@ -82,17 +91,20 @@ public record FunctionDeclarationStatement(
 
     public override Statement Optimize()
     {
+        var body = Body.Optimize();
+
         return new FunctionDeclarationStatement(
             Range,
             Name,
             ReturnType,
             Parameters,
-            Body.Optimize(),
+            body,
             Inline
         )
         {
             Block = Block,
-            _function = _function
+            _function = _function,
+            _returnLabel = _returnLabel
         };
     }
 }

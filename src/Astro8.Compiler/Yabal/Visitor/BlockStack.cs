@@ -13,6 +13,7 @@ public class BlockStack
     private readonly Dictionary<string, Variable> _variables = new();
     private InstructionLabel? _continue;
     private InstructionLabel? _break;
+    private InstructionLabel? _return;
 
     public BlockStack()
     {
@@ -60,6 +61,12 @@ public class BlockStack
     {
         get => _break ?? Parent?.Break;
         set => _break = value;
+    }
+
+    public InstructionLabel? Return
+    {
+        get => _return ?? Parent?.Return;
+        set => _return = value;
     }
 
     public void DeclareVariable(string name, Variable variable)

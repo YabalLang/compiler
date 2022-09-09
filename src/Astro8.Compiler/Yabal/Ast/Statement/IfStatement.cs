@@ -46,7 +46,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
                 builder.SetB(0);
                 builder.Sub();
                 builder.JumpIfZero(alternateLabel ?? end);
-                builder.Jump(end);
+                builder.Jump(consequentLabel);
                 break;
             }
         }

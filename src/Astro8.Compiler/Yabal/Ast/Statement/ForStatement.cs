@@ -5,6 +5,11 @@ namespace Astro8.Yabal.Ast;
 
 public record ForStatement(SourceRange Range, Statement? Init, Statement? Update, Expression Test, BlockStatement Body) : ScopeStatement(Range)
 {
+    private InstructionLabel _nextLabel;
+    private InstructionLabel _bodyLabel;
+    private InstructionLabel _endLabel;
+    private InstructionLabel _testLabel;
+
     public override void OnDeclare(YabalBuilder builder)
     {
         Init?.Declare(builder);
@@ -14,6 +19,14 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 
     public override void OnInitialize(YabalBuilder builder)
     {
+        _nextLabel = builder.CreateLabel();
+        _bodyLabel = builder.CreateLabel();
+        _endLabel = builder.CreateLabel();
+        _testLabel = builder.CreateLabel();
+
+        Block.Continue = _nextLabel;
+        Block.Break = _endLabel;
+
         Init?.Initialize(builder);
         Update?.Initialize(builder);
         Test.Initialize(builder);
@@ -22,29 +35,21 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
 
     public override void OnBuild(YabalBuilder builder)
     {
-        var next = builder.CreateLabel();
-        var body = builder.CreateLabel();
-        var end = builder.CreateLabel();
-        var test = builder.CreateLabel();
-
-        Block.Continue = next;
-        Block.Break = end;
-
         Init?.Build(builder);
-        builder.Jump(test);
+        builder.Jump(_testLabel);
 
-        builder.Mark(next);
+        builder.Mark(_nextLabel);
         Update?.Build(builder);
 
-        builder.Mark(test);
-        Test.CreateComparison(builder, end, body);
+        builder.Mark(_testLabel);
+        Test.CreateComparison(builder, _endLabel, _bodyLabel);
 
-        builder.Mark(body);
+        builder.Mark(_bodyLabel);
         Body.Build(builder);
-        builder.Jump(next);
+        builder.Jump(_nextLabel);
         builder.SetComment("jump to next iteration");
 
-        builder.Mark(end);
+        builder.Mark(_endLabel);
     }
 
     public override Statement CloneStatement()
@@ -68,7 +73,11 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
             Body.Optimize()
         )
         {
-            Block = Block
+            Block = Block,
+            _nextLabel = _nextLabel,
+            _bodyLabel = _bodyLabel,
+            _endLabel = _endLabel,
+            _testLabel = _testLabel
         };
     }
 }
