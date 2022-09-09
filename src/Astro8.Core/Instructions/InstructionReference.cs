@@ -1,16 +1,13 @@
-﻿using System.Runtime.InteropServices;
+﻿namespace Astro8.Instructions;
 
-namespace Astro8.Instructions;
-
-[StructLayout(LayoutKind.Explicit, Size = 12)]
 public readonly struct InstructionReference
 {
     public const int MaxId = 0b11111;
     public const int MaxData = 0b11111111111;
 
-    [FieldOffset(0)] public readonly int Id;
-    [FieldOffset(4)] public readonly int Data;
-    [FieldOffset(8)] public readonly int Raw;
+    public readonly int Id;
+    public readonly int Data;
+    public readonly int Raw;
 
     public InstructionReference(int raw)
     {
