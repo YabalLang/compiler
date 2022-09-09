@@ -42,6 +42,12 @@ public abstract class InstructionBuilderBase
         EmitRaw(value);
     }
 
+    public void SetB_Large(PointerOrData value)
+    {
+        Emit("LDWB");
+        EmitRaw(value);
+    }
+
     public void SetB(PointerOrData value) => Emit("LDIB", value);
 
     public void MovExpansionToB() => Emit("RDEXP");

@@ -78,8 +78,6 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
             return;
         }
 
-        Array.BuildExpression(builder, false);
-
         if (Key is IConstantValue { Value: int intValue })
         {
             var offset = intValue * elementSize;
@@ -89,6 +87,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
                 return;
             }
 
+            Array.BuildExpression(builder, false);
             builder.SetB(offset);
             builder.Add();
 
@@ -96,21 +95,38 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
             return;
         }
 
-        if (Key is IExpressionToB expressionToB)
+        if (elementSize > 1 && !Array.OverwritesB)
         {
-            expressionToB.BuildExpressionToB(builder);
+            Key.BuildExpression(builder, false);
+            builder.SetB(elementSize);
+            builder.Mult();
+            builder.SwapA_B();
+
+            Array.BuildExpression(builder, false);
             builder.Add();
-            builder.SetComment("add to pointer address");
             return;
         }
 
-        if (builder.DisallowC == 0 && !Key.OverwritesB && elementSize == 1)
+        Array.BuildExpression(builder, false);
+
+        if (elementSize == 1)
         {
-            builder.SwapA_B();
-            Key.BuildExpression(builder, false);
-            builder.Add();
-            builder.SetComment("add to pointer address");
-            return;
+            if (Key is IExpressionToB expressionToB)
+            {
+                expressionToB.BuildExpressionToB(builder);
+                builder.Add();
+                builder.SetComment("add to pointer address");
+                return;
+            }
+
+            if (builder.DisallowC == 0 && !Key.OverwritesB)
+            {
+                builder.SwapA_B();
+                Key.BuildExpression(builder, false);
+                builder.Add();
+                builder.SetComment("add to pointer address");
+                return;
+            }
         }
 
         using var variable = builder.GetTemporaryVariable();

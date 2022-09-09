@@ -54,12 +54,46 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
         if (Pointer is {} pointer)
         {
             builder.SetValue(pointer, Type, expression);
+            return;
         }
-        else if (expression is IExpressionToB { OverwritesA: false } expressionToB)
+
+        if (expression.Type.StaticType == StaticType.Pointer)
+        {
+            if (expression is IdentifierExpression {Variable: var variable})
+            {
+                StoreAddressInA(builder);
+                builder.LoadB(variable.Pointer);
+                builder.StoreB_ToAddressInA();
+
+                StoreAddressInA(builder);
+                builder.SetB(1);
+                builder.Add();
+
+                builder.LoadB(variable.Pointer.Add(1));
+                builder.StoreB_ToAddressInA();
+            }
+            else if (expression is AddressExpression { Pointer: { } valuePointer })
+            {
+                StoreAddressInA(builder);
+                builder.SetB_Large(valuePointer);
+                builder.StoreB_ToAddressInA();
+
+                builder.SetB(1);
+                builder.Add();
+
+                builder.SetB(valuePointer.Bank);
+                builder.StoreB_ToAddressInA();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+        else
         {
             var size = expression.Type.Size;
 
-            if (size == 1)
+            if (size == 1 && expression is IExpressionToB { OverwritesA: false } expressionToB)
             {
                 if (!Bank.HasValue)
                 {
@@ -90,9 +124,19 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                     builder.StoreB_ToAddressInA();
                     builder.SetBank(0);
                 }
+
+                return;
             }
-            else if (expression is AddressExpression { Pointer: {} valuePointer })
+
+            if (expression is AddressExpression { Pointer: {} valuePointer })
             {
+                if (expression.Type.StaticType == StaticType.Pointer)
+                {
+                    StoreAddressInA(builder);
+
+                    return;
+                }
+
                 for (var i = 0; i < size; i++)
                 {
                     StoreAddressInA(builder);
@@ -109,15 +153,10 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                     builder.SwapA_B();
                     builder.StoreB_ToAddressInA();
                 }
+
+                return;
             }
-            else
-            {
-                expression.BuildExpression(builder, false);
-                AssignRegisterA(builder);
-            }
-        }
-        else
-        {
+
             expression.BuildExpression(builder, false);
             AssignRegisterA(builder);
         }

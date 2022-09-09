@@ -191,7 +191,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public async ValueTask CompileCodeAsync(string code)
+    public async ValueTask CompileCodeAsync(string code, bool optimize = true)
     {
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
@@ -214,7 +214,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             program.Declare(this);
             program.Initialize(this);
-            program = program.Optimize();
+
+            if (optimize)
+            {
+                program = program.Optimize();
+            }
+
             program.Build(this);
         }
         catch
@@ -574,9 +579,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 }
                 else if (addressExpression.Pointer is { } valuePointer)
                 {
-                    _builder.SetA_Large(valuePointer);
-                    _builder.SetB(pointer);
-                    _builder.SwapA_B();
+                    _builder.SetB_Large(valuePointer);
                     _builder.StoreB_ToAddressInA();
 
                     _builder.SetA(pointer.Add(1));

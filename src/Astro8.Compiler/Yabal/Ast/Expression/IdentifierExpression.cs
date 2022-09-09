@@ -44,6 +44,12 @@ public record IdentifierExpression(SourceRange Range, string Name) : AddressExpr
         builder.SetA(Variable.Pointer);
     }
 
+    public void StoreAddressToB(YabalBuilder builder)
+    {
+        Variable.Usages++;
+        builder.SetB(Variable.Pointer);
+    }
+
     public override string ToString()
     {
         return Name;

@@ -2,8 +2,8 @@
 
 public readonly struct InstructionReference
 {
-    public const int MaxId = 0b11111;
-    public const int MaxData = 0b11111111111;
+    public const int MaxId = 0b111111;
+    public const int MaxData = 0b1111111111;
 
     public readonly int Id;
     public readonly int Data;

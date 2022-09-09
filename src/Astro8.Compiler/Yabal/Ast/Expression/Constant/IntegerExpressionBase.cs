@@ -39,13 +39,12 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
         }
         else
         {
-            builder.LoadA_Large(Value);
-            builder.SwapA_B();
+            builder.SetB_Large(Value);
             builder.SetComment("load large integer");
         }
     }
 
-    bool IExpressionToB.OverwritesA => !IsSmall;
+    bool IExpressionToB.OverwritesA => false;
 
     object? IConstantValue.Value => Value;
 

@@ -118,6 +118,9 @@ public partial class Cpu<THandler>
             case 31:
                 BNKC(ref context);
                 break;
+            case 32:
+                LDWB(ref context);
+                break;
         }
     }
 
@@ -820,6 +823,27 @@ public partial class Cpu<THandler>
             context.Bus = context.C;
             // BNK
             context.Bank = context.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void LDWB(ref StepContext context)
+    {
+        // Step 2
+        {
+            // CR
+            context.Bus = context.ProgramCounter;
+            // AW
+            context.MemoryIndex = context.Bus;
+        }
+        // Step 3
+        {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
+            // WB
+            context.B = context.Bus;
+            // CE
+            context.ProgramCounter += 1;
         }
     }
 

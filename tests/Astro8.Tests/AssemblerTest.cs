@@ -264,7 +264,7 @@ public class AssemblerTest
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Array(bool @const)
+    public async Task Pointer(bool @const)
     {
         var code = $$"""
             var index = 1
@@ -295,7 +295,7 @@ public class AssemblerTest
     }
 
     [Fact]
-    public async Task ArrayBank()
+    public async Task PointerToBank()
     {
         const string code = $$"""
             var memory = create_pointer(4095, 1)
@@ -447,11 +447,11 @@ public class AssemblerTest
     [InlineData(1, true)]
     [InlineData(2, true)]
     [InlineData(3, true)]
-    public async Task If(int step, bool optimized)
+    public async Task If(int step, bool optimize)
     {
         var code = $$"""
             var result = 0
-            var value = {{(optimized ? "" : "0; value =")}} {{step}}
+            var value = {{step}}
 
             if (value == 1) {
                 result = 1
@@ -467,7 +467,7 @@ public class AssemblerTest
         _output.WriteLine("");
 
         var builder = new YabalBuilder();
-        await builder.CompileCodeAsync(code);
+        await builder.CompileCodeAsync(code, optimize);
 
         var cpu = Create(builder);
         cpu.Run();
@@ -570,8 +570,10 @@ public class AssemblerTest
         Assert.Equal(4, cpu.Memory[4098]);
     }
 
-    [Fact]
-    public async Task ArrayToStruct()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PointerToStruct(bool optimize)
     {
         const string code = $$"""
             struct Test {
@@ -585,15 +587,14 @@ public class AssemblerTest
             var a = first.a
             var b = first.b
 
-            int index
-            index = 1
+            int index = 1
             var second = pointer[index]
             var c = second.a
             var d = second.b
             """ ;
 
         var builder = new YabalBuilder();
-        await builder.CompileCodeAsync(code);
+        await builder.CompileCodeAsync(code, optimize);
 
         var cpu = Create(builder);
         cpu.Memory[4095] = 1;

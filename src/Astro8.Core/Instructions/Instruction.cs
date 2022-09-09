@@ -178,6 +178,7 @@ public record Instruction(
 		"not( 2=not,wa,eo,fl & 3=ei", // Logical NOT operation on register A, with result put back into register A
 		"bnk( 2=bnk,ir & 3=ei", // Change bank, changes the memory bank register to the value specified <val>
         "bnkc( 2=rc,bnk & 3=ei", // Change bank, changes the memory bank register to the value in register C
+        "ldwb( 2=cr,aw & 3=ce,rm,wb & 4=ei", // Load value directly after counter into B, and advance counter by 2
     };
 
     private static IReadOnlyList<Instruction>? _default;
