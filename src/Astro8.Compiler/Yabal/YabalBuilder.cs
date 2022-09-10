@@ -200,7 +200,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var commonTokenStream = new CommonTokenStream(lexer);
         var parser = new YabalParser(commonTokenStream)
         {
-            // ErrorHandler = new BailErrorStrategy(),
+            ErrorHandler = new BailErrorStrategy(),
         };
 
         try
@@ -225,11 +225,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
         catch (ParseCanceledException e) when (e.InnerException is InputMismatchException innerException)
         {
-            throw;
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.OffendingToken), "Unexpected token");
         }
         catch (ParseCanceledException e) when (e.InnerException is NoViableAltException innerException)
         {
-            throw;
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.StartToken), "Unexpected token");
         }
     }
 

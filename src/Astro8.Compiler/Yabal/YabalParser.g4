@@ -3,7 +3,7 @@ parser grammar YabalParser;
 options { tokenVocab = YabalLexer; }
 
 program
-    : (statement (eos statement)*)? eos? EOF
+    : (statement (eos statement)*)? SemiColon* EOF
     ;
 
 rawType
@@ -106,7 +106,7 @@ statement
     ;
 
 structDeclaration
-    : Struct identifierName OpenCurly (structItem (eos structItem)*)? eos? CloseCurly
+    : Struct identifierName OpenCurly (structItem (eos structItem)*)? SemiColon* CloseCurly
     ;
 
 structItem
@@ -130,14 +130,19 @@ gotoStatement
     : Goto identifierName
     ;
 
+asmEos
+    : AsmLineTerminator
+    | SemiColon+
+    ;
+
 asmItems
-    : (asmStatementItem (eos asmStatementItem)*)? eos?
+    : asmEos* (asmStatementItem (asmEos+ asmStatementItem)*)? asmEos*
     ;
 
 asmStatementItem
-    : asmIdentifier {noNewLine()}? asmArgument?      # AsmInstruction
-    | AsmHere {noNewLine()}? asmArgument?            # AsmRawValue
-    | asmIdentifier {noNewLine()}? AsmColon          # AsmLabel
+    : asmIdentifier asmArgument?   # AsmInstruction
+    | AsmHere asmArgument?         # AsmRawValue
+    | asmIdentifier AsmColon       # AsmLabel
     ;
 
 asmArgument
@@ -240,7 +245,7 @@ integer
 	;
 
 eos
-    : SemiColon
+    : SemiColon+
     | {lineTerminatorAhead()}?
     ;
 

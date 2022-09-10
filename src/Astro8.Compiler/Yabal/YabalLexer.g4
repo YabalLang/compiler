@@ -546,7 +546,7 @@ CharEnd				    : '\'' -> popMode;
 
 mode ASM;
 AsmWhiteSpaces			: WhiteSpaces -> channel(HIDDEN);
-AsmLineTerminator		: LineTerminator -> channel(HIDDEN);
+AsmLineTerminator		: LineTerminator;
 AsmSemiColon			: SemiColon -> type(SemiColon);
 
 AsmComment	            : ',' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
