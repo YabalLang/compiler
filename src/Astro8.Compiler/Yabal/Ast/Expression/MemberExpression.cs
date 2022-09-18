@@ -56,7 +56,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override bool OverwritesB => true;
 
-    public override bool DirectCopy => false;
+    public override bool DirectCopy => !_field.Bit.HasValue;
 
     public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
 
