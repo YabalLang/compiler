@@ -4,7 +4,7 @@ using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record FunctionParameter(string Name, LanguageType Type);
+public record FunctionParameter(Identifier Name, LanguageType Type);
 
 public record Function(string Name,
     InstructionLabel Label,
@@ -63,7 +63,11 @@ public record FunctionDeclarationStatement(
 
         Block.Return = _returnLabel;
 
-        if (!Inline) Body.Initialize(_function.Builder);
+        if (!Inline)
+        {
+            Body.Initialize(_function.Builder);
+            builder.Variables.AddRange(_function.Builder.Variables);
+        }
     }
 
     public override void OnBuild(YabalBuilder _)

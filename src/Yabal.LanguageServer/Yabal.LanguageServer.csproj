@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+        <PackageReference Include="OmniSharp.Extensions.JsonRpc.Generators" Version="0.19.5" />
+        <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.5" />
+        <PackageReference Include="Serilog" Version="2.11.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Astro8.Compiler\Astro8.Compiler.csproj" />
+    </ItemGroup>
+
+</Project>

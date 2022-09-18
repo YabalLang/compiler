@@ -8,6 +8,8 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 
     public abstract int? Bank { get; }
 
+    public virtual bool DirectCopy => true;
+
     public abstract void StoreAddressInA(YabalBuilder builder);
 
     public virtual void StoreBankInC(YabalBuilder builder)

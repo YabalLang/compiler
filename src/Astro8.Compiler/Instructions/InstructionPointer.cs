@@ -25,17 +25,13 @@ public class InstructionPointer : Pointer
 
     public List<Variable> AssignedVariables { get; } = new();
 
-    public string AssignedVariableNames => string.Join(", ", AssignedVariables.Select(i => i.Name));
+    public string AssignedVariableNames => string.Join(", ", AssignedVariables.Select(i => i.Identifier));
 
-    public int Address
-    {
-        get => _address ?? throw new InvalidOperationException($"No address has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
-        set => _address = value;
-    }
+    public override int Address => _address ?? throw new InvalidOperationException($"No address has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
 
     public override string? ToString()
     {
-        return Name;
+        return $"[{Address}:{Bank}]";
     }
 
     public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
@@ -46,5 +42,10 @@ public class InstructionPointer : Pointer
         }
 
         return value;
+    }
+
+    public void Set(int address)
+    {
+        _address = address;
     }
 }

@@ -10,13 +10,27 @@ public abstract class Pointer
 
     public abstract int Bank { get; }
 
+    public abstract int Address { get; }
+
     public abstract int Get(IReadOnlyDictionary<InstructionPointer, int> mappings);
 
     public void LoadToA(YabalBuilder builder, int offset = 0)
     {
         if (IsSmall)
         {
+            if (Bank > 0) builder.SetBank(Bank);
             builder.LoadA(this.Add(offset));
+            if (Bank > 0) builder.SetBank(0);
+        }
+        else if (Bank > 0)
+        {
+            // When switching banks you cannot use LDLGE since this instruction reads the large value from the current bank
+            // so we need to store the value in the register before switching banks
+
+            builder.SetA_Large(this.Add(offset));
+            builder.SetBank(Bank);
+            builder.LoadA_FromAddressUsingA();
+            builder.SetBank(0);
         }
         else
         {
@@ -28,7 +42,20 @@ public abstract class Pointer
     {
         if (IsSmall)
         {
+            if (Bank > 0) builder.SetBank(Bank);
             builder.StoreA(this.Add(offset));
+            if (Bank > 0) builder.SetBank(0);
+        }
+        else if (Bank > 0)
+        {
+            // When switching banks you cannot use STAOUT since this instruction reads the large value from the current bank
+            // so we need to store the value in the register before switching banks
+
+            builder.SwapA_B();
+            builder.SetA_Large(this.Add(offset));
+            builder.SetBank(Bank);
+            builder.StoreB_ToAddressInA();
+            builder.SetBank(0);
         }
         else
         {

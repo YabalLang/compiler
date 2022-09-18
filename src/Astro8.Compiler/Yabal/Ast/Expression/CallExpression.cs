@@ -18,7 +18,7 @@ public record CallExpression(
 
     public override void Initialize(YabalBuilder builder)
     {
-        if (Callee is not IdentifierExpression identifier)
+        if (Callee is not IdentifierExpression { Identifier: var identifier})
         {
             throw new NotSupportedException("Callee must be an identifier");
         }

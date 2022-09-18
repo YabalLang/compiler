@@ -46,6 +46,16 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
             return StructReference?.Name ?? "";
         }
 
-        return StaticType.ToString();
+        return StaticType switch
+        {
+            StaticType.Integer => "int",
+            StaticType.Boolean => "bool",
+            StaticType.Void => "void",
+            StaticType.Pointer => "ptr",
+            StaticType.Struct => "struct",
+            StaticType.Assembly => "assembly",
+            StaticType.Unknown => "unknown",
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 }

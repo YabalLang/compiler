@@ -3,7 +3,15 @@ using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record IdentifierExpression(SourceRange Range, string Name) : AddressExpression(Range), IExpressionToB, IConstantValue
+public record Identifier(SourceRange Range, string Name)
+{
+    public override string ToString()
+    {
+        return $"{Name}@{Range.StartLine}:{Range.StartColumn}";
+    }
+}
+
+public record IdentifierExpression(SourceRange Range, Identifier Identifier) : AddressExpression(Range), IExpressionToB, IConstantValue
 {
     private Variable? _variable;
 
@@ -11,7 +19,8 @@ public record IdentifierExpression(SourceRange Range, string Name) : AddressExpr
 
     public override void Initialize(YabalBuilder builder)
     {
-        _variable = builder.GetVariable(Name);
+        _variable = builder.GetVariable(Identifier.Name);
+        _variable.References.Add(this);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
@@ -52,7 +61,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : AddressExpr
 
     public override string ToString()
     {
-        return Name;
+        return Identifier.Name;
     }
 
     public object? Value => _variable is { Constant: true, Initializer: {} initializer }
@@ -99,7 +108,7 @@ public record IdentifierExpression(SourceRange Range, string Name) : AddressExpr
 
     public override IdentifierExpression CloneExpression()
     {
-        return new IdentifierExpression(Range, Name)
+        return new IdentifierExpression(Range, Identifier)
         {
             _variable = _variable
         };

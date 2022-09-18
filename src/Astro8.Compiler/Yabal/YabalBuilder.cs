@@ -67,6 +67,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _errors = parent._errors;
     }
 
+    public List<Variable> Variables { get; } = new();
+
     public PointerCollection Stack { get; }
 
     public PointerCollection Globals { get; }
@@ -142,15 +144,16 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
-    public Variable CreateVariable(string name, LanguageType type, Expression? initializer = null)
+    public Variable CreateVariable(Identifier name, LanguageType type, Expression? initializer = null)
     {
         var pointer = Block.IsGlobal
             ? Globals.GetNext(Block, type)
             : Stack.GetNext(Block, type);
 
         var variable = new Variable(name, pointer, type, initializer);
-        Block.DeclareVariable(name, variable);
+        Block.DeclareVariable(name.Name, variable);
         pointer.AssignedVariables.Add(variable);
+        Variables.Add(variable);
         return variable;
     }
 
@@ -568,7 +571,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         var size = expression.Type.Size;
 
-        if (expression is AddressExpression addressExpression)
+        if (expression is AddressExpression { DirectCopy: true } addressExpression)
         {
             if (expression.Type.StaticType == StaticType.Pointer)
             {
@@ -688,12 +691,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             var bits = (1 << bit.Size) - 1;
 
             LoadA(target);
-            SwapA_B();
 
-            SetA_Large(~(bits << bit.Offset) & 0xFFFF);
+            SetB_Large(~(bits << bit.Offset) & 0xFFFF);
             And();
 
-            SetB((intValue & bits) << bit.Offset);
+            SetB_Large((intValue & bits) << bit.Offset);
             Or();
 
             StoreA(target);

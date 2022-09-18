@@ -258,7 +258,7 @@ public class InstructionBuildResult : IProgram
             {
                 var label = either.Left;
                 labels[label] = i;
-                label.Address = i;
+                label.Set(i);
             }
             else
             {

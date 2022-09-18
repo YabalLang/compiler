@@ -14,7 +14,7 @@ public class FileAddress : IAddress
         Pointer = pointer;
     }
 
-    public Pointer? Pointer { get; }
+    public Pointer Pointer { get; }
 
     public int? Length
     {
@@ -34,4 +34,9 @@ public class FileAddress : IAddress
     }
 
     public static IAddress From(string path, FileType type, Pointer pointer) => new FileAddress(path, type, pointer);
+
+    public override string ToString()
+    {
+        return Pointer.ToString() ?? "";
+    }
 }

@@ -174,7 +174,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public override InstructionLabel CreateLabel(string? name = null)
     {
-        return new InstructionLabel(this, name ?? $"L{_labelCount++}");
+        return new InstructionLabel(name ?? $"L{_labelCount++}");
     }
 
     public void CreateLabel(string name, out InstructionLabel label)

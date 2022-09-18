@@ -74,28 +74,33 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return statement;
     }
 
+
+
     public override Node VisitDefaultVariableDeclaration(YabalParser.DefaultVariableDeclarationContext context)
     {
-        var name = context.identifierName().GetText();
         var expression = context.expression() is { } expr ? VisitExpression(expr) : null;
 
         return new VariableDeclarationStatement(
             context,
-            name,
+            GetIdentifier(context.identifierName()),
             context.Const() != null,
             expression,
             _typeVisitor.Visit(context.type())
         );
     }
 
+    private static Identifier GetIdentifier(YabalParser.IdentifierNameContext context)
+    {
+        return new Identifier(context, context.GetText());
+    }
+
     public override Node VisitAutoVariableDeclaration(YabalParser.AutoVariableDeclarationContext context)
     {
-        var name = context.identifierName().GetText();
         var expression = VisitExpression(context.expression());
 
         return new VariableDeclarationStatement(
             context,
-            name,
+            GetIdentifier(context.identifierName()),
             context.Const() != null,
             expression
         );
@@ -211,7 +216,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitIdentifierExpression(YabalParser.IdentifierExpressionContext context)
     {
-        return new IdentifierExpression(context, context.identifierName().GetText());
+        return new IdentifierExpression(context, GetIdentifier(context.identifierName()));
     }
 
     public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
@@ -222,7 +227,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             _typeVisitor.Visit(context.returnType()),
             context.functionParameterList().functionParameter()
                 .Select(p => new FunctionParameter(
-                    p.identifierName().GetText(),
+                    GetIdentifier(p.identifierName()),
                     _typeVisitor.Visit(p.type())
                 ))
                 .ToList(),
@@ -701,6 +706,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                     if (bitOffset == 16)
                     {
                         offset++;
+                        bitOffset = 0;
                     }
                 }
                 else

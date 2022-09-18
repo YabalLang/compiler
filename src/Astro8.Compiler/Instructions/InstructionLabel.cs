@@ -2,7 +2,7 @@
 
 public class InstructionLabel : InstructionPointer
 {
-    public InstructionLabel(InstructionBuilder builder, string? name)
+    public InstructionLabel(string name)
         : base(name)
     {
     }

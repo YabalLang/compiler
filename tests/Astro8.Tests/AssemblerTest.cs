@@ -844,4 +844,84 @@ public class AssemblerTest
         Assert.Equal(Character.CharToInt['S'], bank[offset + 2]);
         Assert.Equal(Character.CharToInt['T'], bank[offset + 3]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadFromBank(bool optimize)
+    {
+        const string code = """
+            var exps = create_pointer(53500, 1)
+            var result = exps[0]
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        var bank = cpu.Banks[1];
+        bank[53500] = 1;
+
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CopyBank(bool optimize)
+    {
+        const string code = """
+            var pixels = create_pointer(53871, 1)
+            var exps = create_pointer(53500, 1)
+
+            pixels[54] = exps[0] << 4
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        var bank = cpu.Banks[1];
+        bank[53500] = 1;
+
+        cpu.Run();
+
+        Assert.Equal(1 << 4, bank[53871 + 54]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructBitReturn(bool optimize)
+    {
+        const string code = """
+            var result = 0;
+
+            struct Float16 {
+                int sign : 1
+                int exponent : 8
+                int fraction : 7
+            }
+
+            void set_result(int value) {
+                result = value
+            }
+
+            Float16 f;
+            f.sign = 1;
+            f.exponent = 5;
+
+            set_result(f.exponent)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(5, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
 }

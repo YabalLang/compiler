@@ -23,7 +23,10 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
         StoreAddressInA(builder);
+
+        if (Array.Bank > 0) builder.SetBank(Array.Bank.Value);
         builder.LoadA_FromAddressUsingA();
+        if (Array.Bank > 0) builder.SetBank(0);
     }
 
     public override bool OverwritesB => Array.OverwritesB || Key is not IntegerExpressionBase { Value: 0 };

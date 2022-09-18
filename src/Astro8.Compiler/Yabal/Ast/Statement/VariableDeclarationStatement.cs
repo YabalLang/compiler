@@ -3,7 +3,7 @@ using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record VariableDeclarationStatement(SourceRange Range, string Name, bool Constant, Expression? Value = null, LanguageType? Type = null) : Statement(Range)
+public record VariableDeclarationStatement(SourceRange Range, Identifier Name, bool Constant, Expression? Value = null, LanguageType? Type = null) : Statement(Range)
 {
     public Variable Variable { get; private set; } = null!;
 

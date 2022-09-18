@@ -11,7 +11,7 @@ public class RawAddress : IAddress
         Pointer = pointer;
     }
 
-    public Pointer? Pointer { get; }
+    public Pointer Pointer { get; }
 
     public int? Length { get; }
 
@@ -23,4 +23,9 @@ public class RawAddress : IAddress
     }
 
     public static IAddress From(LanguageType type, Pointer pointer, int? length = null) => new RawAddress(length, type, pointer);
+
+    public override string ToString()
+    {
+        return Pointer.ToString() ?? "";
+    }
 }

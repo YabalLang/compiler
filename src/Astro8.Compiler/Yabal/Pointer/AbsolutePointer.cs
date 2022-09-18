@@ -4,22 +4,27 @@ namespace Astro8.Yabal;
 
 public class AbsolutePointer : Pointer
 {
-    private readonly int _address;
-
     public AbsolutePointer(int address, int bank)
     {
-        _address = address;
+        Address = address;
         Bank = bank;
     }
 
-    public override string Name => _address.ToString();
+    public override string Name => Address.ToString();
 
-    public override bool IsSmall => _address < InstructionReference.MaxData;
+    public override bool IsSmall => Address < InstructionReference.MaxData;
 
     public override int Bank { get; }
 
+    public override int Address { get; }
+
     public override int Get(IReadOnlyDictionary<InstructionPointer, int> mappings)
     {
-        return _address;
+        return Address;
+    }
+
+    public override string ToString()
+    {
+        return $"[{Address}:{Bank}]";
     }
 }

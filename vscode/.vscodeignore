@@ -1,0 +1,7 @@
+.vscode/**
+src/**
+server/**
+.gitignore
+package-lock.json
+tsconfig.json
+rollup.config.js

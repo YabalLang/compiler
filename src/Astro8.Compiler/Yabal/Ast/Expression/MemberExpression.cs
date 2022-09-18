@@ -45,16 +45,18 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         {
             if (bit.Offset > 0)
             {
-                builder.SetB(bit.Offset);
+                builder.SetB_Large(bit.Offset);
                 builder.BitShiftRight();
             }
 
-            builder.SetB((1 << bit.Size) - 1);
+            builder.SetB_Large((1 << bit.Size) - 1);
             builder.And();
         }
     }
 
     public override bool OverwritesB => true;
+
+    public override bool DirectCopy => false;
 
     public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
 

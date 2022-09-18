@@ -7,6 +7,8 @@ inline int get_color(int r, int g, int b) {
     return (r / 8 << 10) + (g / 8 << 5) + (b / 8)
 }
 
+var red = get_color(255, 0, 0)
+
 int[] screen = create_pointer(53871, 1)
 
 while(true) {
