@@ -33,7 +33,7 @@ public class InstructionBuilderTest
     [InlineData("SUB", 2, 2, 0)]
     [InlineData("MULT", 2, 2, 4)]
     [InlineData("DIV", 2, 2, 1)]
-    [InlineData("NOT", 0b10, 0, ~0b10)]
+    [InlineData("NOT", 0b10, 0, ~0b10 & ushort.MaxValue)]
     [InlineData("AND", 0b10, 0b11, 0b10)]
     [InlineData("OR", 0b10, 0b11, 0b11)]
     [InlineData("BSL", 0b1, 1, 0b10)]

@@ -67,7 +67,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         return Operator switch
         {
             UnaryOperator.Negate when value is IConstantValue { Value: bool b } => new BooleanExpression(Range, !b),
-            UnaryOperator.Not when value is IConstantValue { Value: int i } => new IntegerExpression(Range, ~i),
+            UnaryOperator.Not when value is IConstantValue { Value: int i } => new IntegerExpression(Range, ~i & ushort.MaxValue),
             UnaryOperator.Minus when value is IConstantValue { Value: int i } => new IntegerExpression(Range, -i),
             _ => this
         };

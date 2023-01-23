@@ -924,4 +924,54 @@ public class AssemblerTest
 
         Assert.Equal(5, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Not(bool optimize)
+    {
+        const string code = """
+            var pointer = create_pointer(4095)
+            int prenotted = 0b10001111
+            pointer[0] = ~prenotted
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(~0b10001111 & ushort.MaxValue, cpu.Memory[4095]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructBitLarge(bool optimize)
+    {
+        var code = $$"""
+            struct SignedInt {
+                int s : 1
+                int val : 10
+            };
+
+            var pointer = create_pointer<SignedInt>(4095)
+
+            pointer[0] = {
+                s: 1,
+                val: 1
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        const int expected = 0b1000000001;
+
+        Assert.Equal(expected, cpu.Memory[4095]);
+    }
 }

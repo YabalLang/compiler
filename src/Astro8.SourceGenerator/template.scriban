@@ -92,7 +92,7 @@ public partial class Cpu<THandler>
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsNOT }}
-            context.Bus = ~context.A;
+            context.Bus = ~context.A & ushort.MaxValue;
 
             {{ checkOverflow }}
         {{- else if step.MicroInstruction.IsSU }}

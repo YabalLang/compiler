@@ -784,7 +784,7 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = ~context.A;
+            context.Bus = ~context.A & ushort.MaxValue;
 
             
            if (context.Bus == 0)
