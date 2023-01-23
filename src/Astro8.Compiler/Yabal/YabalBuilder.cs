@@ -740,12 +740,22 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var bits = (1 << bit.Size) - 1;
 
         // Remove invalid bits
-        SetB(bits);
+        if (bits > InstructionReference.MaxData)
+        {
+            SetB_Large(bits);
+        }
+        else
+        {
+            SetB(bits);
+        }
         And();
 
         // Move to correct position
-        SetB(bit.Offset);
-        BitShiftLeft();
+        if (bit.Offset > 0)
+        {
+            SetB(bit.Offset);
+            BitShiftLeft();
+        }
 
         StoreA(value);
 

@@ -950,7 +950,7 @@ public class AssemblerTest
     [InlineData(true)]
     public async Task StructBitLarge(bool optimize)
     {
-        var code = $$"""
+        const string code = """
             struct SignedInt {
                 int s : 1
                 int val : 10
@@ -962,6 +962,14 @@ public class AssemblerTest
                 s: 1,
                 val: 1
             }
+
+            pointer[1].s = 1
+            pointer[1].val = 1
+
+            SignedInt value
+            value.s = 1
+            value.val = 1
+            pointer[2] = value
             """;
 
         var builder = new YabalBuilder();
@@ -970,8 +978,11 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        const int expected = 0b1000000001;
+        const int expected = 0b11;
 
         Assert.Equal(expected, cpu.Memory[4095]);
+        Assert.Equal(expected, cpu.Memory[4096]);
+        Assert.Equal(expected, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
+        Assert.Equal(expected, cpu.Memory[4097]);
     }
 }
