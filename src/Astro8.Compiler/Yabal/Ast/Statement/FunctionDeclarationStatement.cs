@@ -12,7 +12,10 @@ public record Function(string Name,
     YabalBuilder Builder,
     bool Inline,
     BlockStatement Body,
-    List<FunctionParameter> Parameters);
+    List<FunctionParameter> Parameters)
+{
+    public BlockStack? Block { get; set; }
+}
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
@@ -52,6 +55,10 @@ public record FunctionDeclarationStatement(
             }
 
             Body.Declare(builder);
+        }
+        else
+        {
+            _function.Block = builder.Block;
         }
     }
 

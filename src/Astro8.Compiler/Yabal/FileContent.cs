@@ -80,7 +80,6 @@ public record FileContent(int Offset, int[] Data)
                 content[i++] = bytes.Length / 2;
 
                 var memory = new byte[2];
-                int length;
 
                 for (var j = 0; j < bytes.Length; j += 2)
                 {

@@ -16,6 +16,7 @@ public enum BinaryOperator
     OrElse,
     And,
     Or,
+    Xor,
     LeftShift,
     RightShift,
     Modulo

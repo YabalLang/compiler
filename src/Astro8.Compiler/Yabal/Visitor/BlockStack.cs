@@ -19,10 +19,10 @@ public class BlockStack
     {
     }
 
-    public BlockStack(BlockStack parent, FunctionDeclarationStatement? function = null)
+    public BlockStack(BlockStack parent, ScopeStatement? function = null)
     {
         IsGlobal = parent.IsGlobal && function == null;
-        Function = parent.Function ?? function;
+        Scope = parent.Scope ?? function;
         Parent = parent;
         _globalOffset = parent._globalOffset.ToDictionary(x => x.Key, x => x.Value);
         _stackOffset = parent._stackOffset.ToDictionary(x => x.Key, x => x.Value);
@@ -45,7 +45,7 @@ public class BlockStack
 
     public bool IsGlobal { get; set; }
 
-    public FunctionDeclarationStatement? Function { get; }
+    public ScopeStatement? Scope { get; }
 
     public BlockStack? Parent { get; set; }
 

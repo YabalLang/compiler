@@ -70,6 +70,32 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 SetRegisters(builder);
                 builder.BitShiftRight();
                 break;
+            case BinaryOperator.Xor:
+            {
+                using var value = builder.GetTemporaryVariable(global: true);
+                using var left = builder.GetTemporaryVariable(global: true);
+                using var right = builder.GetTemporaryVariable(global: true);
+
+                Left.Build(builder);
+                builder.StoreA(left);
+
+                Right.Build(builder);
+                builder.StoreA(right);
+
+                builder.LoadA(left);
+                builder.LoadB(right);
+                builder.And();
+                builder.StoreA(value);
+
+                builder.LoadA(left);
+                builder.LoadB(right);
+                builder.Or();
+
+                builder.LoadB(value);
+                builder.Sub();
+
+                break;
+            }
             case BinaryOperator.Modulo:
             {
                 SetRegisters(builder);
@@ -275,6 +301,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 BinaryOperator.RightShift => new IntegerExpression(Range, leftInt >> rightInt),
                 BinaryOperator.And => new IntegerExpression(Range, leftInt & rightInt),
                 BinaryOperator.Or => new IntegerExpression(Range, leftInt | rightInt),
+                BinaryOperator.Xor => new IntegerExpression(Range, leftInt ^ rightInt),
                 _ => new BinaryExpression(Range, Operator, left, right)
             };
         }
@@ -299,6 +326,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         BinaryOperator.RightShift => LanguageType.Integer,
         BinaryOperator.And => LanguageType.Integer,
         BinaryOperator.Or => LanguageType.Integer,
+        BinaryOperator.Xor => LanguageType.Integer,
         BinaryOperator.Equal => LanguageType.Boolean,
         BinaryOperator.NotEqual => LanguageType.Boolean,
         BinaryOperator.AndAlso => LanguageType.Boolean,

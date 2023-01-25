@@ -1,4 +1,5 @@
-﻿using Astro8.Devices;
+﻿using System.IO.Abstractions.TestingHelpers;
+using Astro8.Devices;
 using Astro8.Instructions;
 using Moq;
 using Xunit.Abstractions;
@@ -85,6 +86,9 @@ public class AssemblerTest
     [InlineData("%", 5, 2, 1)]
     [InlineData("&", 0b10, 0b11, 0b10)]
     [InlineData("|", 0b10, 0b11, 0b11)]
+    [InlineData("^", 0b10, 0b11, 0b01)]
+    [InlineData("^", 0b10, 0b10, 0b00)]
+    [InlineData("^", 0b11, 0b11, 0b00)]
     [InlineData("<<", 0b1, 1, 0b10)]
     [InlineData(">>", 0b10, 1, 0b1)]
     public async Task Binary(string type, int left, int right, int expected)
@@ -984,5 +988,43 @@ public class AssemblerTest
         Assert.Equal(expected, cpu.Memory[4096]);
         Assert.Equal(expected, cpu.Memory[builder.GetVariable("value").Pointer.Address]);
         Assert.Equal(expected, cpu.Memory[4097]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Import(bool optimize)
+    {
+        var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
+        {
+            [@"lib.yabal"] = new("""
+                var offset = 0;
+
+                inline void set_offset(int value) {
+                    offset = value
+                }
+
+                inline int get_offset() {
+                    return offset
+                }
+                """)
+        });
+
+        const string code = """
+            import "lib.yabal"
+
+            var pointer = create_pointer(4095)
+
+            set_offset(1)
+            pointer[0] = get_offset()
+            """;
+
+        var builder = new YabalBuilder(fileSystem);
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4095]);
     }
 }

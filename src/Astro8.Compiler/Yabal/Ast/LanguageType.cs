@@ -8,7 +8,10 @@ public record LanguageStruct(string Name)
 {
     public List<LanguageStructField> Fields { get; } = new();
 
-    public int Size => Fields.Max(f => f.Offset + f.Type.Size);
+    public int Size => Fields
+        .Select(f => f.Offset + f.Type.Size)
+        .DefaultIfEmpty()
+        .Max();
 }
 
 public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null)

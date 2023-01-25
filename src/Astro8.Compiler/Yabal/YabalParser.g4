@@ -50,6 +50,7 @@ expression
 	| expression (Equals|NotEquals) expression						    # EqualExpression
 	| expression And expression									        # AndExpression
 	| expression Or expression									        # OrExpression
+	| expression Xor expression									        # XorExpression
 	| expression AndAlso expression								        # AndAlsoExpression
 	| expression OrElse expression								        # OrElseExpression
 	| expression QuestionMark expression Colon expression               # TernaryExpression
@@ -92,7 +93,8 @@ underscore
 
 // Statements
 statement
-    : variableDeclaration
+    : importStatement
+    | variableDeclaration
     | structDeclaration
 	| returnStatement
 	| whileStatement
@@ -175,6 +177,10 @@ whileStatement
 	: While OpenBrace expression CloseBrace blockStatement
 	;
 
+importStatement
+    : Import string
+    ;
+
 // If-statement
 ifStatement
 	: If OpenBrace expression CloseBrace blockStatement elseIfStatement* elseStatement?
@@ -215,9 +221,9 @@ functionBody
 
 // Variable
 variableDeclaration
-    : Const? type identifierName (Assign (expression|initStruct))?              # DefaultVariableDeclaration
-    | Const? Var identifierName Assign expression                               # AutoVariableDeclaration
-    | Inline?  returnType identifierName functionParameterList functionBody     # FunctionDeclaration
+    : Const? type identifierName (Assign (expression|initStruct))?                      # DefaultVariableDeclaration
+    | Const? Var identifierName Assign expression                                       # AutoVariableDeclaration
+    | Export? Inline? returnType identifierName functionParameterList functionBody      # FunctionDeclaration
     ;
 
 // Identifier

@@ -338,6 +338,14 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
+    public override Node VisitImportStatement(YabalParser.ImportStatementContext context)
+    {
+        return new ImportStatement(
+            context,
+            GetStringValue(context.@string())
+        );
+    }
+
     public override Node VisitNotEqualExpression(YabalParser.NotEqualExpressionContext context)
     {
         return CreateBinary(context, context.expression(), BinaryOperator.NotEqual);
@@ -543,6 +551,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return CreateBinary(context, context.expression(), BinaryOperator.Or);
     }
 
+    public override Node VisitXorExpression(YabalParser.XorExpressionContext context)
+    {
+        return CreateBinary(context, context.expression(), BinaryOperator.Xor);
+    }
+
     public override Node VisitExpressionExpression(YabalParser.ExpressionExpressionContext context)
     {
         return VisitExpression(context.expression());
@@ -637,12 +650,19 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitStringExpression(YabalParser.StringExpressionContext context)
     {
+        var value = GetStringValue(context.@string());
+
+        return new StringExpression(context, value);
+    }
+
+    private static string GetStringValue(YabalParser.StringContext context)
+    {
         var sb = new StringBuilder();
-        var parts = context.@string().stringPart();
+        var parts = context.stringPart();
 
         foreach (var part in parts)
         {
-            if (part.StringEscape() is {} escape)
+            if (part.StringEscape() is { } escape)
             {
                 var c = escape.GetText()[1];
 
@@ -660,7 +680,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             }
         }
 
-        return new StringExpression(context, parts[0].GetText());
+        return parts[0].GetText();
     }
 
     public override Node VisitLabelStatement(YabalParser.LabelStatementContext context)

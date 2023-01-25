@@ -40,6 +40,27 @@ public record CallExpression(
 
             _variables = new (Variable, Expression)[Arguments.Count];
 
+            // Copy variables from parent blocks
+            if (Function.Block is { } functionBlock)
+            {
+                var current = functionBlock;
+
+                while (current != null)
+                {
+                    foreach (var variable in current.Variables)
+                    {
+                        if (_block.TryGetVariable(variable.Key, out _))
+                        {
+                            continue;
+                        }
+
+                        _block.DeclareVariable(variable.Key, variable.Value);
+                    }
+
+                    current = current.Parent;
+                }
+            }
+
             for (var i = 0; i < Arguments.Count; i++)
             {
                 var parameter = Function.Parameters[i];

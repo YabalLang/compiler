@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.IO.Abstractions;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Astro8.Yabal;
@@ -24,7 +25,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private bool _hasCall;
 
     public YabalBuilder()
+        : this(new FileSystem())
     {
+
+    }
+
+    public YabalBuilder(IFileSystem fileSystem)
+    {
+        FileSystem = fileSystem;
         _builder = new InstructionBuilder();
 
         _callLabel = _builder.CreateLabel("__call");
@@ -48,6 +56,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public YabalBuilder(YabalBuilder parent)
     {
         _parent = parent;
+        FileSystem = parent.FileSystem;
         _builder = new InstructionBuilder();
 
         _callLabel = parent._callLabel;
@@ -66,6 +75,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _files = parent._files;
         _errors = parent._errors;
     }
+
+    public IFileSystem FileSystem { get; }
 
     public List<Variable> Variables { get; } = new();
 
@@ -102,7 +113,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public BlockStack Block { get; private set; }
 
-    public BlockStack PushBlock(FunctionDeclarationStatement? function = null)
+    public BlockStack PushBlock(ScopeStatement? function = null)
     {
         return Block = new BlockStack(Block, function);
     }
@@ -115,6 +126,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public void PushBlock(BlockStack block)
     {
         block.Parent = Block;
+        Block = block;
+    }
+
+    public void SetBlock(BlockStack block)
+    {
         Block = block;
     }
 
@@ -197,21 +213,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public async ValueTask CompileCodeAsync(string code, bool optimize = true)
     {
-        var inputStream = new AntlrInputStream(code);
-        var lexer = new YabalLexer(inputStream);
-
-        var commonTokenStream = new CommonTokenStream(lexer);
-        var parser = new YabalParser(commonTokenStream)
-        {
-            ErrorHandler = new BailErrorStrategy(),
-        };
-
         try
         {
-            var listener = new YabalVisitor();
-            var program = listener.VisitProgram(parser.program());
+            var program = Parse(code);
 
-            foreach (var (path, type) in listener.Files)
+            foreach (var (path, type) in _files.Keys)
             {
                 await FileContent.LoadAsync(path, type);
             }
@@ -234,6 +240,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             AddError(ErrorLevel.Error, SourceRange.From(innerException.StartToken), "Unexpected token");
         }
+    }
+
+    public ProgramStatement Parse(string code)
+    {
+        var inputStream = new AntlrInputStream(code);
+        var lexer = new YabalLexer(inputStream);
+
+        var commonTokenStream = new CommonTokenStream(lexer);
+        var parser = new YabalParser(commonTokenStream)
+        {
+            ErrorHandler = new BailErrorStrategy(),
+        };
+
+        var listener = new YabalVisitor();
+        return listener.VisitProgram(parser.program());
     }
 
     private void CreateCall(InstructionBuilderBase builder)
@@ -366,6 +387,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         get => _builder.DisallowC;
         set => _builder.DisallowC = value;
     }
+
+    public IEnumerable<Function> Functions => _functions.Values;
 
     public override InstructionLabel CreateLabel(string? name = null)
     {
