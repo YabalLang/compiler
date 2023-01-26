@@ -211,11 +211,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public async ValueTask CompileCodeAsync(string code, bool optimize = true)
+    public async ValueTask CompileCodeAsync(string code, bool optimize = true, string? file = null)
     {
+        file ??= ":memory:";
+
         try
         {
-            var program = Parse(code);
+            var program = Parse(file, code);
 
             foreach (var (path, type) in _files.Keys)
             {
@@ -234,15 +236,15 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
         catch (ParseCanceledException e) when (e.InnerException is InputMismatchException innerException)
         {
-            AddError(ErrorLevel.Error, SourceRange.From(innerException.OffendingToken), "Unexpected token");
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.OffendingToken, file), "Unexpected token");
         }
         catch (ParseCanceledException e) when (e.InnerException is NoViableAltException innerException)
         {
-            AddError(ErrorLevel.Error, SourceRange.From(innerException.StartToken), "Unexpected token");
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.StartToken, file), "Unexpected token");
         }
     }
 
-    public ProgramStatement Parse(string code)
+    public ProgramStatement Parse(string file, string code)
     {
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
@@ -253,7 +255,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             ErrorHandler = new BailErrorStrategy(),
         };
 
-        var listener = new YabalVisitor();
+        var listener = new YabalVisitor(file);
         return listener.VisitProgram(parser.program());
     }
 
@@ -480,6 +482,19 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
+        foreach (var (_, function) in _functions)
+        {
+            if (function.References.Count == 0)
+            {
+                AddError(ErrorLevel.Debug, function.Name.Range, $"Function '{function.Name.Name}' is never called and will be excluded from the output.");
+                continue;
+            }
+
+            builder.Mark(function.Label);
+            builder.AddRange(function.Builder._builder);
+            builder.Jump(_returnLabel);
+        }
+
         if (_hasCall)
         {
             builder.Mark(ReturnValue);
@@ -490,13 +505,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             builder.Mark(_tempPointer);
             builder.EmitRaw(0, "temporary pointer");
-
-            foreach (var (_, function) in _functions)
-            {
-                builder.Mark(function.Label);
-                builder.AddRange(function.Builder._builder);
-                builder.Jump(_returnLabel);
-            }
 
             CreateCall(builder);
             CreateReturn(builder);
@@ -560,7 +568,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public void DeclareFunction(Function statement)
     {
-        _functions.Add(statement.Name, statement);
+        _functions.Add(statement.Name.Name, statement);
     }
 
     public void SetComment(string comment)

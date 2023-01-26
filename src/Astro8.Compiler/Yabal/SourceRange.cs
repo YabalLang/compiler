@@ -3,7 +3,7 @@ using Antlr4.Runtime;
 
 namespace Astro8.Yabal;
 
-public readonly record struct SourceRange(int StartLine, int StartColumn, int EndLine, int EndColumn, int Index, int Length) : IComparable<SourceRange>
+public readonly record struct SourceRange(string File, int StartLine, int StartColumn, int EndLine, int EndColumn, int Index, int Length) : IComparable<SourceRange>
 {
     public static readonly SourceRange Zero = default;
 
@@ -29,7 +29,7 @@ public readonly record struct SourceRange(int StartLine, int StartColumn, int En
         return (stopLine, stopColumn);
     }
 
-    public static implicit operator SourceRange(ParserRuleContext context)
+    public static SourceRange From(ParserRuleContext context, string file)
     {
         var startLine = context.Start.Line;
         var startColumn = context.Start.Column;
@@ -39,6 +39,7 @@ public readonly record struct SourceRange(int StartLine, int StartColumn, int En
         var (endLine, endColumn) = CalculateStop(end.Line, end.Column, text);
 
         return new SourceRange(
+            file,
             startLine,
             startColumn,
             endLine,
@@ -48,7 +49,7 @@ public readonly record struct SourceRange(int StartLine, int StartColumn, int En
         );
     }
 
-    public static SourceRange From(IToken token)
+    public static SourceRange From(IToken token, string file)
     {
         var startLine = token.Line;
         var startColumn = token.Column;
@@ -61,6 +62,7 @@ public readonly record struct SourceRange(int StartLine, int StartColumn, int En
         }
 
         return new SourceRange(
+            file,
             startLine,
             startColumn,
             endLine,
@@ -83,6 +85,7 @@ public readonly record struct SourceRange(int StartLine, int StartColumn, int En
         var end = array.MaxBy(r => r.Index + r.Length);
 
         return new SourceRange(
+            start.File,
             start.StartLine,
             start.StartColumn,
             end.EndLine,

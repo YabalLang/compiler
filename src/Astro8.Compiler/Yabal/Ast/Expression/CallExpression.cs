@@ -24,6 +24,7 @@ public record CallExpression(
         }
 
         Function = builder.GetFunction(identifier.Name);
+        Function.References.Add(this);
 
         foreach (var argument in Arguments)
         {

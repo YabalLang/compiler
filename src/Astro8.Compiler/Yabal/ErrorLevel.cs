@@ -3,5 +3,6 @@
 public enum ErrorLevel
 {
     Error,
-    Warning
+    Warning,
+    Debug
 }

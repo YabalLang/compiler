@@ -121,7 +121,7 @@ async Task Build(InvocationContext ctx)
 
     var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
-    await builder.CompileCodeAsync(code);
+    await builder.CompileCodeAsync(code, file: path.Name);
     PrintErrors(builder.Errors, code);
 
     if (string.IsNullOrEmpty(outPath))
@@ -182,7 +182,7 @@ async Task Execute(InvocationContext ctx)
 
     var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
-    await builder.CompileCodeAsync(code);
+    await builder.CompileCodeAsync(code, file: path.Name);
 
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);
     var disableCharacters = ctx.ParseResult.GetValueForOption(disableCharactersOption);
@@ -376,25 +376,43 @@ void PrintErrors(IReadOnlyDictionary<SourceRange, List<CompileError>> errorByRan
     foreach (var (range, errors) in errorByRange.OrderBy(i => i.Key))
     {
         Console.WriteLine();
-        Console.Write($"At line {range.StartLine}, column {range.StartColumn}:");
+        Console.WriteLine($"In '{range.File}' at line {range.StartLine}, column {range.StartColumn}:");
 
         if (errors.Count == 1)
         {
-            Console.Write(' ');
-            Console.WriteLine(errors[0].Message);
+            Console.Write("   ");
+            WriteError(errors[0]);
         }
         else
         {
-            Console.WriteLine();
-
             foreach (var error in errors)
             {
-                Console.Write("- ");
-                Console.WriteLine(error.Message);
+                Console.Write(" - ");
+                WriteError(error);
             }
         }
 
         Console.WriteLine();
         Console.WriteLine(code.GetPeek(range));
     }
+}
+
+void WriteError(CompileError compileError)
+{
+    var color = Console.ForegroundColor;
+
+    Console.ForegroundColor = compileError.Level switch
+    {
+        ErrorLevel.Error => ConsoleColor.DarkRed,
+        ErrorLevel.Warning => ConsoleColor.DarkYellow,
+        ErrorLevel.Debug => ConsoleColor.DarkGray,
+        _ => color
+    };
+
+    Console.Write(compileError.Level);
+
+    Console.ForegroundColor = color;
+
+    Console.Write(": ");
+    Console.WriteLine(compileError.Message);
 }

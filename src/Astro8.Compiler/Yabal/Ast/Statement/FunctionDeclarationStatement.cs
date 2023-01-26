@@ -6,7 +6,8 @@ namespace Astro8.Yabal.Ast;
 
 public record FunctionParameter(Identifier Name, LanguageType Type);
 
-public record Function(string Name,
+public record Function(
+    Identifier Name,
     InstructionLabel Label,
     LanguageType ReturnType,
     YabalBuilder Builder,
@@ -15,11 +16,13 @@ public record Function(string Name,
     List<FunctionParameter> Parameters)
 {
     public BlockStack? Block { get; set; }
+
+    public List<CallExpression> References { get; } = new();
 }
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
-    string Name,
+    Identifier Name,
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
     BlockStatement Body,
@@ -35,7 +38,7 @@ public record FunctionDeclarationStatement(
 
         _function = new Function(
             Name,
-            builder.CreateLabel(Name),
+            builder.CreateLabel(Name.Name),
             ReturnType,
             functionBuilder,
             Inline,
@@ -66,7 +69,7 @@ public record FunctionDeclarationStatement(
     {
         Debug.Assert(_function != null);
 
-        _returnLabel = builder.CreateLabel(Name);
+        _returnLabel = builder.CreateLabel(Name.Name);
 
         Block.Return = _returnLabel;
 

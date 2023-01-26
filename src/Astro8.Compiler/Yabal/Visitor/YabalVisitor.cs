@@ -8,8 +8,14 @@ namespace Astro8.Yabal.Visitor;
 
 public class YabalVisitor : YabalParserBaseVisitor<Node>
 {
+    private readonly string _file;
     private readonly TypeVisitor _typeVisitor = new();
     private BlockCompileStack _block = new();
+
+    public YabalVisitor(string file)
+    {
+        _file = file;
+    }
 
     public List<(string, FileType)> Files { get; } = new();
 
@@ -20,7 +26,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         walker.Walk(discover, context);
 
         return new ProgramStatement(
-            context,
+            SourceRange.From(context, _file),
             context.statement().Select(VisitStatement).ToList()
         );
     }
@@ -30,7 +36,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return Visit(context) switch
         {
             Statement statement => statement,
-            Expression expression => new ExpressionStatement(context, expression),
+            Expression expression => new ExpressionStatement(SourceRange.From(context, _file), expression),
             _ => throw new InvalidOperationException($"{context.GetType().Name} is not supported.")
         };
     }
@@ -65,7 +71,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         _block = new BlockCompileStack(parent);
 
         var statement = new BlockStatement(
-            context,
+            SourceRange.From(context, _file),
             context.statement().Select(VisitStatement).ToList()
         );
 
@@ -81,7 +87,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         var expression = context.expression() is { } expr ? VisitExpression(expr) : null;
 
         return new VariableDeclarationStatement(
-            context,
+            SourceRange.From(context, _file),
             GetIdentifier(context.identifierName()),
             context.Const() != null,
             expression,
@@ -89,9 +95,9 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    private static Identifier GetIdentifier(YabalParser.IdentifierNameContext context)
+    private Identifier GetIdentifier(YabalParser.IdentifierNameContext context)
     {
-        return new Identifier(context, context.GetText());
+        return new Identifier(SourceRange.From(context, _file), context.GetText());
     }
 
     public override Node VisitAutoVariableDeclaration(YabalParser.AutoVariableDeclarationContext context)
@@ -99,7 +105,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         var expression = VisitExpression(context.expression());
 
         return new VariableDeclarationStatement(
-            context,
+            SourceRange.From(context, _file),
             GetIdentifier(context.identifierName()),
             context.Const() != null,
             expression
@@ -108,7 +114,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override IntegerExpressionBase VisitIntegerExpression(YabalParser.IntegerExpressionContext context)
     {
-        return new IntegerExpression(context, ParseInt(context.GetText()));
+        return new IntegerExpression(SourceRange.From(context, _file), ParseInt(context.GetText()));
     }
 
     public static int ParseInt(ReadOnlySpan<char> text)
@@ -129,18 +135,18 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override BooleanExpression VisitTrue(YabalParser.TrueContext context)
     {
-        return new BooleanExpression(context, true);
+        return new BooleanExpression(SourceRange.From(context, _file), true);
     }
 
     public override BooleanExpression VisitFalse(YabalParser.FalseContext context)
     {
-        return new BooleanExpression(context, false);
+        return new BooleanExpression(SourceRange.From(context, _file), false);
     }
 
     public override Node VisitAssignExpression(YabalParser.AssignExpressionContext context)
     {
         return new AssignExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(context.expression()[0]),
             VisitExpression(context.expression()[1])
         );
@@ -152,7 +158,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         BinaryOperator @operator)
     {
         return new BinaryExpression(
-            context,
+            SourceRange.From(context, _file),
             @operator,
             VisitExpression(expressions[0]),
             VisitExpression(expressions[1])
@@ -165,7 +171,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         BinaryOperator @operator)
     {
         return new AssignExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(expressions[0]),
             CreateBinary(context, expressions, @operator)
         );
@@ -216,14 +222,14 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitIdentifierExpression(YabalParser.IdentifierExpressionContext context)
     {
-        return new IdentifierExpression(context, GetIdentifier(context.identifierName()));
+        return new IdentifierExpression(SourceRange.From(context, _file), GetIdentifier(context.identifierName()));
     }
 
     public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
     {
         return new FunctionDeclarationStatement(
-            context,
-            context.identifierName().GetText(),
+            SourceRange.From(context, _file),
+            GetIdentifier(context.identifierName()),
             _typeVisitor.Visit(context.returnType()),
             context.functionParameterList().functionParameter()
                 .Select(p => new FunctionParameter(
@@ -241,11 +247,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         if (context.expression() is { } expression)
         {
             return new BlockStatement(
-                context,
+                SourceRange.From(context, _file),
                 new List<Statement>
                 {
                     new ReturnStatement(
-                        context,
+                        SourceRange.From(context, _file),
                         VisitExpression(expression)
                     )
                 }
@@ -258,7 +264,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitCallExpression(YabalParser.CallExpressionContext context)
     {
         return new CallExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()),
             context.expressionList().expression().Select(VisitExpression).ToList()
         );
@@ -267,7 +273,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitExpressionStatement(YabalParser.ExpressionStatementContext context)
     {
         return new ExpressionStatement(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression())
         );
     }
@@ -285,20 +291,20 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 {
                     case YabalParser.AsmInstructionContext instruction:
                         instructions.Add(new AsmInstruction(
-                            item,
+                            SourceRange.From(item, _file),
                             instruction.asmIdentifier().GetText(),
                             instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
                         ));
                         break;
                     case YabalParser.AsmLabelContext label:
                         instructions.Add(new AsmDefineLabel(
-                            item,
+                            SourceRange.From(item, _file),
                             label.asmIdentifier().GetText()
                         ));
                         break;
                     case YabalParser.AsmRawValueContext rawValue:
                         instructions.Add(new AsmRawValue(
-                            item,
+                            SourceRange.From(item, _file),
                             AsmArgumentVisitor.Instance.Visit(rawValue.asmArgument())
                         ));
                         break;
@@ -308,13 +314,13 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             }
         }
 
-        return new AsmExpression(context, instructions);
+        return new AsmExpression(SourceRange.From(context, _file), instructions);
     }
 
     public override Node VisitArrayAccessExpression(YabalParser.ArrayAccessExpressionContext context)
     {
         return new ArrayAccessExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAddressExpression(context.expression()[0]),
             VisitExpression(context.expression()[1])
         );
@@ -323,7 +329,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitReturnStatement(YabalParser.ReturnStatementContext context)
     {
         return new ReturnStatement(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression())
         );
     }
@@ -332,7 +338,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitWhileStatement(YabalParser.WhileStatementContext context)
     {
         return new WhileStatement(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()),
             VisitBlockStatement(context.blockStatement())
         );
@@ -341,7 +347,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitImportStatement(YabalParser.ImportStatementContext context)
     {
         return new ImportStatement(
-            context,
+            SourceRange.From(context, _file),
             GetStringValue(context.@string())
         );
     }
@@ -387,7 +393,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 test = VisitExpression(elseIf.expression());
 
                 elseStatement = new IfStatement(
-                    elseIf,
+                    SourceRange.From(elseIf, _file),
                     test,
                     (BlockStatement) Visit(elseIf.blockStatement()),
                     elseStatement);
@@ -397,7 +403,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         test = VisitExpression(context.expression());
 
         return new IfStatement(
-            context,
+            SourceRange.From(context, _file),
             test,
             (BlockStatement) Visit(context.blockStatement()),
             elseStatement);
@@ -422,7 +428,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         }
 
         return new CharExpression(
-            context,
+            SourceRange.From(context, _file),
             value[0]
         );
     }
@@ -430,7 +436,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitForStatement(YabalParser.ForStatementContext context)
     {
         return new ForStatement(
-            context,
+            SourceRange.From(context, _file),
             context.forInit()?.statement() is { } init ? VisitStatement(init) : null,
             context.statement() is {} statement ? VisitStatement(statement) : null,
             VisitExpression(context.expression()),
@@ -441,7 +447,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitIncrementLeftExpression(YabalParser.IncrementLeftExpressionContext context)
     {
         return new UpdateExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(context.expression()),
             true,
             BinaryOperator.Add
@@ -451,7 +457,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitIncrementRightExpression(YabalParser.IncrementRightExpressionContext context)
     {
         return new UpdateExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(context.expression()),
             false,
             BinaryOperator.Add
@@ -461,7 +467,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitDecrementLeftExpression(YabalParser.DecrementLeftExpressionContext context)
     {
         return new UpdateExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(context.expression()),
             true,
             BinaryOperator.Subtract
@@ -498,7 +504,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         }
 
         return new SwitchExpression(
-            context,
+            SourceRange.From(context, _file),
             expression,
             items,
             defaultValue
@@ -508,7 +514,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitDecrementRightExpression(YabalParser.DecrementRightExpressionContext context)
     {
         return new UpdateExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAssignExpression(context.expression()),
             false,
             BinaryOperator.Subtract
@@ -518,7 +524,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitTernaryExpression(YabalParser.TernaryExpressionContext context)
     {
         return new TernaryExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()[0]),
             VisitExpression(context.expression()[1]),
             VisitExpression(context.expression()[2])
@@ -564,7 +570,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitNegateExpression(YabalParser.NegateExpressionContext context)
     {
         return new UnaryExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()),
             UnaryOperator.Negate
         );
@@ -573,7 +579,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitNotExpression(YabalParser.NotExpressionContext context)
     {
         return new UnaryExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()),
             UnaryOperator.Not
         );
@@ -582,7 +588,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitMinusExpression(YabalParser.MinusExpressionContext context)
     {
         return new UnaryExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression()),
             UnaryOperator.Minus
         );
@@ -593,7 +599,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         var createPointer = context.createPointer();
 
         return new CreatePointerExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(createPointer.expression()),
             createPointer.integer() is {} integer ? ParseInt(integer.GetText()) : 0,
             createPointer.type() is {} type ? _typeVisitor.VisitType(type) : LanguageType.Integer
@@ -603,29 +609,29 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitSizeOfExpression(YabalParser.SizeOfExpressionContext context)
     {
         return new SizeOfExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitExpression(context.expression())
         );
     }
 
     public override Node VisitContinueStatement(YabalParser.ContinueStatementContext context)
     {
-        return new ContinueStatement(context);
+        return new ContinueStatement(SourceRange.From(context, _file));
     }
 
     public override Node VisitBreakStatement(YabalParser.BreakStatementContext context)
     {
-        return new BreakStatement(context);
+        return new BreakStatement(SourceRange.From(context, _file));
     }
 
     public override Node VisitIncludeBytesExpression(YabalParser.IncludeBytesExpressionContext context)
     {
-        return IncludeFile(context, context.expression(), FileType.Byte);
+        return IncludeFile(SourceRange.From(context, _file), context.expression(), FileType.Byte);
     }
 
     public override Node VisitIncludeImageExpression(YabalParser.IncludeImageExpressionContext context)
     {
-        return IncludeFile(context, context.expression(), FileType.Image);
+        return IncludeFile(SourceRange.From(context, _file), context.expression(), FileType.Image);
     }
 
     private Node IncludeFile(SourceRange context, YabalParser.ExpressionContext expression, FileType type)
@@ -652,7 +658,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         var value = GetStringValue(context.@string());
 
-        return new StringExpression(context, value);
+        return new StringExpression(SourceRange.From(context, _file), value);
     }
 
     private static string GetStringValue(YabalParser.StringContext context)
@@ -685,12 +691,12 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitLabelStatement(YabalParser.LabelStatementContext context)
     {
-        return new LabelStatement(context, context.identifierName().GetText());
+        return new LabelStatement(SourceRange.From(context, _file), context.identifierName().GetText());
     }
 
     public override Node VisitGotoStatement(YabalParser.GotoStatementContext context)
     {
-        return new GotoStatement(context, context.identifierName().GetText());
+        return new GotoStatement(SourceRange.From(context, _file), context.identifierName().GetText());
     }
 
     public override Node VisitStructDeclaration(YabalParser.StructDeclarationContext context)
@@ -738,13 +744,13 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         _typeVisitor.Structs[reference.Name] = reference;
 
-        return new StructDeclarationStatement(context, reference);
+        return new StructDeclarationStatement(SourceRange.From(context, _file), reference);
     }
 
     public override Node VisitMemberExpression(YabalParser.MemberExpressionContext context)
     {
         return new MemberExpression(
-            context,
+            SourceRange.From(context, _file),
             VisitAddressExpression(context.expression()),
             context.identifierName().GetText()
         );
@@ -755,7 +761,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         var init = context.initStruct();
 
         return new InitStructExpression(
-            context,
+            SourceRange.From(context, _file),
             init.initStructItem()
                 .Select(i => new InitStructItem(i.identifierName()?.GetText(), VisitExpression(i.expression())))
                 .ToList(),
