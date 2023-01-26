@@ -50,10 +50,6 @@ public abstract class InstructionBuilderBase
 
     public void SetB(PointerOrData value) => Emit("LDIB", value);
 
-    public void MovExpansionToB() => Emit("RDEXP");
-
-    public void MovBToExpansion() => Emit("WREXP");
-
     public void StoreA(PointerOrData address, int? index = null) => Emit("STA", address, index);
 
     public void Add() => Emit("ADD");

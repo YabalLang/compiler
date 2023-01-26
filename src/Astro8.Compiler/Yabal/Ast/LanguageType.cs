@@ -39,23 +39,13 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public override string ToString()
     {
-        if (StaticType == StaticType.Pointer)
-        {
-            return $"*{ElementType}";
-        }
-
-        if (StaticType == StaticType.Struct)
-        {
-            return StructReference?.Name ?? "";
-        }
-
         return StaticType switch
         {
             StaticType.Integer => "int",
             StaticType.Boolean => "bool",
             StaticType.Void => "void",
-            StaticType.Pointer => "ptr",
-            StaticType.Struct => "struct",
+            StaticType.Pointer => $"*{ElementType}",
+            StaticType.Struct => StructReference?.Name ?? "struct",
             StaticType.Assembly => "assembly",
             StaticType.Unknown => "unknown",
             _ => throw new ArgumentOutOfRangeException()
