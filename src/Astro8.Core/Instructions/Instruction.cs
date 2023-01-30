@@ -31,6 +31,11 @@ public record Instruction(
         var name = nameSpan.Trim().ToString();
         var microInstructions = new MicroInstruction[microInstructionLength];
 
+        for (var i = 0; i < microInstructions.Length; i++)
+        {
+            microInstructions[i] = MicroInstruction.None;
+        }
+
         foreach(var microInstructionLine in definition.Split('&'))
         {
             // Get offset

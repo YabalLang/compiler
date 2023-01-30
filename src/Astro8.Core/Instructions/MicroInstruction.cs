@@ -1,7 +1,9 @@
 ﻿namespace Astro8.Instructions;
 
-public class MicroInstruction
+public class MicroInstruction : IEquatable<MicroInstruction>
 {
+    public static MicroInstruction None = new(0);
+
     private const int AluMask = 0b0000000000001111;
     public const int SU = 0b0000000000000001;
     public const int MU = 0b0000000000000010;
@@ -343,9 +345,21 @@ public class MicroInstruction
 
     public static implicit operator MicroInstruction(int value) => From(value);
 
-    public static MicroInstruction operator &(MicroInstruction a, MicroInstruction b) => new(a.Value & b.Value);
+    public static MicroInstruction operator &(MicroInstruction? a, MicroInstruction? b)
+    {
+        if (a is null) return b ?? None;
+        if (b is null) return a;
 
-    public static MicroInstruction operator |(MicroInstruction a, MicroInstruction b) => new(a.Value | b.Value);
+        return new(a.Value & b.Value);
+    }
+
+    public static MicroInstruction operator |(MicroInstruction? a, MicroInstruction? b)
+    {
+        if (a is null) return b ?? None;
+        if (b is null) return a;
+
+        return new(a.Value | b.Value);
+    }
 
     public static MicroInstruction[] Parse(string content)
     {
@@ -402,5 +416,35 @@ public class MicroInstruction
     {
         get => _default ??= Parse(Instruction.Default);
         set => _default = value;
+    }
+
+    public bool Equals(MicroInstruction? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return Value == other.Value;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != this.GetType()) return false;
+        return Equals((MicroInstruction)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return Value;
+    }
+
+    public static bool operator ==(MicroInstruction? left, MicroInstruction? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(MicroInstruction? left, MicroInstruction? right)
+    {
+        return !Equals(left, right);
     }
 }

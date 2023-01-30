@@ -490,6 +490,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 continue;
             }
 
+            if (function.Inline)
+            {
+                continue;
+            }
+
             builder.Mark(function.Label);
             builder.AddRange(function.Builder._builder);
             builder.Jump(_returnLabel);

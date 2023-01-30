@@ -53,6 +53,11 @@ public class InstructionModel
                 {
                     var microInstruction = microInstructions[j];
 
+                    if (microInstruction == null)
+                    {
+                        continue;
+                    }
+
                     Steps.Add(new InstructionStepModel(
                         i,
                         microInstruction,

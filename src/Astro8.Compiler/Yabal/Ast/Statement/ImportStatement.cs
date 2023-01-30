@@ -9,7 +9,7 @@ public record ImportStatement(SourceRange Range, string Path, Dictionary<string,
     public override void OnDeclare(YabalBuilder builder)
     {
         var code = builder.FileSystem.File.ReadAllText(Path);
-        var program = builder.Parse(code, Path);
+        var program = builder.Parse(Path, code);
 
         _program = program;
 

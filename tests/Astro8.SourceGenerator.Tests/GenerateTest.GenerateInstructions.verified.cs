@@ -41,84 +41,81 @@ public partial class Cpu<THandler>
                 LDIB(ref context);
                 break;
             case 6:
-                RDEXP(ref context);
-                break;
-            case 7:
-                WREXP(ref context);
-                break;
-            case 8:
                 STA(ref context);
                 break;
-            case 9:
+            case 7:
                 ADD(ref context);
                 break;
-            case 10:
+            case 8:
                 SUB(ref context);
                 break;
-            case 11:
+            case 9:
                 MULT(ref context);
                 break;
-            case 12:
+            case 10:
                 DIV(ref context);
                 break;
-            case 13:
+            case 11:
                 JMP(ref context);
                 break;
-            case 14:
+            case 12:
                 JMPZ(ref context);
                 break;
-            case 15:
+            case 13:
                 JMPC(ref context);
                 break;
-            case 16:
+            case 14:
                 JREG(ref context);
                 break;
-            case 17:
+            case 15:
                 LDAIN(ref context);
                 break;
-            case 18:
+            case 16:
                 STAOUT(ref context);
                 break;
-            case 19:
+            case 17:
                 LDLGE(ref context);
                 break;
-            case 20:
+            case 18:
                 STLGE(ref context);
                 break;
-            case 21:
+            case 19:
                 LDW(ref context);
                 break;
-            case 22:
+            case 20:
                 SWP(ref context);
                 break;
-            case 23:
+            case 21:
                 SWPC(ref context);
                 break;
-            case 24:
+            case 22:
                 PCR(ref context);
                 break;
-            case 25:
+            case 23:
                 BSL(ref context);
                 break;
-            case 26:
+            case 24:
                 BSR(ref context);
                 break;
-            case 27:
+            case 25:
                 AND(ref context);
                 break;
-            case 28:
+            case 26:
                 OR(ref context);
                 break;
-            case 29:
+            case 27:
                 NOT(ref context);
                 break;
-            case 30:
+            case 28:
                 BNK(ref context);
                 break;
-            case 31:
+            case 29:
+                VBUF(ref context);
+                break;
+            case 30:
                 BNKC(ref context);
                 break;
-            case 32:
+            case 31:
                 LDWB(ref context);
                 break;
         }
@@ -207,40 +204,6 @@ public partial class Cpu<THandler>
             context.Bus = context.InstructionData;
             // WB
             context.B = context.Bus;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RDEXP(ref StepContext context)
-    {
-        // Step 2
-        {
-            // IR
-            context.Bus = context.InstructionData;
-        }
-        // Step 3
-        {
-            // RE
-            context.Bus = ExpansionPorts[context.Bus];
-            // WA
-            context.A = context.Bus;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WREXP(ref StepContext context)
-    {
-        // Step 2
-        {
-            // IR
-            context.Bus = context.InstructionData;
-        }
-        // Step 3
-        {
-            // RA
-            context.Bus = context.A;
-            // WE
-            ExpansionPorts[context.Bus] = context.Bus;
         }
     }
 
@@ -811,6 +774,14 @@ public partial class Cpu<THandler>
             context.Bus = context.InstructionData;
             // BNK
             context.Bank = context.Bus;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void VBUF(ref StepContext context)
+    {
+        // Step 2
+        {
         }
     }
 
