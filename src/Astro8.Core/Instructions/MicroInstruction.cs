@@ -1,6 +1,6 @@
 ﻿namespace Astro8.Instructions;
 
-public readonly record struct MicroInstruction
+public class MicroInstruction
 {
     private const int AluMask = 0b0000000000001111;
     public const int SU = 0b0000000000000001;
