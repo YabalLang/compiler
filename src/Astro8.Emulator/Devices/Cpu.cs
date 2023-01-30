@@ -9,14 +9,23 @@ public sealed partial class Cpu<THandler> : IDisposable
 {
     private readonly Stopwatch _stopwatch;
     private readonly THandler _handler;
+    private readonly Address? _keyboardAddress;
+    private readonly Address? _mouseAddress;
     private int _steps;
     private bool _halt;
     private CpuContext _context;
 
-    public Cpu(CpuMemory<THandler>[] banks, THandler handler)
+    public Cpu(
+        CpuMemory<THandler>[] banks,
+        THandler handler,
+        Address? keyboardAddress = null,
+        Address? mouseAddress = null
+    )
     {
         Banks = banks;
         _handler = handler;
+        _keyboardAddress = keyboardAddress;
+        _mouseAddress = mouseAddress;
         _stopwatch = Stopwatch.StartNew();
     }
 
@@ -58,8 +67,6 @@ public sealed partial class Cpu<THandler> : IDisposable
         set => _context = _context with { Bank = value };
     }
 
-    public int[] ExpansionPorts { get; } = new int[4];
-
     public CpuContext Context => _context;
 
     public void Run(int cycleDuration = 5, int instructionsPerCycle = 100)
@@ -80,10 +87,7 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     public void RunThread(int cycleDuration = 0, int instructionsPerCycle = 1)
     {
-        var cpuThread = new Thread(() =>
-        {
-            Run(cycleDuration, instructionsPerCycle);
-        });
+        var cpuThread = new Thread(() => { Run(cycleDuration, instructionsPerCycle); });
 
         cpuThread.Start();
     }
@@ -209,12 +213,6 @@ public sealed partial class Cpu<THandler> : IDisposable
         writer.Write(B);
         writer.Write(C);
 
-        writer.Write(ExpansionPorts.Length);
-        foreach (var value in ExpansionPorts)
-        {
-            writer.Write(value);
-        }
-
         writer.Write(_halt);
 
         foreach (var memory in Banks)
@@ -232,12 +230,6 @@ public sealed partial class Cpu<THandler> : IDisposable
         A = reader.ReadInt32();
         B = reader.ReadInt32();
         C = reader.ReadInt32();
-
-        var length = reader.ReadInt32();
-        for (var i = 0; i < Math.Min(length, ExpansionPorts.Length); i++)
-        {
-            ExpansionPorts[i] = reader.ReadInt32();
-        }
 
         _halt = reader.ReadBoolean();
 
@@ -322,4 +314,63 @@ public sealed partial class Cpu<THandler> : IDisposable
     {
         Halt();
     }
+
+    public void SetKeyboard(int value)
+    {
+        if (_keyboardAddress is not { Bank: var bank, Offset: var offset })
+        {
+            return;
+        }
+
+        Banks[bank].Data[offset] = value;
+    }
+
+    public void SetMouseButton(MouseButton button, bool pressed)
+    {
+        if (_mouseAddress is not { Bank: var bank, Offset: var offset })
+        {
+            return;
+        }
+
+        var span = Banks[bank].Data.AsSpan();
+
+        switch (button)
+        {
+            case MouseButton.Left when pressed:
+                span[offset] |= 0b0100_0000_0000_0000;
+                break;
+            case MouseButton.Left:
+                span[offset] &= ~0b0100_0000_0000_0000;
+                break;
+
+            case MouseButton.Right when pressed:
+                span[offset] |= 0b1000_0000_0000_0000;
+                break;
+            case MouseButton.Right:
+                span[offset] &= ~0b1000_0000_0000_0000;
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(button), button, null);
+        }
+    }
+
+    public void SetMousePosition(int x, int y)
+    {
+        if (_mouseAddress is not { Bank: var bank, Offset: var offset })
+        {
+            return;
+        }
+
+        var span = Banks[bank].Data.AsSpan();
+        var value = span[offset];
+
+        span[offset] = ((x & 0b1111111) << 7) | (y & 0b1111111) | (value & 0b1100_0000_0000_0000);
+    }
+}
+
+public enum MouseButton
+{
+    Left,
+    Right
 }

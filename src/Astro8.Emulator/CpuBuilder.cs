@@ -10,6 +10,8 @@ public class CpuBuilder<THandler>
     private readonly THandler _handler;
     private Screen<THandler>? _screen;
     private CharacterDevice<THandler>? _character;
+    private Address? _keyboardAddress;
+    private Address? _mouseAddress;
     private readonly CpuMemory<THandler>?[] _memory = new CpuMemory<THandler>?[2]; // TODO: Make the amount of banks variable
 
     public CpuBuilder(THandler handler, Config config)
@@ -93,6 +95,18 @@ public class CpuBuilder<THandler>
         return this;
     }
 
+    public CpuBuilder<THandler> WithKeyboard(int bank = 1, int? address = null)
+    {
+        _keyboardAddress = new Address(bank, address ?? _config.Memory.Devices.Keyboard);
+        return this;
+    }
+
+    public CpuBuilder<THandler> WithMouse(int bank = 1, int? address = null)
+    {
+        _mouseAddress = new Address(bank, address ?? _config.Memory.Devices.Mouse);
+        return this;
+    }
+
     public Cpu<THandler> Create()
     {
         for (var i = 0; i < _memory.Length; i++)
@@ -100,7 +114,7 @@ public class CpuBuilder<THandler>
             _memory[i] ??= new CpuMemory<THandler>(i, 0xFFFF);
         }
 
-        var cpu = new Cpu<THandler>(_memory!, _handler);
+        var cpu = new Cpu<THandler>(_memory!, _handler, _keyboardAddress, _mouseAddress);
 
         if (_screen != null)
         {

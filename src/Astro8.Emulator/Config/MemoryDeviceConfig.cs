@@ -9,4 +9,8 @@ public class MemoryDeviceConfig
     public int Character { get; set; } = 0xD12A;
 
     public int Program { get; set; } = 0x0000;
+
+    public int Keyboard { get; set; } = 0xD0FC;
+
+    public int Mouse { get; set; } = 0xD0FD;
 }

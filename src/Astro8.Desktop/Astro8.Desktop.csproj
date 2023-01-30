@@ -13,13 +13,20 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <SelfContained>true</SelfContained>
         <PublishTrimmed>true</PublishTrimmed>
         <InvariantGlobalization>true</InvariantGlobalization>
         <DebugType>embedded</DebugType>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    </PropertyGroup>
+    
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>

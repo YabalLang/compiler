@@ -219,13 +219,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             var program = Parse(file, code);
 
+            program.Declare(this);
+            program.Initialize(this);
+
             foreach (var (path, type) in _files.Keys)
             {
                 await FileContent.LoadAsync(path, type);
             }
-
-            program.Declare(this);
-            program.Initialize(this);
 
             if (optimize)
             {

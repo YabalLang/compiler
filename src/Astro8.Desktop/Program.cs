@@ -199,6 +199,8 @@ async Task Execute(InvocationContext ctx)
     var cpuBuilder = CpuBuilder.Create(handler, config);
 
     cpuBuilder.WithMemory();
+    cpuBuilder.WithKeyboard();
+    cpuBuilder.WithMouse();
 
     if (!disableScreen)
     {
@@ -267,7 +269,7 @@ async Task Execute(InvocationContext ctx)
                     {
                         if (Character.CharToInt.TryGetValue(key.KeyChar, out var value))
                         {
-                            cpu.ExpansionPorts[0] = value;
+                            cpu.SetKeyboard(value);
                         }
 
                         break;
@@ -308,31 +310,33 @@ async Task Execute(InvocationContext ctx)
                             break;
                     }
 
-                    cpu.ExpansionPorts[0] = Keyboard.Table.TryGetValue((int) e.key.keysym.scancode, out var keyCode)
-                        ? keyCode
-                        : 168;
+                    cpu.SetKeyboard(
+                        Keyboard.Table.TryGetValue((int) e.key.keysym.scancode, out var keyCode)
+                            ? keyCode
+                            : 168
+                    );
 
                     break;
                 }
                 case SDL_KEYUP:
                 {
-                    cpu.ExpansionPorts[0] = 168;
+                    cpu.SetKeyboard(168);
                     break;
                 }
                 case SDL_MOUSEMOTION:
-                    cpu.ExpansionPorts[1] = ((e.motion.x & 0b1111111) << 7) | (e.motion.y & 0b1111111) | (cpu.ExpansionPorts[1] & 0b1100_0000_0000_0000);
+                    cpu.SetMousePosition(e.motion.x, e.motion.y);
                     break;
                 case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_LEFT:
-                    cpu.ExpansionPorts[1] |= 0b0100_0000_0000_0000;
+                    cpu.SetMouseButton(MouseButton.Left, true);
                     break;
                 case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_LEFT:
-                    cpu.ExpansionPorts[1] &= ~0b0100_0000_0000_0000;
+                    cpu.SetMouseButton(MouseButton.Left, false);
                     break;
                 case SDL_MOUSEBUTTONDOWN when e.button.button == SDL_BUTTON_RIGHT:
-                    cpu.ExpansionPorts[1] |= 0b1000_0000_0000_0000;
+                    cpu.SetMouseButton(MouseButton.Right, true);
                     break;
                 case SDL_MOUSEBUTTONUP when e.button.button == SDL_BUTTON_RIGHT:
-                    cpu.ExpansionPorts[1] &= ~0b1000_0000_0000_0000;
+                    cpu.SetMouseButton(MouseButton.Right, false);
                     break;
             }
         }

@@ -1,6 +1,8 @@
 var screen = create_pointer(53871, 1);
 var screen_width = 108;
 
+var mouse = create_pointer<MouseInput>(53501, 1);
+
 inline int mask(int n) {
     return (1 << n) - 1;
 }
@@ -10,7 +12,7 @@ inline int get_color(int r, int g, int b) {
 }
 
 while (true) {
-    MouseInput input = asm { RDEXP 1 };
+    MouseInput input = mouse[0];
     var offset = input.y * screen_width + input.x;
 
     if (input.left == 1) {
