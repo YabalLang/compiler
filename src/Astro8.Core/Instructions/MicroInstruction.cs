@@ -19,7 +19,6 @@ public readonly record struct MicroInstruction
     public const int RM = 0b0000000001000000;
     public const int IR = 0b0000000001010000;
     public const int CR = 0b0000000001100000;
-    public const int RE = 0b0000000001110000;
 
     private const int WriteMask = 0b0000011110000000;
     public const int WA =  0b0000000010000000;
@@ -30,9 +29,8 @@ public readonly record struct MicroInstruction
     public const int WM =  0b0000001100000000;
     public const int J  =  0b0000001110000000;
     public const int AW =  0b0000010000000000;
-    public const int WE =  0b0000010010000000;
-    public const int BNK = 0b0000010100000000;
-    public const int EXI = 0b0000010110000000;
+    public const int BNK = 0b0000010010000000;
+    public const int VBUF = 0b0000010100000000;
 
     private const int MiscMask = 0b1111100000000000;
     public const int FL = 0b0000100000000000;
@@ -53,7 +51,6 @@ public readonly record struct MicroInstruction
             ["RM"] = RM,
             ["IR"] = IR,
             ["CR"] = CR,
-            ["RE"] = RE,
             ["WA"] = WA,
             ["WB"] = WB,
             ["WC"] = WC,
@@ -62,7 +59,6 @@ public readonly record struct MicroInstruction
             ["WM"] = WM,
             ["J"] = J,
             ["AW"] = AW,
-            ["WE"] = WE,
             ["EO"] = EO,
             ["CE"] = CE,
             ["ST"] = ST,
@@ -74,7 +70,7 @@ public readonly record struct MicroInstruction
             ["SL"] = SL,
             ["SR"] = SR,
             ["BNK"] = BNK,
-            ["EXI"] = EXI,
+            ["VBF"] = VBUF,
         };
 
     private readonly int _valueAlu;
@@ -106,7 +102,6 @@ public readonly record struct MicroInstruction
         IsRM = _valueRead == RM;
         IsIR = _valueRead == IR;
         IsCR = _valueRead == CR;
-        IsRE = _valueRead == RE;
 
         IsWA = _valueWrite == WA;
         IsWB = _valueWrite == WB;
@@ -116,9 +111,8 @@ public readonly record struct MicroInstruction
         IsWM = _valueWrite == WM;
         IsJ  = _valueWrite == J;
         IsAW = _valueWrite == AW;
-        IsWE = _valueWrite == WE;
         IsBNK = _valueWrite == BNK;
-        IsEXI = _valueWrite == EXI;
+        IsVBUF = _valueWrite == VBUF;
 
         IsEO = (_valueMisc & EO) == EO;
         IsCE = (_valueMisc & CE) == CE;
@@ -205,11 +199,6 @@ public readonly record struct MicroInstruction
     /// </summary>
     public bool IsCR { get; }
 
-    /// <summary>
-    /// Read from expansion port to bus
-    /// </summary>
-    public bool IsRE { get; }
-
     #endregion
 
     #region Write Instruction Special Address
@@ -255,16 +244,14 @@ public readonly record struct MicroInstruction
     public bool IsAW { get; }
 
     /// <summary>
-    /// Write from bus to expansion port
+    /// Switch the video buffer
     /// </summary>
-    public bool IsWE { get; }
+    public bool IsVBUF { get; }
 
     /// <summary>
     /// Change bank, changes the memory bank register to the value
     /// </summary>
     public bool IsBNK { get; }
-
-    public bool IsEXI { get; }
 
     #endregion
 
@@ -302,33 +289,35 @@ public readonly record struct MicroInstruction
         Span<char> chars = stackalloc char[64];
         var offset = 0;
 
-        if (IsDI) Write(ref chars, ref offset, 'D', 'I');
-        else if (IsMU) Write(ref chars, ref offset, 'M', 'U');
-        else if (IsSU) Write(ref chars, ref offset, 'S', 'U');
+        if (IsDI) Write(ref chars, ref offset, "DI");
+        else if (IsMU) Write(ref chars, ref offset, "MU");
+        else if (IsSU) Write(ref chars, ref offset, "SU");
 
-        if (IsRE) Write(ref chars, ref offset, 'R', 'E');
-        else if (IsCR) Write(ref chars, ref offset, 'C', 'R');
-        else if (IsIR) Write(ref chars, ref offset, 'I', 'R');
-        else if (IsRC) Write(ref chars, ref offset, 'R', 'C');
-        else if (IsRM) Write(ref chars, ref offset, 'R', 'M');
-        else if (IsRB) Write(ref chars, ref offset, 'R', 'B');
-        else if (IsRA) Write(ref chars, ref offset, 'R', 'A');
+        if (IsCR) Write(ref chars, ref offset, "CR");
+        else if (IsIR) Write(ref chars, ref offset, "IR");
+        else if (IsRC) Write(ref chars, ref offset, "RC");
+        else if (IsRM) Write(ref chars, ref offset, "RM");
+        else if (IsRB) Write(ref chars, ref offset, "RB");
+        else if (IsRA) Write(ref chars, ref offset, "RA");
 
-        if (IsJ) Write(ref chars, ref offset, 'J', '\0');
-        else if (IsWM) Write(ref chars, ref offset, 'W', 'M');
-        else if (IsDW) Write(ref chars, ref offset, 'D', 'W');
-        else if (IsWC) Write(ref chars, ref offset, 'W', 'C');
-        else if (IsWA) Write(ref chars, ref offset, 'W', 'A');
-        else if (IsWB) Write(ref chars, ref offset, 'W', 'B');
-        else if (IsIW) Write(ref chars, ref offset, 'I', 'W');
-        else if (IsAW) Write(ref chars, ref offset, 'A', 'W');
-        else if (IsWE) Write(ref chars, ref offset, 'W', 'E');
+        if (IsJ) Write(ref chars, ref offset, "J");
+        else if (IsWM) Write(ref chars, ref offset, "WM");
+        else if (IsDW) Write(ref chars, ref offset, "DW");
+        else if (IsWC) Write(ref chars, ref offset, "WC");
+        else if (IsWC) Write(ref chars, ref offset, "WA");
+        else if (IsWC) Write(ref chars, ref offset, "WB");
+        else if (IsWC) Write(ref chars, ref offset, "IW");
+        else if (IsWC) Write(ref chars, ref offset, "AW");
+        else if (IsWC) Write(ref chars, ref offset, "WE");
+        else if (IsWC) Write(ref chars, ref offset, "VBUF");
+        else if (IsWC) Write(ref chars, ref offset, "BNK");
+        else if (IsWC) Write(ref chars, ref offset, "EXI");
 
-        if (IsEO) Write(ref chars, ref offset, 'E', 'O');
-        if (IsCE) Write(ref chars, ref offset, 'C', 'E');
-        if (IsST) Write(ref chars, ref offset, 'S', 'T');
-        if (IsEI) Write(ref chars, ref offset, 'E', 'I');
-        if (IsFL) Write(ref chars, ref offset, 'F', 'L');
+        if (IsEO) Write(ref chars, ref offset, "EO");
+        if (IsCE) Write(ref chars, ref offset, "CE");
+        if (IsST) Write(ref chars, ref offset, "ST");
+        if (IsEI) Write(ref chars, ref offset, "EI");
+        if (IsFL) Write(ref chars, ref offset, "FL");
 
 #if NETSTANDARD2_0
         return new string(chars.Slice(0, offset).ToArray());
@@ -337,7 +326,7 @@ public readonly record struct MicroInstruction
 #endif
     }
 
-    private static void Write(ref Span<char> chars, ref int offset, char a, char b)
+    private static void Write(ref Span<char> chars, ref int offset, string name)
     {
         if (offset > 0)
         {
@@ -346,12 +335,8 @@ public readonly record struct MicroInstruction
             chars[offset++] = ' ';
         }
 
-        chars[offset++] = a;
-
-        if (b is not '\0')
-        {
-            chars[offset++] = b;
-        }
+        name.AsSpan().CopyTo(chars.Slice(offset));
+        offset += name.Length;
     }
 
     public static MicroInstruction From(int value) => new(value);

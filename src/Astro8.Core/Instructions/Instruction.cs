@@ -89,7 +89,7 @@ public record Instruction(
             {
                 if (!MicroInstruction.All.TryGetValue(code.Trim(), StringComparison.OrdinalIgnoreCase, out var microInstruction))
                 {
-                    throw new FormatException($"Invalid instruction definition: {value}");
+                    throw new FormatException($"Invalid microinstruction: {code.ToString()}");
                 }
 
                 for (var i = 0; i < FlagLength; i++)
@@ -146,12 +146,14 @@ public record Instruction(
     }
 
     private static readonly string[] DefaultInstructions = {
-        "fetch( 0=cr,aw & 1=rm,iw,ce & 2=ei", // Fetch
+		"fetch( 0=cr,aw & 1=rm,iw,ce & 2=ei", // Fetch
 		"ain( 2=aw,ir & 3=wa,rm & 4=ei", // LoadA
 		"bin( 2=aw,ir & 3=wb,rm & 4=ei", // LoadB
 		"cin( 2=aw,ir & 3=wc,rm & 4=ei", // LoadC
 		"ldia( 2=wa,ir & 3=ei", // Load immediate A <val>
 		"ldib( 2=wb,ir & 3=ei", // Load immediate B <val>
+		//"rdexp( 2=ir,exi & 3=wa,re & 4=ei", // Read from expansion port <index> to register A
+		//"wrexp( 2=ir,exi & 3=ra,we & 4=ei", // Write from reg A to expansion port <index>
 		"sta( 2=aw,ir & 3=ra,wm & 4=ei", // Store A <addr>
 		"add( 2=wa,eo,fl & 3=ei", // Add
 		"sub( 2=wa,eo,su,fl & 3=ei", // Subtract
@@ -175,6 +177,7 @@ public record Instruction(
 		"or( 2=or,wa,eo,fl & 3=ei", // Logical OR operation on register A and register B, with result put back into register A
 		"not( 2=not,wa,eo,fl & 3=ei", // Logical NOT operation on register A, with result put back into register A
 		"bnk( 2=bnk,ir & 3=ei", // Change bank, changes the memory bank register to the value specified <val>
+		"vbuf( 2=vbf & 3=ei", // Swap the video buffer
 		"bnkc( 2=rc,bnk & 3=ei", // Change bank to C register
 		"ldwb( 2=cr,aw & 3=ce,rm,wb & 4=ei", // Load value directly after counter into B, and advance counter by 2
     };
