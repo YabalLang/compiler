@@ -19,6 +19,9 @@ public class ErrorMessages
     public const string VariableTypeNotSpecified = "Variable type not specified";
     public const string ValueIsNotAnArray = "Value is not an array";
     public const string MemberAccessOnNonStruct = "Member access can only be used on structs";
+    public const string InstructionBankSwitched = "This instruction cannot be used when the bank is switched";
+    public const string PointerBankSwitched = "The pointer cannot be accessed when the bank is switched";
+    public const string BankNotSwitchedBack = "The bank was not switched back to 0 after changing it in inline assembly";
 
     public static string MemberNotFound(string name)
         => $"Member '{name}' not found";

@@ -292,28 +292,26 @@ public class MicroInstruction : IEquatable<MicroInstruction>
         var offset = 0;
 
         if (IsDI) Write(ref chars, ref offset, "DI");
-        else if (IsMU) Write(ref chars, ref offset, "MU");
-        else if (IsSU) Write(ref chars, ref offset, "SU");
+        if (IsMU) Write(ref chars, ref offset, "MU");
+        if (IsSU) Write(ref chars, ref offset, "SU");
 
         if (IsCR) Write(ref chars, ref offset, "CR");
-        else if (IsIR) Write(ref chars, ref offset, "IR");
-        else if (IsRC) Write(ref chars, ref offset, "RC");
-        else if (IsRM) Write(ref chars, ref offset, "RM");
-        else if (IsRB) Write(ref chars, ref offset, "RB");
-        else if (IsRA) Write(ref chars, ref offset, "RA");
+        if (IsIR) Write(ref chars, ref offset, "IR");
+        if (IsRC) Write(ref chars, ref offset, "RC");
+        if (IsRM) Write(ref chars, ref offset, "RM");
+        if (IsRB) Write(ref chars, ref offset, "RB");
+        if (IsRA) Write(ref chars, ref offset, "RA");
 
         if (IsJ) Write(ref chars, ref offset, "J");
-        else if (IsWM) Write(ref chars, ref offset, "WM");
-        else if (IsDW) Write(ref chars, ref offset, "DW");
-        else if (IsWC) Write(ref chars, ref offset, "WC");
-        else if (IsWC) Write(ref chars, ref offset, "WA");
-        else if (IsWC) Write(ref chars, ref offset, "WB");
-        else if (IsWC) Write(ref chars, ref offset, "IW");
-        else if (IsWC) Write(ref chars, ref offset, "AW");
-        else if (IsWC) Write(ref chars, ref offset, "WE");
-        else if (IsWC) Write(ref chars, ref offset, "VBUF");
-        else if (IsWC) Write(ref chars, ref offset, "BNK");
-        else if (IsWC) Write(ref chars, ref offset, "EXI");
+        if (IsWM) Write(ref chars, ref offset, "WM");
+        if (IsDW) Write(ref chars, ref offset, "DW");
+        if (IsWC) Write(ref chars, ref offset, "WC");
+        if (IsWA) Write(ref chars, ref offset, "WA");
+        if (IsWB) Write(ref chars, ref offset, "WB");
+        if (IsIW) Write(ref chars, ref offset, "IW");
+        if (IsAW) Write(ref chars, ref offset, "AW");
+        if (IsVBUF) Write(ref chars, ref offset, "VBUF");
+        if (IsBNK) Write(ref chars, ref offset, "BNK");
 
         if (IsEO) Write(ref chars, ref offset, "EO");
         if (IsCE) Write(ref chars, ref offset, "CE");

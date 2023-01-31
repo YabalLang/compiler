@@ -3,7 +3,10 @@ var value = 0;
 
 while (true) {
     asm {
-        RDEXP
+        LDW 53500
+        BNK 1
+        LDAIN
+        BNK 0
         STA @value
     }
 

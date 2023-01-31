@@ -3,13 +3,8 @@ var screen_width = 108;
 
 var mouse = create_pointer<MouseInput>(53501, 1);
 
-inline int mask(int n) {
-    return (1 << n) - 1;
-}
-
-inline int get_color(int r, int g, int b) {
-    return (r / 8 << 10) + (g / 8 << 5) + (b / 8);
-}
+inline int mask(int n) => (1 << n) - 1
+inline int get_color(int r, int g, int b) => (r / 8 << 10) + (g / 8 << 5) + (b / 8)
 
 while (true) {
     MouseInput input = mouse[0];

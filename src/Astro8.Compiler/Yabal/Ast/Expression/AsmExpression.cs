@@ -72,6 +72,9 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
             }
         }
 
+        var bank = 0;
+        SourceRange? lastBankSwitch = null;
+
         foreach (var statement in Statements)
         {
             switch (statement)
@@ -121,12 +124,32 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                         continue;
                     }
 
+                    if (bank != 0 &&
+                        instruction.MicroInstructions.Skip(4).Any(mi => mi.IsCR && mi.IsAW) &&
+                        instruction.MicroInstructions.Skip(4).Any(mi => mi.IsRM))
+                    {
+                        builder.AddError(ErrorLevel.Error, range, ErrorMessages.InstructionBankSwitched);
+                    }
+
                     if (!argValue.HasValue)
                     {
                         builder.Emit(name);
+                        continue;
                     }
-                    else if (instruction.MicroInstructions.Any(mi => mi.IsIR))
+
+                    if (argValue.Value.IsLeft)
                     {
+                        builder.AddError(ErrorLevel.Error, range, ErrorMessages.PointerBankSwitched);
+                    }
+
+                    if (instruction.MicroInstructions.Any(mi => mi.IsIR))
+                    {
+                        if (name == "BNK")
+                        {
+                            bank = argValue.Value.IsRight ? argValue.Value.Right : 0;
+                            lastBankSwitch = range;
+                        }
+
                         builder.Emit(name, argValue.Value);
                     }
                     else
@@ -138,6 +161,11 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                     break;
                 }
             }
+        }
+
+        if (bank != 0)
+        {
+            builder.AddError(ErrorLevel.Warning, lastBankSwitch ?? Range, ErrorMessages.BankNotSwitchedBack);
         }
     }
 
