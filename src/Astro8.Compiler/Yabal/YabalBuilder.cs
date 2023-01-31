@@ -482,6 +482,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
+        if (_hasCall)
+        {
+            builder.Mark(ReturnValue);
+            builder.EmitRaw(0, "return value");
+
+            builder.Mark(_stackPointer);
+            builder.EmitRaw(0xEF6E - (1 + (Stack.Count * 16)), "stack pointer");
+
+            builder.Mark(_tempPointer);
+            builder.EmitRaw(0, "temporary pointer");
+
+            CreateCall(builder);
+            CreateReturn(builder);
+        }
+
         foreach (var (_, function) in _functions)
         {
             if (function.References.Count == 0)
@@ -498,21 +513,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.Mark(function.Label);
             builder.AddRange(function.Builder._builder);
             builder.Jump(_returnLabel);
-        }
-
-        if (_hasCall)
-        {
-            builder.Mark(ReturnValue);
-            builder.EmitRaw(0, "return value");
-
-            builder.Mark(_stackPointer);
-            builder.EmitRaw(0xEF6E - (1 + (Stack.Count * 16)), "stack pointer");
-
-            builder.Mark(_tempPointer);
-            builder.EmitRaw(0, "temporary pointer");
-
-            CreateCall(builder);
-            CreateReturn(builder);
         }
 
         builder.Mark(programLabel);
