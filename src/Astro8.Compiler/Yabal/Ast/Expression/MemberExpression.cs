@@ -1,8 +1,9 @@
 ﻿using Astro8.Instructions;
+using Astro8.Yabal.Visitor;
 
 namespace Astro8.Yabal.Ast;
 
-public record MemberExpression(SourceRange Range, AddressExpression Expression, string Name) : AddressExpression(Range)
+public record MemberExpression(SourceRange Range, AddressExpression Expression, string Name) : AddressExpression(Range), IVariableSource
 {
     private LanguageStructField _field = null!;
 
@@ -10,7 +11,14 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
     {
         Expression.Initialize(builder);
 
-        var field = Expression.Type.StructReference?.Fields.FirstOrDefault(f => f.Name == Name);
+        var type = Expression.Type;
+
+        if (type.StaticType == StaticType.Reference)
+        {
+            type = type.ElementType!;
+        }
+
+        var field = type.StructReference?.Fields.FirstOrDefault(f => f.Name == Name);
         _field = field ?? throw new InvalidOperationException($"Struct {Expression.Type} does not contain a field named {Name}");
     }
 
@@ -55,6 +63,21 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
     }
 
     public override bool OverwritesB => true;
+
+    public (Variable, int? Offset) GetVariable(YabalBuilder builder)
+    {
+        if (_field.Bit.HasValue)
+        {
+            throw new InvalidOperationException("Cannot get variable from bit field");
+        }
+
+        if (Expression is IdentifierExpression identifierExpression)
+        {
+            return (identifierExpression.Variable, _field.Offset);
+        }
+
+        throw new InvalidOperationException("Cannot get variable from expression");
+    }
 
     public override bool DirectCopy => !_field.Bit.HasValue;
 

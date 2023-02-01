@@ -6,7 +6,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 {
     public abstract Pointer? Pointer { get; }
 
-    public abstract int? Bank { get; }
+    public virtual int? Bank => Pointer?.Bank;
 
     public virtual bool DirectCopy => true;
 

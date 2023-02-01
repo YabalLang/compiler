@@ -273,7 +273,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         // Store values on stack
         foreach (var pointer in Stack)
         {
-            builder.SetB(1);
+            builder.SetB(pointer.Size);
             builder.Add();
 
             builder.LoadB(pointer);
@@ -296,11 +296,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _hasCall = true;
 
         var hasArguments = arguments is { Count: > 0 };
+        var hasReferenceArguments = arguments?.Any(a => a.Type.StaticType == StaticType.Reference) ?? false;
         var returnAddress = _builder.CreateLabel();
         var setArguments = _builder.CreateLabel();
 
         _builder.SetA_Large(hasArguments ? setArguments : address);
         _builder.SwapA_C();
+
+        using var currentStackPointer = GetTemporaryVariable(global: true);
+
+        if (hasReferenceArguments)
+        {
+            _builder.LoadA(_stackPointer);
+            _builder.StoreA(currentStackPointer);
+            _builder.SetComment("store current stack pointer");
+        }
 
         _builder.SetA_Large(returnAddress);
         _builder.StoreA(_tempPointer);
@@ -325,7 +335,49 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 }
 
                 var variable = Stack.Get(offset, argument.Type.Size);
-                SetValue(variable, argument.Type, argument);
+
+                if (argument.Type.StaticType == StaticType.Reference)
+                {
+                    if (argument is not IVariableSource source)
+                    {
+                        throw new InvalidOperationException("Reference argument must be a variable");
+                    }
+
+                    var (sourceVariable, sourceOffset) = source.GetVariable(this);
+
+                    if (sourceVariable.Type.StaticType == StaticType.Reference)
+                    {
+                        _builder.LoadA(sourceVariable.Pointer);
+                        _builder.StoreA(variable);
+                    }
+                    else
+                    {
+                        var stackVariable = Stack.FirstOrDefault(s => s.AssignedVariables.Contains(sourceVariable));
+
+                        if (stackVariable != null)
+                        {
+                            var stackOffset = 1 + (sourceOffset ?? 0) +
+                                              Stack.TakeWhile(s => s != stackVariable).Sum(item => item.Size);
+
+                            _builder.LoadA(currentStackPointer);
+                            _builder.SetB(stackOffset);
+                            _builder.Add();
+
+                            _builder.StoreA(variable);
+                            _builder.SetComment("store stack pointer as reference");
+                        }
+                        else
+                        {
+                            _builder.SetA(sourceVariable.Pointer);
+                            _builder.StoreA(variable);
+                        }
+                    }
+
+                }
+                else
+                {
+                    SetValue(variable, argument.Type, argument);
+                }
 
                 sizes[size] = offset + 1;
             }
@@ -484,11 +536,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         if (_hasCall)
         {
+            var stackStart = 0xEF6E - (1 + (Stack.Count * 16));
+
             builder.Mark(ReturnValue);
             builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
-            builder.EmitRaw(0xEF6E - (1 + (Stack.Count * 16)), "stack pointer");
+            builder.EmitRaw(stackStart, "stack pointer");
 
             builder.Mark(_tempPointer);
             builder.EmitRaw(0, "temporary pointer");
@@ -752,6 +806,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         else
         {
             SwapA_B();
+
+            if (target.Right.Type.StaticType == StaticType.Reference)
+            {
+                LoadA_FromAddressUsingA();
+            }
+
             target.Right.StoreAddressInA(this);
             StoreB_ToAddressInA();
         }

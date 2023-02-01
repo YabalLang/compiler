@@ -232,10 +232,20 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             GetIdentifier(context.identifierName()),
             _typeVisitor.Visit(context.returnType()),
             context.functionParameterList().functionParameter()
-                .Select(p => new FunctionParameter(
-                    GetIdentifier(p.identifierName()),
-                    _typeVisitor.Visit(p.type())
-                ))
+                .Select(p =>
+                {
+                    var type = _typeVisitor.Visit(p.type());
+
+                    if (p.Ref() != null)
+                    {
+                        type = LanguageType.Reference(type);
+                    }
+
+                    return new FunctionParameter(
+                        GetIdentifier(p.identifierName()),
+                        type
+                    );
+                })
                 .ToList(),
             VisitFunctionBody(context.functionBody()),
             context.Inline() != null
@@ -766,6 +776,14 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 .Select(i => new InitStructItem(i.identifierName()?.GetText(), VisitExpression(i.expression())))
                 .ToList(),
             init.type() is {} type ? _typeVisitor.VisitType(type) : null
+        );
+    }
+
+    public override Node VisitRefExpression(YabalParser.RefExpressionContext context)
+    {
+        return new ReferenceExpression(
+            SourceRange.From(context, _file),
+            VisitExpression(context.expression())
         );
     }
 }

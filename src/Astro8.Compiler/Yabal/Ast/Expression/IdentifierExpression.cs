@@ -11,7 +11,7 @@ public record Identifier(SourceRange Range, string Name)
     }
 }
 
-public record IdentifierExpression(SourceRange Range, Identifier Identifier) : AddressExpression(Range), IExpressionToB, IConstantValue
+public record IdentifierExpression(SourceRange Range, Identifier Identifier) : AddressExpression(Range), IExpressionToB, IConstantValue, IVariableSource
 {
     private Variable? _variable;
 
@@ -40,23 +40,46 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
 
     public override bool OverwritesB => false;
 
+    public (Variable, int? Offset) GetVariable(YabalBuilder builder)
+    {
+        if (Variable.Initializer is IVariableSource { Type.StaticType: StaticType.Reference } variableSource)
+        {
+            return variableSource.GetVariable(builder);
+        }
+
+        return (Variable, null);
+    }
+
     public override LanguageType Type => Variable.Type;
 
 
     bool IExpressionToB.OverwritesA => false;
 
-    public override int? Bank => Pointer?.Bank;
+    public override int? Bank
+    {
+        get
+        {
+            if (Variable.Type.StaticType == StaticType.Reference)
+            {
+                return 0;
+            }
+
+            return Pointer?.Bank;
+        }
+    }
 
     public override void StoreAddressInA(YabalBuilder builder)
     {
         Variable.Usages++;
-        builder.SetA(Variable.Pointer);
-    }
 
-    public void StoreAddressToB(YabalBuilder builder)
-    {
-        Variable.Usages++;
-        builder.SetB(Variable.Pointer);
+        if (Variable.Type.StaticType == StaticType.Reference)
+        {
+            builder.LoadA(Variable.Pointer);
+        }
+        else
+        {
+            builder.SetA(Variable.Pointer);
+        }
     }
 
     public override string ToString()
@@ -75,6 +98,11 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         get
         {
             Variable.Usages++;
+
+            if (Variable.Type.StaticType == StaticType.Reference)
+            {
+                return null;
+            }
 
             if (Variable.Type.StaticType == StaticType.Pointer)
             {

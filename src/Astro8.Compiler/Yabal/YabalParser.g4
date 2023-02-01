@@ -27,6 +27,7 @@ expression
 	| IncludeBytes expression                                           # IncludeBytesExpression
 	| IncludeImage expression                                           # IncludeImageExpression
 	| SizeOf expression                                                 # SizeOfExpression
+	| Ref expression                                                    # RefExpression
 	| expression Dot identifierName                                     # MemberExpression
 	| Incr expression												    # IncrementLeftExpression
 	| expression Incr												    # IncrementRightExpression
@@ -237,7 +238,7 @@ functionParameterList
     ;
 
 functionParameter
-	: type identifierName (Assign expression)?
+	: Ref? type identifierName (Assign expression)?
 	;
 
 // Literal

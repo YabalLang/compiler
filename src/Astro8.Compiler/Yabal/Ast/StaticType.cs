@@ -8,5 +8,6 @@ public enum StaticType
     Pointer,
     Struct,
     Assembly,
+    Reference,
     Unknown
 }

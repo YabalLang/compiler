@@ -26,6 +26,8 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public static LanguageType Struct(LanguageStruct structReference) => new(StaticType.Struct, null, structReference);
 
+    public static LanguageType Reference(LanguageType elementType) => new(StaticType.Reference, elementType);
+
     public int Size => StaticType switch
     {
         StaticType.Integer => 1,
@@ -33,6 +35,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Void => 0,
         StaticType.Assembly => 1,
         StaticType.Pointer => 2,
+        StaticType.Reference => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };
@@ -47,6 +50,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
             StaticType.Pointer => $"*{ElementType}",
             StaticType.Struct => StructReference?.Name ?? "struct",
             StaticType.Assembly => "assembly",
+            StaticType.Reference => $"ref {ElementType}",
             StaticType.Unknown => "unknown",
             _ => throw new ArgumentOutOfRangeException()
         };

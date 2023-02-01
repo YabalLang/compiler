@@ -1027,4 +1027,206 @@ public class AssemblerTest
 
         Assert.Equal(1, cpu.Memory[4095]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Reference(bool optimize)
+    {
+        const string code = """
+            void set_value(ref int value) {
+                value = 2
+            }
+
+            var a = 1
+            set_value(ref a)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("a").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StackReference(bool optimize)
+    {
+        const string code = """
+            void set_value(ref int value) {
+                value = 2
+            }
+
+            int get_value() {
+                var a = 1
+                set_value(ref a)
+                return a
+            }
+
+            int result = 0
+            result = get_value()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeepReference(bool optimize)
+    {
+        const string code = """
+            void set_value(ref int value) {
+                value = 1
+            }
+
+            void set_value_ref(ref int a) {
+                set_value(a)
+            }
+
+            int result = 0
+            set_value_ref(ref result)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeepReferenceInvalid(bool optimize)
+    {
+        const string code = """
+            void set_value(ref int value) {
+                value = 1
+            }
+
+            void set_value_ref(ref int a) {
+                set_value(ref a)
+            }
+
+            int result = 0
+            set_value_ref(ref result)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DeepReferenceVariable(bool optimize)
+    {
+        const string code = """
+            void set_value(ref int value) {
+                value = 1
+            }
+
+            void set_value_ref(ref int a) {
+                var b = a
+                set_value(b)
+            }
+
+            int result = 0
+            set_value_ref(ref result)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructReference(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a
+                int b
+            }
+
+            void set_value(ref Test value) {
+                value.a = 1
+                value.b = 2
+            }
+
+            Test test
+            set_value(ref test)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("test").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(2, cpu.Memory[address + 1]);
+    }
+
+    [Theory(Skip = "Not implemented yet")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructReferenceStack(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a
+                int b
+            }
+
+            void set_value(ref Test value) {
+                value.a = 1
+                value.b = 2
+            }
+
+            Test get_value() {
+                Test test
+                set_value(ref test)
+                return test
+            }
+
+            Test test
+            test = get_value()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("test").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(2, cpu.Memory[address + 1]);
+    }
 }

@@ -74,6 +74,7 @@ IncludeImage        : 'include_image';
 Goto                : 'goto';
 Struct              : 'struct';
 Inline              : 'inline';
+Ref                 : 'ref';
 
 Identifier			: IdentifierStart IdentifierPart*;
 
