@@ -275,14 +275,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.LoadA(_stackPointer);
         builder.StoreB_ToAddressInA();
 
-        // Store values on stack
+
         foreach (var pointer in Stack)
         {
-            builder.SetB(pointer.Size);
-            builder.Add();
+            for (var i = 0; i < pointer.Size; i++)
+            {
+                builder.SetB(1);
+                builder.Add();
 
-            builder.LoadB(pointer);
-            builder.StoreB_ToAddressInA();
+                builder.LoadB(pointer.Add(i));
+                builder.StoreB_ToAddressInA();
+            }
         }
 
         // Increment stack pointer
@@ -672,9 +675,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         var size = expression.Type.Size;
 
-        if (expression is AddressExpression { DirectCopy: true } addressExpression)
+        switch (expression)
         {
-            if (expression.Type.StaticType == StaticType.Pointer)
+            case AddressExpression { DirectCopy: true, Type.StaticType: StaticType.Pointer } addressExpression:
             {
                 if (addressExpression is IdentifierExpression {Variable: var variable})
                 {
@@ -699,42 +702,59 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 {
                     throw new NotImplementedException();
                 }
+
+                break;
             }
-            else
+            case AddressExpression { DirectCopy: true, Pointer: { } valuePointer }:
             {
-                if (addressExpression.Pointer is { } valuePointer)
+                for (var i = 0; i < size; i++)
                 {
-                    for (var i = 0; i < size; i++)
+                    valuePointer.CopyTo(this, pointer, i);
+                }
+
+                break;
+            }
+            case AddressExpression { DirectCopy: true } addressExpression:
+            {
+                for (var i = 0; i < size; i++)
+                {
+                    addressExpression.StoreAddressInA(this);
+
+                    if (i > 0)
                     {
-                        valuePointer.CopyTo(this, pointer, i);
+                        SetB(i);
+                        Add();
                     }
+
+                    LoadA_FromAddressUsingA();
+                    StorePointer(pointer.Add(i));
+                }
+
+                break;
+            }
+            case { Type: { StaticType: StaticType.Pointer, IsReference: true } } when size == 2:
+            {
+                expression.BuildExpression(this, false);
+                StorePointer(pointer);
+
+                SetA(0);
+                StorePointer(pointer.Add(1));
+                break;
+            }
+            default:
+            {
+                if (size == 1)
+                {
+                    expression.BuildExpression(this, false);
+                    StorePointer(pointer);
                 }
                 else
                 {
-                    for (var i = 0; i < size; i++)
-                    {
-                        addressExpression.StoreAddressInA(this);
-
-                        if (i > 0)
-                        {
-                            SetB(i);
-                            Add();
-                        }
-
-                        LoadA_FromAddressUsingA();
-                        StorePointer(pointer.Add(i));
-                    }
+                    throw new NotImplementedException();
                 }
+
+                break;
             }
-        }
-        else if (size == 1)
-        {
-            expression.BuildExpression(this, false);
-            StorePointer(pointer);
-        }
-        else
-        {
-            throw new NotImplementedException();
         }
 
     }

@@ -14,7 +14,7 @@ public record LanguageStruct(string Name)
         .Max();
 }
 
-public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null)
+public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null, bool IsReference = false)
 {
     public static readonly LanguageType Integer = new(StaticType.Integer);
     public static readonly LanguageType Boolean = new(StaticType.Boolean);
@@ -26,9 +26,10 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public static LanguageType Struct(LanguageStruct structReference) => new(StaticType.Struct, null, structReference);
 
-    public static LanguageType Reference(LanguageType elementType) => new(StaticType.Reference, elementType);
+    public static LanguageType Reference(LanguageType elementType) => new(StaticType.Reference, elementType, IsReference: true);
 
-    public static LanguageType ReferencePointer(LanguageType elementType) => new(StaticType.ReferencePointer, elementType);
+
+    public static LanguageType RefPointer(LanguageType elementType) => new(StaticType.Pointer, elementType, IsReference: true);
 
     public int Size => StaticType switch
     {
@@ -38,7 +39,6 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Assembly => 1,
         StaticType.Pointer => 2,
         StaticType.Reference => 1,
-        StaticType.ReferencePointer => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };

@@ -1314,11 +1314,22 @@ public class AssemblerTest
         const string code = """
             void set_value(int[] array) {
                 array[0] = 1
+
+                asm {
+                    AIN @array
+                    STLGE 4096
+                }
             }
 
             int get_value() {
                 var array = stackalloc int[2]
                 set_value(array)
+
+                asm {
+                    AIN @array
+                    STLGE 4095
+                }
+
                 return array[0]
             }
 
@@ -1330,6 +1341,9 @@ public class AssemblerTest
 
         var cpu = Create(builder);
         cpu.Run();
+
+        Assert.Equal(0xEF6E, cpu.Memory[4095]);
+        Assert.Equal(0xEF6E, cpu.Memory[4096]);
 
         Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }

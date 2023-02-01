@@ -59,7 +59,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
     {
         get
         {
-            if (Variable.Type.StaticType is StaticType.Reference or StaticType.ReferencePointer)
+            if (Variable.Type.IsReference)
             {
                 return 0;
             }
@@ -72,7 +72,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
     {
         Variable.Usages++;
 
-        if (Variable.Type.StaticType is StaticType.Reference or StaticType.ReferencePointer)
+        if (Variable.Type.IsReference)
         {
             builder.LoadA(Variable.Pointer);
         }
@@ -99,7 +99,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         {
             Variable.Usages++;
 
-            if (Variable.Type.StaticType is StaticType.Reference or StaticType.ReferencePointer)
+            if (Variable.Type.IsReference)
             {
                 return null;
             }

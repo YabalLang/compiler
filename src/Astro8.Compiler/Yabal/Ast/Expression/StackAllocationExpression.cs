@@ -28,7 +28,7 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
 
     public override bool DirectCopy => false;
 
-    public override LanguageType Type => LanguageType.ReferencePointer(PointerType);
+    public override LanguageType Type => LanguageType.RefPointer(PointerType);
 
     public override Pointer? Pointer => null;
 

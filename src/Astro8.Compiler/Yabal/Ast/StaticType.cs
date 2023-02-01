@@ -6,7 +6,6 @@ public enum StaticType
     Boolean,
     Void,
     Pointer,
-    ReferencePointer,
     Struct,
     Assembly,
     Reference,
