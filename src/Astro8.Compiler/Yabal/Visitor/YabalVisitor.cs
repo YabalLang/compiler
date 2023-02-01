@@ -786,4 +786,13 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             VisitExpression(context.expression())
         );
     }
+
+    public override Node VisitStackAllocExpression(YabalParser.StackAllocExpressionContext context)
+    {
+        return new StackAllocationExpression(
+            SourceRange.From(context, _file),
+            _typeVisitor.VisitType(context.type()),
+            VisitExpression(context.expression())
+        );
+    }
 }

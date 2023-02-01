@@ -15,6 +15,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     private readonly InstructionPointer _tempPointer;
     private readonly InstructionPointer _stackPointer;
+    private readonly InstructionPointer _stackAllocPointer;
     private readonly InstructionLabel _callLabel;
     private readonly InstructionLabel _returnLabel;
     private readonly Dictionary<string, Function> _functions = new();
@@ -42,6 +43,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         _tempPointer = _builder.CreatePointer(name: "Yabal:temp");
         _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer");
+        _stackAllocPointer = new InstructionPointer(name: "Yabal:stack_alloc_pointer");
         Stack = new PointerCollection("Stack");
         Globals = new PointerCollection("Global");
         Temporary = new PointerCollection("Temp");
@@ -65,6 +67,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         ReturnValue = parent.ReturnValue;
 
         _stackPointer = parent._stackPointer;
+        _stackAllocPointer = parent._stackAllocPointer;
         _tempPointer = parent._tempPointer;
         Block = parent.Block;
         Stack = parent.Stack;
@@ -75,6 +78,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _files = parent._files;
         _errors = parent._errors;
     }
+
+    public InstructionPointer StackAllocPointer => _stackAllocPointer;
 
     public IFileSystem FileSystem { get; }
 
@@ -444,6 +449,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public IEnumerable<Function> Functions => _functions.Values;
 
+    public bool HasStackAllocation { get; set; }
+
     public override InstructionLabel CreateLabel(string? name = null)
     {
         return _builder.CreateLabel(name);
@@ -536,13 +543,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         if (_hasCall)
         {
-            var stackStart = 0xEF6E - (1 + (Stack.Count * 16));
+            var stackAllocStart = 0xEF6E;
+            var stackStart = stackAllocStart - (1 + Stack.Sum(i => i.Size) * 16);
 
             builder.Mark(ReturnValue);
             builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
             builder.EmitRaw(stackStart, "stack pointer");
+
+            builder.Mark(_stackAllocPointer);
+            builder.EmitRaw(stackAllocStart, "stack allocation pointer");
 
             builder.Mark(_tempPointer);
             builder.EmitRaw(0, "temporary pointer");

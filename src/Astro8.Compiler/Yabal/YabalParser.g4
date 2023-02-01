@@ -14,7 +14,7 @@ rawType
 
 type
     : rawType                           # DefaultType
-    | type OpenBracket CloseBracket     # ArrayType
+    | type OpenCloseBracket             # ArrayType
     ;
 
 returnType
@@ -24,6 +24,7 @@ returnType
 
 expression
 	: createPointer                                                     # CreatePointerExpression
+	| StackAlloc type OpenBracket expression CloseBracket               # StackAllocExpression
 	| IncludeBytes expression                                           # IncludeBytesExpression
 	| IncludeImage expression                                           # IncludeImageExpression
 	| SizeOf expression                                                 # SizeOfExpression

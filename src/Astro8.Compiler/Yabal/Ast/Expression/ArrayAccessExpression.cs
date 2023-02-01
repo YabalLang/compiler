@@ -9,7 +9,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         Array.Initialize(builder);
         Key.Initialize(builder);
 
-        if (Array.Type.StaticType != StaticType.Pointer)
+        if (Array.Type.StaticType is not (StaticType.Pointer or StaticType.ReferencePointer))
         {
             builder.AddError(ErrorLevel.Error, Array.Range, ErrorMessages.ValueIsNotAnArray);
         }
@@ -57,6 +57,11 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
     {
         get
         {
+            if (Array.Type.StaticType == StaticType.ReferencePointer)
+            {
+                return null;
+            }
+
             if (Array is not {Pointer: { } pointer} ||
                 Key is not IConstantValue {Value: int index})
             {
@@ -85,12 +90,13 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         {
             var offset = intValue * elementSize;
 
+            Array.BuildExpression(builder, false);
+
             if (offset == 0)
             {
                 return;
             }
 
-            Array.BuildExpression(builder, false);
             builder.SetB(offset);
             builder.Add();
 

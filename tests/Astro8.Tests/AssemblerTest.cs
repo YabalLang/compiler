@@ -1258,4 +1258,79 @@ public class AssemblerTest
         Assert.Equal(1, cpu.Memory[address]);
         Assert.Equal(2, cpu.Memory[address + 1]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StackAlloc(bool optimize)
+    {
+        const string code = """
+            int set_stackalloc() {
+                var array = stackalloc int[2]
+                array[0] = 1
+
+                asm {
+                    AIN @array
+                    STLGE 4095
+                }
+
+                var array2 = stackalloc int[2]
+                array2[1] = 1
+
+                asm {
+                    AIN @array2
+                    STLGE 4096
+                }
+
+                return array[0] + array2[1]
+            }
+
+            var result = set_stackalloc()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        // Ensure the stack allocation is increased
+        Assert.Equal(0xEF6E, cpu.Memory[4095]);
+        Assert.Equal(0xEF70, cpu.Memory[4096]);
+
+        // Ensure the stack allocation is returned
+        Assert.Equal(0xEF6E, cpu.Memory[builder.StackAllocPointer.Address]);
+
+        // Check value
+        Assert.Equal(1, cpu.Memory[0xEF6E]);
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StackAllocPass(bool optimize)
+    {
+        const string code = """
+            void set_value(int[] array) {
+                array[0] = 1
+            }
+
+            int get_value() {
+                var array = stackalloc int[2]
+                set_value(array)
+                return array[0]
+            }
+
+            var result = get_value()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
 }

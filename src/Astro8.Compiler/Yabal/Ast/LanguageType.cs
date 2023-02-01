@@ -28,6 +28,8 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public static LanguageType Reference(LanguageType elementType) => new(StaticType.Reference, elementType);
 
+    public static LanguageType ReferencePointer(LanguageType elementType) => new(StaticType.ReferencePointer, elementType);
+
     public int Size => StaticType switch
     {
         StaticType.Integer => 1,
@@ -36,6 +38,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Assembly => 1,
         StaticType.Pointer => 2,
         StaticType.Reference => 1,
+        StaticType.ReferencePointer => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };

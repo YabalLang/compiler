@@ -59,7 +59,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
             return;
         }
 
-        if (expression.Type.StaticType == StaticType.Pointer)
+        if (expression.Type.StaticType is StaticType.Pointer)
         {
             if (expression is IdentifierExpression {Variable: var variable})
             {

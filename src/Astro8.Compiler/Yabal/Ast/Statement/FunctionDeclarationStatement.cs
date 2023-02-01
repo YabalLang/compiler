@@ -86,8 +86,29 @@ public record FunctionDeclarationStatement(
 
         if (!Inline)
         {
-            Body.Build(_function.Builder);
-            _function.Builder.Mark(_returnLabel);
+            var builder = _function.Builder;
+
+            TemporaryVariable? stackAllocationAddress = null;
+
+            if (_function.Builder.HasStackAllocation)
+            {
+                stackAllocationAddress = _.GetTemporaryVariable();
+
+                builder.LoadA(builder.StackAllocPointer);
+                builder.StoreA(stackAllocationAddress);
+            }
+
+            Body.Build(builder);
+            builder.Mark(_returnLabel);
+
+            if (stackAllocationAddress != null)
+            {
+                builder.SwapA_C();
+                builder.LoadA(stackAllocationAddress);
+                builder.StoreA(builder.StackAllocPointer);
+                builder.SwapA_C();
+                stackAllocationAddress.Dispose();
+            }
         }
     }
 
