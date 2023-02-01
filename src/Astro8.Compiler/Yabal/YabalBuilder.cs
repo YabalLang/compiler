@@ -806,12 +806,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         else
         {
             SwapA_B();
-
-            if (target.Right.Type.StaticType == StaticType.Reference)
-            {
-                LoadA_FromAddressUsingA();
-            }
-
             target.Right.StoreAddressInA(this);
             StoreB_ToAddressInA();
         }

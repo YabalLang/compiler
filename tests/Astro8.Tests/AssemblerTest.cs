@@ -1193,6 +1193,35 @@ public class AssemblerTest
         Assert.Equal(2, cpu.Memory[address + 1]);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructReferenceBit(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a : 4
+                int b : 4
+            }
+
+            void set_value(ref Test value) {
+                value.a = 1
+                value.b = 1
+            }
+
+            Test test
+            set_value(ref test)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(17, cpu.Memory[builder.GetVariable("test").Pointer.Address]);
+    }
+
     [Theory(Skip = "Not implemented yet")]
     [InlineData(false)]
     [InlineData(true)]
