@@ -639,6 +639,11 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return IncludeFile(SourceRange.From(context, _file), context.expression(), FileType.Byte);
     }
 
+    public override Node VisitIncludeFontExpression(YabalParser.IncludeFontExpressionContext context)
+    {
+        return IncludeFile(SourceRange.From(context, _file), context.expression(), FileType.Font);
+    }
+
     public override Node VisitIncludeImageExpression(YabalParser.IncludeImageExpressionContext context)
     {
         return IncludeFile(SourceRange.From(context, _file), context.expression(), FileType.Image);

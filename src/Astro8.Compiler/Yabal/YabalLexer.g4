@@ -73,6 +73,7 @@ StackAlloc          : 'stackalloc';
 SizeOf              : 'sizeof';
 IncludeBytes        : 'include_bytes';
 IncludeImage        : 'include_image';
+IncludeFont         : 'include_font';
 Goto                : 'goto';
 Struct              : 'struct';
 Inline              : 'inline';

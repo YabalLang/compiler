@@ -275,7 +275,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.LoadA(_stackPointer);
         builder.StoreB_ToAddressInA();
 
-
         foreach (var pointer in Stack)
         {
             for (var i = 0; i < pointer.Size; i++)

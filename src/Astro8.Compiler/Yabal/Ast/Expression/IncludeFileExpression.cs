@@ -36,5 +36,6 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
 public enum FileType
 {
     Byte,
-    Image
+    Image,
+    Font
 }

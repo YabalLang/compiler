@@ -27,6 +27,7 @@ expression
 	| StackAlloc type OpenBracket expression CloseBracket               # StackAllocExpression
 	| IncludeBytes expression                                           # IncludeBytesExpression
 	| IncludeImage expression                                           # IncludeImageExpression
+	| IncludeFont expression                                            # IncludeFontExpression
 	| SizeOf expression                                                 # SizeOfExpression
 	| Ref expression                                                    # RefExpression
 	| expression Dot identifierName                                     # MemberExpression

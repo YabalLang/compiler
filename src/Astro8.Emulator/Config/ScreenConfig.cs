@@ -2,7 +2,7 @@
 
 public class ScreenConfig
 {
-    public int Scale { get; set; } = 5;
+    public int Scale { get; set; } = 4;
 
     public int Width { get; set; } = 108;
 
