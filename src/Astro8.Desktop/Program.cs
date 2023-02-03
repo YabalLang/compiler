@@ -189,7 +189,7 @@ async Task Execute(InvocationContext ctx)
     var statePath = ctx.ParseResult.GetValueForOption(stateOption);
     var charactersToConsole = ctx.ParseResult.GetValueForOption(charactersToConsoleOption);
 
-    var config = ConfigContext.Load();
+    var config = ConfigContext.Load(path.Directory?.FullName);
     using var handler = new DesktopHandler(
         config.Screen.Width,
         config.Screen.Height,

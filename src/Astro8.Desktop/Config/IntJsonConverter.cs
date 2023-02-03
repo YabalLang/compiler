@@ -8,27 +8,15 @@ public class IntJsonConverter : JsonConverter<int>
 {
     public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        return ParseInt(ref reader);
+    }
+
+    public static int ParseInt(ref Utf8JsonReader reader)
+    {
         if (reader.TokenType == JsonTokenType.String)
         {
-            var stringValue = reader.GetString()!.AsSpan();
-
-            if (!stringValue.Contains('_'))
-            {
-                return ParseInt(stringValue);
-            }
-
-            Span<char> value = stackalloc char[stringValue.Length];
-
-            var offset = 0;
-            foreach (var c in stringValue)
-            {
-                if (c != '_')
-                {
-                    value[offset++] = c;
-                }
-            }
-
-            return ParseInt(value);
+            var span = reader.GetString()!.AsSpan();
+            return ParseInt(span);
         }
 
         if (reader.TokenType == JsonTokenType.Number)
@@ -39,7 +27,28 @@ public class IntJsonConverter : JsonConverter<int>
         throw new JsonException();
     }
 
-    private static int ParseInt(ReadOnlySpan<char> span)
+    public static int ParseInt(ReadOnlySpan<char> span)
+    {
+        if (!span.Contains('_'))
+        {
+            return ParseIntCore(span);
+        }
+
+        Span<char> value = stackalloc char[span.Length];
+
+        var offset = 0;
+        foreach (var c in span)
+        {
+            if (c != '_')
+            {
+                value[offset++] = c;
+            }
+        }
+
+        return ParseIntCore(value);
+    }
+
+    private static int ParseIntCore(ReadOnlySpan<char> span)
     {
         if (span.Length > 2 && span[0] == '0' && (span[1] is 'X' or 'x'))
         {
