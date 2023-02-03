@@ -3,7 +3,12 @@ using Astro8.Yabal.Ast;
 
 namespace Astro8.Yabal.Visitor;
 
-public record Variable(Identifier Identifier, InstructionPointer Pointer, LanguageType Type, Expression? Initializer = null)
+public record Variable(
+    Identifier Identifier,
+    InstructionPointer Pointer,
+    LanguageType Type,
+    Expression? Initializer = null,
+    bool IsGlobal = false)
 {
     public bool Constant { get; set; } = true;
 

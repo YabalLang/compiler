@@ -42,4 +42,6 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
     public override int? Bank => 0;
 
     int IPointerSource.Bank => 0;
+
+    public override bool DirectCopy => false;
 }

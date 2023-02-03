@@ -42,13 +42,15 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
 
     public (Variable, int? Offset) GetVariable(YabalBuilder builder)
     {
-        if (Variable.Initializer is IVariableSource { Type.StaticType: StaticType.Reference } variableSource)
+        if (Variable.Initializer is IVariableSource variable && Type.StaticType == StaticType.Reference)
         {
-            return variableSource.GetVariable(builder);
+            return variable.GetVariable(builder);
         }
 
         return (Variable, null);
     }
+
+    public bool CanGetVariable => true;
 
     public override LanguageType Type => Variable.Type;
 

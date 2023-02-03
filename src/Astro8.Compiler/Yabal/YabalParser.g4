@@ -120,7 +120,7 @@ structItem
     ;
 
 structFunction
-    : returnType identifierName functionParameterList functionBody
+    : Static? returnType identifierName functionParameterList functionBody
     ;
 
 structField
@@ -226,7 +226,11 @@ functionBody
 variableDeclaration
     : Const? type identifierName (Assign (expression|initStruct))?                      # DefaultVariableDeclaration
     | Const? Var identifierName Assign expression                                       # AutoVariableDeclaration
-    | Export? Inline? returnType identifierName functionParameterList functionBody      # FunctionDeclaration
+    | Export? Inline? returnType (identifierName|operatorName) functionParameterList functionBody      # FunctionDeclaration
+    ;
+
+operatorName
+    : Operator (Add|Sub|Div|Mul|Mod|ShiftLeft|ShiftRight|GreaterEqual|Greater|LessEqual|Less|Equals|NotEquals|And|Or|Xor|AndAlso|OrElse)
     ;
 
 // Identifier

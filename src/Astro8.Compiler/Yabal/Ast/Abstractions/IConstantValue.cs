@@ -16,4 +16,6 @@ public interface IPointerSource : IExpression
 public interface IVariableSource : IExpression
 {
     (Variable, int? Offset) GetVariable(YabalBuilder builder);
+
+    bool CanGetVariable { get; }
 }

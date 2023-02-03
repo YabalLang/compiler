@@ -16,7 +16,21 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
 
     public override void Build(YabalBuilder builder)
     {
-        Expression.BuildExpression(builder, false);
+        var returnType = builder.ReturnType ?? throw new InvalidOperationException();
+
+        if (Expression is InitStructExpression initStruct)
+        {
+            builder.InitStruct(returnType, builder.ReturnValue, initStruct);
+        }
+        else if (returnType.Size == 1)
+        {
+            Expression.BuildExpression(builder, false);
+            builder.StoreA(builder.ReturnValue);
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
 
         if (builder.Block.Return != null)
         {

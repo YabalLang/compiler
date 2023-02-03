@@ -1348,7 +1348,6 @@ public class AssemblerTest
         Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }
 
-
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -1374,6 +1373,38 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal(4, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+        Assert.Equal(2, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StructOperator(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a : 8
+                int b : 8
+            }
+
+            Test operator +(Test a, Test b) {
+                return { a: a.a + b.a, b: a.b + b.b }
+            }
+
+            Test a = { a: 1, b: 2 }
+            Test b = { a: 2, b: 1 }
+            var c = a + b
+
+            var result = c.a + c.b
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("result").Pointer.Address;
+        Assert.Equal(6, cpu.Memory[address]);
     }
 }

@@ -1,7 +1,9 @@
 var font = include_font("Ubuntu Mono");
 var screen = create_pointer(53871, 1);
 var screenWidth = 108;
-var screenOffset = 0;
+var screenHeight = 108;
+var currentX = 0;
+var currentY = 0;
 
 void render_char(int screenX, int screenY, int character) {
     var width = 8;
@@ -20,23 +22,36 @@ void render_char(int screenX, int screenY, int character) {
 }
 
 void write_char(int character) {
-    render_char(screenOffset, 0, character);
-    screenOffset += 7;
+    render_char(currentX, currentY, character);
+    currentX += 8;
+
+    if (currentX >= 104) {
+        currentX = 0;
+        currentY += 8;
+    }
 }
 
-void write_string(int[] str, int size) {
-    for (var i = 0; i < 4; i++) {
-        write_char(str[i]);
+void write_string(int[] str) {
+    for (var i = 0; true; i++) {
+        var c = str[i];
+
+        if (c == 0) {
+            break;
+        }
+
+        write_char(c);
+    }
+}
+
+void reset_screen() {
+    for (var i = 0; i < 108 * 108; i++) {
+        screen[i] = 0;
     }
 }
 
 while (true) {
-    screenOffset = 0;
-
-    render_char(0, 0, 'H')
-    render_char(7, 0, 'E')
-    render_char(14, 0, 'L')
-    render_char(21, 0, 'L')
-    render_char(28, 0, 'O')
+    currentX = 0;
+    currentY = 0;
+    write_string("abcdefghijklmnopqrstuvwxyz0123456789");
 }
 

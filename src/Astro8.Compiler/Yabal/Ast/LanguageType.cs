@@ -28,7 +28,6 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
 
     public static LanguageType Reference(LanguageType elementType) => new(StaticType.Reference, elementType, IsReference: true);
 
-
     public static LanguageType RefPointer(LanguageType elementType) => new(StaticType.Pointer, elementType, IsReference: true);
 
     public int Size => StaticType switch

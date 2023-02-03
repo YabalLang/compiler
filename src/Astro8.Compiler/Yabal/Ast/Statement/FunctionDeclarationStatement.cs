@@ -7,7 +7,7 @@ namespace Astro8.Yabal.Ast;
 public record FunctionParameter(Identifier Name, LanguageType Type);
 
 public record Function(
-    Identifier Name,
+    Either<Identifier, BinaryOperator> Name,
     InstructionLabel Label,
     LanguageType ReturnType,
     YabalBuilder Builder,
@@ -17,12 +17,12 @@ public record Function(
 {
     public BlockStack? Block { get; set; }
 
-    public List<CallExpression> References { get; } = new();
+    public List<Expression> References { get; } = new();
 }
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
-    Identifier Name,
+    Either<Identifier, BinaryOperator> Name,
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
     BlockStatement Body,
@@ -34,11 +34,14 @@ public record FunctionDeclarationStatement(
 
     public override void OnDeclare(YabalBuilder builder)
     {
-        var functionBuilder = new YabalBuilder(builder);
+        var functionBuilder = new YabalBuilder(builder)
+        {
+            ReturnType = ReturnType,
+        };
 
         _function = new Function(
             Name,
-            builder.CreateLabel(Name.Name),
+            builder.CreateLabel(),
             ReturnType,
             functionBuilder,
             Inline,
@@ -69,7 +72,7 @@ public record FunctionDeclarationStatement(
     {
         Debug.Assert(_function != null);
 
-        _returnLabel = builder.CreateLabel(Name.Name);
+        _returnLabel = builder.CreateLabel();
 
         Block.Return = _returnLabel;
 
@@ -84,31 +87,33 @@ public record FunctionDeclarationStatement(
     {
         Debug.Assert(_function != null);
 
-        if (!Inline)
+        if (Inline)
         {
-            var builder = _function.Builder;
+            return;
+        }
 
-            TemporaryVariable? stackAllocationAddress = null;
+        var builder = _function.Builder;
 
-            if (_function.Builder.HasStackAllocation)
-            {
-                stackAllocationAddress = _.GetTemporaryVariable();
+        TemporaryVariable? stackAllocationAddress = null;
 
-                builder.LoadA(builder.StackAllocPointer);
-                builder.StoreA(stackAllocationAddress);
-            }
+        if (_function.Builder.HasStackAllocation)
+        {
+            stackAllocationAddress = _.GetTemporaryVariable();
 
-            Body.Build(builder);
-            builder.Mark(_returnLabel);
+            builder.LoadA(builder.StackAllocPointer);
+            builder.StoreA(stackAllocationAddress);
+        }
 
-            if (stackAllocationAddress != null)
-            {
-                builder.SwapA_C();
-                builder.LoadA(stackAllocationAddress);
-                builder.StoreA(builder.StackAllocPointer);
-                builder.SwapA_C();
-                stackAllocationAddress.Dispose();
-            }
+        Body.Build(builder);
+        builder.Mark(_returnLabel);
+
+        if (stackAllocationAddress != null)
+        {
+            builder.SwapA_C();
+            builder.LoadA(stackAllocationAddress);
+            builder.StoreA(builder.StackAllocPointer);
+            builder.SwapA_C();
+            stackAllocationAddress.Dispose();
         }
     }
 

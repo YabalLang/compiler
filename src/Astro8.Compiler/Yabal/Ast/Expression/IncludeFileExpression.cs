@@ -5,6 +5,7 @@ namespace Astro8.Yabal.Ast;
 public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue, IPointerSource
 {
     private InstructionPointer _pointer = null!;
+    private readonly LanguageType _type = LanguageType.Pointer(LanguageType.Integer);
 
     public override void Initialize(YabalBuilder builder)
     {
@@ -18,7 +19,7 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
 
     public override bool OverwritesB => false;
 
-    public override LanguageType Type { get; } = LanguageType.Pointer(LanguageType.Integer);
+    public override LanguageType Type => _type;
 
     public object Value => FileAddress.From(Path, FileType, _pointer);
 

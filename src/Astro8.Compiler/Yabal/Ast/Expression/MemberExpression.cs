@@ -79,9 +79,13 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         throw new InvalidOperationException("Cannot get variable from expression");
     }
 
+    public bool CanGetVariable => Expression is IdentifierExpression && !_field.Bit.HasValue;
+
     public override bool DirectCopy => !_field.Bit.HasValue;
 
-    public override LanguageType Type => Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ?? LanguageType.Unknown;
+    public override LanguageType Type =>
+        Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ??
+        LanguageType.Unknown;
 
     public override Pointer? Pointer => Expression is { Pointer: {} pointer } && !_field.Bit.HasValue
         ? pointer.Add(_field.Offset)

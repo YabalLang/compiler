@@ -227,9 +227,91 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
     {
+        Either<Identifier, BinaryOperator> name;
+
+        if (context.identifierName() is { } identifierName)
+        {
+            name = GetIdentifier(identifierName);
+        }
+        else if (context.operatorName() is { } operatorName)
+        {
+            if (operatorName.Add() is not null)
+            {
+                name = BinaryOperator.Add;
+            }
+            else if (operatorName.Sub() is not null)
+            {
+                name = BinaryOperator.Subtract;
+            }
+            else if (operatorName.Mul() is not null)
+            {
+                name = BinaryOperator.Multiply;
+            }
+            else if (operatorName.Div() is not null)
+            {
+                name = BinaryOperator.Divide;
+            }
+            else if (operatorName.Mod() is not null)
+            {
+                name = BinaryOperator.Modulo;
+            }
+            else if (operatorName.Less() is not null)
+            {
+                name = BinaryOperator.LessThan;
+            }
+            else if (operatorName.LessEqual() is not null)
+            {
+                name = BinaryOperator.LessThanOrEqual;
+            }
+            else if (operatorName.Greater() is not null)
+            {
+                name = BinaryOperator.GreaterThan;
+            }
+            else if (operatorName.GreaterEqual() is not null)
+            {
+                name = BinaryOperator.GreaterThanOrEqual;
+            }
+            else if (operatorName.Equals() is not null)
+            {
+                name = BinaryOperator.Equal;
+            }
+            else if (operatorName.NotEquals() is not null)
+            {
+                name = BinaryOperator.NotEqual;
+            }
+            else if (operatorName.And() is not null)
+            {
+                name = BinaryOperator.And;
+            }
+            else if (operatorName.Or() is not null)
+            {
+                name = BinaryOperator.Or;
+            }
+            else if (operatorName.Xor() is not null)
+            {
+                name = BinaryOperator.Xor;
+            }
+            else if (operatorName.ShiftLeft() is not null)
+            {
+                name = BinaryOperator.LeftShift;
+            }
+            else if (operatorName.ShiftRight() is not null)
+            {
+                name = BinaryOperator.RightShift;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+
         return new FunctionDeclarationStatement(
             SourceRange.From(context, _file),
-            GetIdentifier(context.identifierName()),
+            name,
             _typeVisitor.Visit(context.returnType()),
             context.functionParameterList().functionParameter()
                 .Select(p =>

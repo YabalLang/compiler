@@ -33,6 +33,8 @@ public record ReferenceExpression(SourceRange Range, Expression Expression) : Ex
         return variableSource.GetVariable(builder);
     }
 
+    public bool CanGetVariable => Expression is IVariableSource;
+
     public override LanguageType Type => LanguageType.Reference(Expression.Type);
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)

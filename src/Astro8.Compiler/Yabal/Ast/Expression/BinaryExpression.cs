@@ -28,14 +28,58 @@ public static class ExpressionExtensions
 
 public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expression Left, Expression Right) : Expression(Range), IComparisonExpression
 {
+    private LanguageType? _type;
+
     public override void Initialize(YabalBuilder builder)
     {
         Left.Initialize(builder);
         Right.Initialize(builder);
+
+        if (builder.BinaryOperators.TryGetValue((Operator, Left.Type, Right.Type), out var function))
+        {
+            _type = function.ReturnType;
+        }
+        else
+        {
+            _type = Operator switch
+            {
+                BinaryOperator.Add => LanguageType.Integer,
+                BinaryOperator.Subtract => LanguageType.Integer,
+                BinaryOperator.Multiply => LanguageType.Integer,
+                BinaryOperator.Divide => LanguageType.Integer,
+                BinaryOperator.Modulo => LanguageType.Integer,
+                BinaryOperator.GreaterThan => LanguageType.Boolean,
+                BinaryOperator.GreaterThanOrEqual => LanguageType.Boolean,
+                BinaryOperator.LessThan => LanguageType.Boolean,
+                BinaryOperator.LessThanOrEqual => LanguageType.Boolean,
+                BinaryOperator.LeftShift => LanguageType.Integer,
+                BinaryOperator.RightShift => LanguageType.Integer,
+                BinaryOperator.And => LanguageType.Integer,
+                BinaryOperator.Or => LanguageType.Integer,
+                BinaryOperator.Xor => LanguageType.Integer,
+                BinaryOperator.Equal => LanguageType.Boolean,
+                BinaryOperator.NotEqual => LanguageType.Boolean,
+                BinaryOperator.AndAlso => LanguageType.Boolean,
+                BinaryOperator.OrElse => LanguageType.Boolean,
+                _ => throw new NotSupportedException()
+            };
+        }
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
+        if (builder.BinaryOperators.TryGetValue((Operator, Left.Type, Right.Type), out var function))
+        {
+            function.References.Add(this);
+            builder.Call(function.Label, new[] { Left, Right });
+            return;
+        }
+
+        if (Left.Type.StaticType != StaticType.Integer || Right.Type.StaticType != StaticType.Integer)
+        {
+            throw new NotSupportedException($"Binary operator {Operator} is not supported for {Left.Type} and {Right.Type}");
+        }
+
         switch (Operator)
         {
             case BinaryOperator.Add:
@@ -267,7 +311,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.Equal => new BooleanExpression(Range, Equals(leftValue, rightValue)),
                 BinaryOperator.NotEqual => new BooleanExpression(Range, !Equals(leftValue, rightValue)),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => new BinaryExpression(Range, Operator, left, right) { _type = _type }
             };
         }
 
@@ -279,7 +323,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             {
                 BinaryOperator.AndAlso => new BooleanExpression(Range, leftBool && rightBool),
                 BinaryOperator.OrElse => new BooleanExpression(Range, leftBool || rightBool),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => new BinaryExpression(Range, Operator, left, right) { _type = _type }
             };
         }
 
@@ -302,37 +346,16 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 BinaryOperator.And => new IntegerExpression(Range, leftInt & rightInt),
                 BinaryOperator.Or => new IntegerExpression(Range, leftInt | rightInt),
                 BinaryOperator.Xor => new IntegerExpression(Range, leftInt ^ rightInt),
-                _ => new BinaryExpression(Range, Operator, left, right)
+                _ => new BinaryExpression(Range, Operator, left, right) { _type = _type }
             };
         }
 
-        return new BinaryExpression(Range, Operator, left, right);
+        return new BinaryExpression(Range, Operator, left, right) { _type = _type };
     }
 
     public override bool OverwritesB => true;
 
-    public override LanguageType Type => Operator switch
-    {
-        BinaryOperator.Add => LanguageType.Integer,
-        BinaryOperator.Subtract => LanguageType.Integer,
-        BinaryOperator.Multiply => LanguageType.Integer,
-        BinaryOperator.Divide => LanguageType.Integer,
-        BinaryOperator.Modulo => LanguageType.Integer,
-        BinaryOperator.GreaterThan => LanguageType.Boolean,
-        BinaryOperator.GreaterThanOrEqual => LanguageType.Boolean,
-        BinaryOperator.LessThan => LanguageType.Boolean,
-        BinaryOperator.LessThanOrEqual => LanguageType.Boolean,
-        BinaryOperator.LeftShift => LanguageType.Integer,
-        BinaryOperator.RightShift => LanguageType.Integer,
-        BinaryOperator.And => LanguageType.Integer,
-        BinaryOperator.Or => LanguageType.Integer,
-        BinaryOperator.Xor => LanguageType.Integer,
-        BinaryOperator.Equal => LanguageType.Boolean,
-        BinaryOperator.NotEqual => LanguageType.Boolean,
-        BinaryOperator.AndAlso => LanguageType.Boolean,
-        BinaryOperator.OrElse => LanguageType.Boolean,
-        _ => throw new NotSupportedException()
-    };
+    public override LanguageType Type => _type ?? throw new InvalidOperationException("Type not set");
 
     public override Expression CloneExpression()
     {
@@ -341,6 +364,6 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
             Operator,
             Left.CloneExpression(),
             Right.CloneExpression()
-        );
+        )  { _type = _type };
     }
 }

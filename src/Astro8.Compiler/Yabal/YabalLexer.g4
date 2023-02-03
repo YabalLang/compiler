@@ -76,6 +76,8 @@ IncludeImage        : 'include_image';
 IncludeFont         : 'include_font';
 Goto                : 'goto';
 Struct              : 'struct';
+Static              : 'static';
+Operator            : 'operator';
 Inline              : 'inline';
 Ref                 : 'ref';
 

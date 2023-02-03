@@ -50,6 +50,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _strings = new Dictionary<string, InstructionPointer>();
         _files = new Dictionary<(string, FileType), InstructionPointer>();
         _errors = new Dictionary<SourceRange, List<CompileError>>();
+        BinaryOperators = new Dictionary<(BinaryOperator, LanguageType, LanguageType), Function>();
 
         _globalBlock = new BlockStack { IsGlobal = true };
         Block = _globalBlock;
@@ -77,7 +78,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _strings = parent._strings;
         _files = parent._files;
         _errors = parent._errors;
+        BinaryOperators = parent.BinaryOperators;
     }
+
+    public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; } = new();
 
     public InstructionPointer StackAllocPointer => _stackAllocPointer;
 
@@ -171,7 +175,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             ? Globals.GetNext(Block, type)
             : Stack.GetNext(Block, type);
 
-        var variable = new Variable(name, pointer, type, initializer);
+        var variable = new Variable(name, pointer, type, initializer, Block.IsGlobal);
         Block.DeclareVariable(name.Name, variable);
         pointer.AssignedVariables.Add(variable);
         Variables.Add(variable);
@@ -303,7 +307,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _hasCall = true;
 
         var hasArguments = arguments is { Count: > 0 };
-        var hasReferenceArguments = arguments?.Any(a => a.Type.StaticType == StaticType.Reference) ?? false;
+        var hasReferenceArguments = arguments?.Any(a => a is IVariableSource) ?? false;
         var returnAddress = _builder.CreateLabel();
         var setArguments = _builder.CreateLabel();
 
@@ -343,29 +347,27 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
                 var variable = Stack.Get(offset, argument.Type.Size);
 
-                if (argument.Type.StaticType == StaticType.Reference)
+                if (argument is IVariableSource { CanGetVariable: true } source)
                 {
-                    if (argument is not IVariableSource source)
-                    {
-                        throw new InvalidOperationException("Reference argument must be a variable");
-                    }
-
                     var (sourceVariable, sourceOffset) = source.GetVariable(this);
 
-                    if (sourceVariable.Type.StaticType == StaticType.Reference)
-                    {
-                        _builder.LoadA(sourceVariable.Pointer);
-                        _builder.StoreA(variable);
-                    }
-                    else
-                    {
-                        var stackVariable = Stack.FirstOrDefault(s => s.AssignedVariables.Contains(sourceVariable));
+                    var stackVariable = Stack.FirstOrDefault(s => s.AssignedVariables.Contains(sourceVariable));
+                    var stackOffset = 1 + (sourceOffset ?? 0) + Stack.TakeWhile(s => s != stackVariable).Sum(item => item.Size);
 
-                        if (stackVariable != null)
+                    if (argument.Type.StaticType == StaticType.Reference)
+                    {
+                        if (sourceVariable.IsGlobal)
                         {
-                            var stackOffset = 1 + (sourceOffset ?? 0) +
-                                              Stack.TakeWhile(s => s != stackVariable).Sum(item => item.Size);
-
+                            _builder.SetA(sourceVariable.Pointer);
+                            _builder.StoreA(variable);
+                        }
+                        else if (sourceVariable.Type.StaticType == StaticType.Reference)
+                        {
+                            _builder.LoadA(sourceVariable.Pointer);
+                            _builder.StoreA(variable);
+                        }
+                        else if (stackVariable != null)
+                        {
                             _builder.LoadA(currentStackPointer);
                             _builder.SetB(stackOffset);
                             _builder.Add();
@@ -379,7 +381,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                             _builder.StoreA(variable);
                         }
                     }
+                    else if (!sourceVariable.IsGlobal)
+                    {
+                        for (var j = 0; j < size; j++)
+                        {
+                            _builder.LoadA(currentStackPointer);
+                            _builder.SetB(stackOffset + j);
+                            _builder.Add();
 
+                            _builder.LoadA_FromAddressUsingA();
+                            _builder.StoreA(variable.Add(j));
+                        }
+                    }
+                    else
+                    {
+                        SetValue(variable, argument.Type, argument);
+                    }
+                }
+                else if (argument.Type.StaticType == StaticType.Reference)
+                {
+                    throw new NotSupportedException("Could not create a reference");
                 }
                 else
                 {
@@ -452,6 +473,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public IEnumerable<Function> Functions => _functions.Values;
 
     public bool HasStackAllocation { get; set; }
+
+    public LanguageType? ReturnType { get; set; }
 
     public override InstructionLabel CreateLabel(string? name = null)
     {
@@ -543,13 +566,17 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
+        builder.Mark(ReturnValue);
+
+        for (var i = 0; i < 10; i++)
+        {
+            builder.EmitRaw(0, $"return value ({i})");
+        }
+
         if (_hasCall)
         {
             var stackAllocStart = 0xEF6E;
             var stackStart = stackAllocStart - (1 + Stack.Sum(i => i.Size) * 16);
-
-            builder.Mark(ReturnValue);
-            builder.EmitRaw(0, "return value");
 
             builder.Mark(_stackPointer);
             builder.EmitRaw(stackStart, "stack pointer");
@@ -564,11 +591,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             CreateReturn(builder);
         }
 
-        foreach (var (_, function) in _functions)
+        foreach (var function in _functions.Values.Concat(BinaryOperators.Values))
         {
             if (function.References.Count == 0)
             {
-                AddError(ErrorLevel.Debug, function.Name.Range, $"Function '{function.Name.Name}' is never called and will be excluded from the output.");
+                AddError(ErrorLevel.Debug, function.Name.Left?.Range ?? default, $"Function '{function.Name}' is never called and will be excluded from the output.");
                 continue;
             }
 
@@ -640,7 +667,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public void DeclareFunction(Function statement)
     {
-        _functions.Add(statement.Name.Name, statement);
+        if (statement.Name.IsLeft)
+        {
+            _functions.Add(statement.Name.Left.Name, statement);
+        }
+        else
+        {
+            var op = statement.Name.Right;
+
+            if (statement.Parameters.Count != 2)
+            {
+                throw new InvalidOperationException("Binary operator must have 2 parameters.");
+            }
+
+            BinaryOperators.Add((op, statement.Parameters[0].Type, statement.Parameters[1].Type), statement);
+        }
     }
 
     public void SetComment(string comment)
@@ -676,7 +717,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         switch (expression)
         {
-            case AddressExpression { DirectCopy: true, Type.StaticType: StaticType.Pointer } addressExpression:
+            case AddressExpression { DirectCopy: true } addressExpression when addressExpression.Type.StaticType == StaticType.Pointer:
             {
                 if (addressExpression is IdentifierExpression {Variable: var variable})
                 {
@@ -731,7 +772,16 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
                 break;
             }
-            case { Type: { StaticType: StaticType.Pointer, IsReference: true } } when size == 2:
+            case {} when expression.Type is { StaticType: StaticType.Pointer, IsReference: true } && size == 2:
+            {
+                expression.BuildExpression(this, false);
+                StorePointer(pointer);
+
+                SetA(0);
+                StorePointer(pointer.Add(1));
+                break;
+            }
+            case StringExpression when type.StaticType == StaticType.Pointer:
             {
                 expression.BuildExpression(this, false);
                 StorePointer(pointer);
@@ -777,7 +827,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    private void InitStruct(LanguageType type, Pointer pointer, InitStructExpression initStruct)
+    public void InitStruct(LanguageType type, Pointer pointer, InitStructExpression initStruct)
     {
         if (type is not { StaticType: StaticType.Struct, StructReference: { } structRef })
         {

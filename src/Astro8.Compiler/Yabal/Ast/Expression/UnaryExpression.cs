@@ -75,13 +75,14 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
 
     public override bool OverwritesB => true;
 
-    public override LanguageType Type => Operator switch
-    {
-        UnaryOperator.Not => LanguageType.Integer,
-        UnaryOperator.Negate => LanguageType.Boolean,
-        UnaryOperator.Minus => LanguageType.Integer,
-        _ => throw new InvalidOperationException()
-    };
+    public override LanguageType Type =>
+        Operator switch
+        {
+            UnaryOperator.Not => LanguageType.Integer,
+            UnaryOperator.Negate => LanguageType.Boolean,
+            UnaryOperator.Minus => LanguageType.Integer,
+            _ => throw new InvalidOperationException()
+        };
 
     public override Expression CloneExpression()
     {

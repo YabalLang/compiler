@@ -79,6 +79,9 @@ public record CallExpression(
     {
         if (Function.Inline)
         {
+            var previousReturn = builder.ReturnType;
+
+            builder.ReturnType = Function.ReturnType;
             builder.PushBlock(_block);
 
             foreach (var (variable, expression) in _variables)
@@ -93,6 +96,7 @@ public record CallExpression(
             builder.Mark(_returnLabel);
 
             builder.PopBlock();
+            builder.ReturnType = previousReturn;
         }
         else
         {
