@@ -6,13 +6,20 @@ namespace Astro8;
 [JsonSerializable(typeof(Config))]
 internal partial class ConfigContext : JsonSerializerContext
 {
-    public static Config Load()
+    public static Config Load(string? directory)
     {
         Config? config = null;
 
-        if (File.Exists("config.jsonc"))
+        var path = "config.jsonc";
+
+        if (directory != null)
         {
-            var json = File.ReadAllText("config.jsonc");
+            path = Path.Combine(directory, path);
+        }
+
+        if (File.Exists(path))
+        {
+            var json = File.ReadAllText(path);
 
             var context = new ConfigContext(
                 new JsonSerializerOptions
@@ -20,7 +27,8 @@ internal partial class ConfigContext : JsonSerializerContext
                     ReadCommentHandling = JsonCommentHandling.Skip,
                     Converters =
                     {
-                        new IntJsonConverter()
+                        new IntJsonConverter(),
+                        new AddressConverter()
                     }
                 }
             );

@@ -9,22 +9,17 @@
     "InstructionsPerCycle": 100
   },
 
-  "Program": {
-    "Path": "program_machine_code",
-    "Size": "0xEF6E"
-  },
-
   "Screen": {
     // Note: changing the resolution will also resize the memory allocation of the screen and character device.
-    "Width": 108,
-    "Height": 108,
-    "Scale": 9
+    "Width": 255,
+    "Height": 255,
+    "Scale": 2
   },
 
   "Memory": {
     // Max amount of memory in bytes.
     "Size": "0xFFFF",
-    "Banks": 2,
+    "Banks": 3,
 
     // Mapping of device in memory.
     "Devices": {
@@ -32,7 +27,7 @@
         "Character": [1, "0xD12A"],
         "Keyboard": [1, "0xD0FC"],
         "Mouse": [1, "0xD0FD"],
-        "Screen": [1, "0xD26F"],
+        "Screen": [2, "0x0000"]
     }
   }
 }

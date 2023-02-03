@@ -12,12 +12,13 @@ public class CpuBuilder<THandler>
     private CharacterDevice<THandler>? _character;
     private Address? _keyboardAddress;
     private Address? _mouseAddress;
-    private readonly CpuMemory<THandler>?[] _memory = new CpuMemory<THandler>?[2]; // TODO: Make the amount of banks variable
+    private readonly CpuMemory<THandler>?[] _memory;
 
     public CpuBuilder(THandler handler, Config config)
     {
         _handler = handler;
         _config = config;
+        _memory = new CpuMemory<THandler>?[config.Memory.Banks];
     }
 
     public CpuBuilder<THandler> WithMemory(int? size = null)
@@ -45,9 +46,10 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithProgramFile(string? file = null, int? address = null)
+    public CpuBuilder<THandler> WithProgramFile(string? file = null, Address? address = null)
     {
-        var memory = _memory[0];
+        var (bank, offset) = address ?? _config.Memory.Devices.Program;
+        var memory = _memory[bank];
 
         if (memory == null)
         {
@@ -57,7 +59,7 @@ public class CpuBuilder<THandler>
         HexFile.LoadFile(
             file ?? _config.Program.Path,
             memory.Data,
-            address ?? _config.Memory.Devices.Program
+            offset
         );
         memory.UpdateInstructions();
 
@@ -70,11 +72,13 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithScreen(int bank = 1, int? address = null)
+    public CpuBuilder<THandler> WithScreen(Address? address = null)
     {
+        var (bank, offset) = address ?? _config.Memory.Devices.Screen;
+
         _screen = new Screen<THandler>(
             bank,
-            address ?? _config.Memory.Devices.Screen,
+            offset,
             _handler,
             _config.Screen.Width,
             _config.Screen.Height
@@ -82,11 +86,13 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithCharacter(int bank = 1, int? address = null, bool writeToConsole = false)
+    public CpuBuilder<THandler> WithCharacter(Address? address = null, bool writeToConsole = false)
     {
+        var (bank, offset) = address ?? _config.Memory.Devices.Screen;
+
         _character = new CharacterDevice<THandler>(
             bank,
-            address ?? _config.Memory.Devices.Character,
+            offset,
             _screen,
             _config.Screen.Width,
             _config.Screen.Height,
@@ -95,15 +101,15 @@ public class CpuBuilder<THandler>
         return this;
     }
 
-    public CpuBuilder<THandler> WithKeyboard(int bank = 1, int? address = null)
+    public CpuBuilder<THandler> WithKeyboard(Address? address = null)
     {
-        _keyboardAddress = new Address(bank, address ?? _config.Memory.Devices.Keyboard);
+        _keyboardAddress = address ?? _config.Memory.Devices.Keyboard;
         return this;
     }
 
-    public CpuBuilder<THandler> WithMouse(int bank = 1, int? address = null)
+    public CpuBuilder<THandler> WithMouse(Address? address = null)
     {
-        _mouseAddress = new Address(bank, address ?? _config.Memory.Devices.Mouse);
+        _mouseAddress = address ?? _config.Memory.Devices.Mouse;
         return this;
     }
 

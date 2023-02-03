@@ -1,0 +1,31 @@
+var font = include_font("Ubuntu Mono");
+var screen = create_pointer(0, 2);
+var screenWidth = 255;
+var screenOffset = 0;
+
+void render_char(int screenX, int screenY, int character) {
+    var width = 8;
+    var height = 8;
+    var offset = character * width * height;
+
+    for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+            var pixel = font[offset + y * width + x];
+
+            if (pixel > 0) {
+                screen[(screenY + y) * screenWidth + (screenX + x)] = pixel;
+            }
+        }
+    }
+}
+
+while (true) {
+    screenOffset = 0;
+
+    render_char(0, 0, 'H')
+    render_char(7, 0, 'E')
+    render_char(14, 0, 'L')
+    render_char(21, 0, 'L')
+    render_char(28, 0, 'O')
+}
+
