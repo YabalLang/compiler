@@ -2,15 +2,14 @@
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
 using System.IO.Compression;
-using Yabal;
-using Yabal.Devices;
-using Yabal.Instructions;
-using Yabal.Utils;
-using Yabal;
-using Yabal.Devices;
-using Zio.FileSystems;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
+using CliWrap;
+using Yabal;
+using Yabal.Devices;
+using Yabal.Utils;
+using Zio.FileSystems;
+using Command = System.CommandLine.Command;
 
 var filePathOption = new Argument<FileInfo?>(
     name: "path",
@@ -49,6 +48,12 @@ var disableCharactersOption = new Option<bool>(
 disableCharactersOption.AddAlias("--disable-chars");
 disableCharactersOption.AddAlias("-xC");
 
+var nativeOption = new Option<bool>(
+    name: "--native",
+    description: "Use the official emulator.");
+
+nativeOption.AddAlias("-n");
+
 var charactersToConsoleOption = new Option<bool>(
     name: "--console",
     description: "Redirect character set to the console.");
@@ -69,7 +74,8 @@ var run = new Command(
     disableScreenOption,
     disableCharactersOption,
     charactersToConsoleOption,
-    stateOption
+    stateOption,
+    nativeOption
 };
 
 run.SetHandler(Execute);
@@ -121,6 +127,11 @@ async Task Build(InvocationContext ctx)
         formats.Add(OutputFormat.Assembly);
     }
 
+    await BuildOutput(path, outPath, formats);
+}
+
+async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> formats)
+{
     var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
@@ -148,8 +159,8 @@ async Task Build(InvocationContext ctx)
             _ => throw new NotSupportedException()
         });
 
-        using var file = File.Open(filePath, FileMode.Create);
-        using var writer = new StreamWriter(file);
+        await using var file = File.Open(filePath, FileMode.Create);
+        await using var writer = new StreamWriter(file);
 
         switch (format)
         {
@@ -175,6 +186,31 @@ async Task Build(InvocationContext ctx)
     }
 }
 
+string? GetNativePath()
+{
+    var paths = new List<string>
+    {
+        "astro8.exe",
+        "astro8"
+    };
+
+    if (Path.GetDirectoryName(typeof(Program).Assembly.Location) is { } location)
+    {
+        paths.Add(Path.Combine(location, "astro8.exe"));
+        paths.Add(Path.Combine(location, "astro8"));
+
+        var nativeFolder = Path.Combine(location, "native");
+
+        if (Directory.Exists(nativeFolder))
+        {
+            paths.Add(Path.Combine(nativeFolder, "astro8.exe"));
+            paths.Add(Path.Combine(nativeFolder, "astro8"));
+        }
+    }
+
+    return paths.FirstOrDefault(File.Exists);
+}
+
 async Task Execute(InvocationContext ctx)
 {
     var path = ctx.ParseResult.GetValueForArgument(filePathOption);
@@ -194,6 +230,32 @@ async Task Execute(InvocationContext ctx)
     var disableCharacters = ctx.ParseResult.GetValueForOption(disableCharactersOption);
     var statePath = ctx.ParseResult.GetValueForOption(stateOption);
     var charactersToConsole = ctx.ParseResult.GetValueForOption(charactersToConsoleOption);
+    var native = ctx.ParseResult.GetValueForOption(nativeOption);
+
+    if (native)
+    {
+        var fileName = GetNativePath();
+
+        if (fileName == null)
+        {
+            ctx.Console.WriteLine("Could not find the native emulator.");
+            return;
+        }
+
+        await BuildOutput(path, null, new List<OutputFormat> { OutputFormat.AssemblyWithComments });
+
+        await Cli.Wrap(fileName)
+            .WithArguments(new[]
+            {
+                Path.ChangeExtension(path.FullName, ".asmc"),
+            })
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(s => ctx.Console.WriteLine(s)))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(s => ctx.Console.WriteLine(s)))
+            .WithValidation(CommandResultValidation.None)
+            .ExecuteAsync();
+
+        return;
+    }
 
     var config = ConfigContext.Load(path.Directory?.FullName);
     using var handler = new DesktopHandler(
