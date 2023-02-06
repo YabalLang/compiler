@@ -4,11 +4,40 @@ using Antlr4.Runtime.Misc;
 using Yabal.Ast;
 using Yabal.Exceptions;
 using Yabal.Instructions;
+using Yabal.Loaders;
 using Yabal.Visitor;
 using Zio;
 using Zio.FileSystems;
 
 namespace Yabal;
+
+public sealed class YabalContext : IDisposable
+{
+    public YabalContext(IFileSystem? fileLoader = null)
+    {
+        FileReader = new FileReader(fileLoader);
+    }
+
+    public FileReader FileReader { get; }
+
+    public Dictionary<FileType, IFileLoader> FileLoaders { get; } = new()
+    {
+        [FileType.Byte] = ByteLoader.Instance
+    };
+
+    public Dictionary<(Uri, string, FileType type), (SourceRange Range, FileAddress Address)> Files { get; } = new();
+
+    public YabalContext AddFileLoader(FileType type, IFileLoader loader)
+    {
+        FileLoaders.Add(type, loader);
+        return this;
+    }
+
+    public void Dispose()
+    {
+        FileReader.Dispose();
+    }
+}
 
 public class YabalBuilder : InstructionBuilderBase, IProgram
 {
@@ -23,12 +52,19 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     private readonly InstructionLabel _returnLabel;
     private readonly Dictionary<string, List<Function>> _functions = new();
     private readonly Dictionary<string, InstructionPointer> _strings;
-    private readonly Dictionary<(string, FileType type), InstructionPointer> _files;
     private readonly Dictionary<SourceRange, List<CompileError>> _errors;
     private readonly BlockStack _globalBlock;
+    private readonly YabalContext _context;
 
     public YabalBuilder()
+        : this(new YabalContext())
     {
+
+    }
+
+    public YabalBuilder(YabalContext context)
+    {
+        _context = context;
         _builder = new InstructionBuilder();
 
         _callLabel = _builder.CreateLabel("__call");
@@ -43,7 +79,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         Globals = new PointerCollection("Global");
         Temporary = new PointerCollection("Temp");
         _strings = new Dictionary<string, InstructionPointer>();
-        _files = new Dictionary<(string, FileType), InstructionPointer>();
         _errors = new Dictionary<SourceRange, List<CompileError>>();
         BinaryOperators = new Dictionary<(BinaryOperator, LanguageType, LanguageType), Function>();
 
@@ -55,6 +90,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public YabalBuilder(YabalBuilder parent)
     {
         _parent = parent;
+        _context = parent._context;
         _visitor = parent._visitor;
         _builder = new InstructionBuilder();
 
@@ -72,7 +108,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         Temporary = parent.Temporary;
         _globalBlock = parent._globalBlock;
         _strings = parent._strings;
-        _files = parent._files;
         _errors = parent._errors;
         BinaryOperators = parent.BinaryOperators;
     }
@@ -105,11 +140,19 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public InstructionPointer GetFile(string path, FileType type)
+    public FileAddress GetFile(SourceRange range, string path, FileType type)
     {
-        var pointer = _builder.CreatePointer(name: $"File:{type}:{_files.Count}");
-        _files.Add((path, type), pointer);
-        return pointer;
+        var key = (range.File, path, type);
+
+        if (_context.Files.TryGetValue(key, out var value))
+        {
+            return value.Address;
+        }
+
+        var pointer = _builder.CreatePointer(name: $"File:{type}:{_context.Files.Count}");
+        var address = new FileAddress(path, type, pointer);
+        _context.Files.Add(key, (range, address));
+        return address;
     }
 
     public InstructionPointer ReturnValue { get; set; }
@@ -231,21 +274,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return pointer;
     }
 
-    public async ValueTask<bool> CompileCodeAsync(string code, bool optimize = true, Uri? file = null, IFileSystem? fileSystem = null)
+    public async ValueTask<bool> CompileCodeAsync(string code, bool optimize = true, Uri? file = null)
     {
-        fileSystem ??= new PhysicalFileSystem();
         file ??= new Uri("memory://");
 
         try
         {
-            var program = Parse(fileSystem, file, code);
+            var program = Parse(_context, file, code);
 
             program.Declare(this);
             program.Initialize(this);
 
-            foreach (var (path, type) in _files.Keys)
+            foreach (var ((_, path, type), (range, address)) in _context.Files)
             {
-                await FileContent.LoadAsync(path, type);
+                if (!_context.FileLoaders.TryGetValue(type, out var loader))
+                {
+                    AddError(ErrorLevel.Error, default, $"No loader for file type {type}");
+                    continue;
+                }
+
+                address.Content = await loader.LoadAsync(range, path, _context.FileReader);
             }
 
             if (optimize)
@@ -274,7 +322,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public ProgramStatement Parse(IFileSystem fileSystem, Uri file, string code)
+    public ProgramStatement Parse(YabalContext context, Uri file, string code)
     {
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
@@ -285,7 +333,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             ErrorHandler = new BailErrorStrategy(),
         };
 
-        var listener = new YabalVisitor(file, fileSystem);
+        var listener = new YabalVisitor(file, context);
         return listener.VisitProgram(parser.program());
     }
 
@@ -634,7 +682,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     private void AddStrings(InstructionBuilder builder)
     {
-        if (_strings.Count == 0 && _files.Count == 0)
+        if (_strings.Count == 0 && _context.Files.Count == 0)
         {
             return;
         }
@@ -667,15 +715,15 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             builder.EmitRaw(0xFFFF);
         }
 
-        foreach (var ((file, type), pointer) in _files)
+        foreach (var (_, pointer) in _context.Files.Values)
         {
-            var (offset, content) = FileContent.Get(file, type);
+            var (offset, content) = pointer.Content;
 
             for (var i = 0; i < content.Length; i++)
             {
                 if (i == offset)
                 {
-                    builder.Mark(pointer);
+                    builder.Mark(pointer.Pointer);
                 }
 
                 builder.EmitRaw(content[i]);

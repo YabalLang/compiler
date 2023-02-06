@@ -26,10 +26,10 @@ public class TypeDiscover : YabalParserBaseListener
 
 public class ImportDiscover : YabalParserBaseListener
 {
-    private readonly IFileSystem _fileSystem;
+    private readonly FileReader _fileSystem;
     private readonly Uri _file;
 
-    public ImportDiscover(IFileSystem fileSystem, Uri file)
+    public ImportDiscover(FileReader fileSystem, Uri file)
     {
         _fileSystem = fileSystem;
         _file = file;
@@ -43,27 +43,7 @@ public class ImportDiscover : YabalParserBaseListener
     {
         var path = YabalVisitor.GetStringValue(context.@string());
 
-        Uri? uri;
-
-        if (path.StartsWith("."))
-        {
-            uri = new Uri(_file, path);
-        }
-        else if (path.StartsWith("/"))
-        {
-            uri = new Uri(_file, "." + path);
-        }
-        else if (!Uri.TryCreate(path, UriKind.Absolute, out uri))
-        {
-            uri = new Uri($"https://yabal.dev/x/{path}.yabal");
-        }
-
-        if (uri == null)
-        {
-            throw new InvalidOperationException();
-        }
-
-        var code = GetFromUri(context, uri);
+        var (uri, code) = _fileSystem.ReadAllTextAsync(SourceRange.From(context, _file), path).GetAwaiter().GetResult();
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
 
@@ -77,45 +57,6 @@ public class ImportDiscover : YabalParserBaseListener
 
         ImportByUrl[uri] = result;
         ImportByContext[context] = (uri, result);
-    }
-
-    private string? GetFromUri(YabalParser.ImportStatementContext context, Uri uri)
-    {
-        return uri.Scheme switch
-        {
-            "file" => GetFromFile(context, uri),
-            "http" or "https" => GetFromHttp(context, uri),
-            _ => throw new InvalidCodeException("Invalid import scheme '" + uri.Scheme + "'", SourceRange.From(context, _file))
-        };
-    }
-
-    private string? GetFromFile(ParserRuleContext context, Uri uri)
-    {
-        try
-        {
-            return _fileSystem.ReadAllText(uri.LocalPath);
-        }
-        catch (Exception)
-        {
-            throw new InvalidCodeException("Could not find or read file '" + _fileSystem.ConvertPathToInternal(uri.LocalPath) + "'", SourceRange.From(context, _file));
-        }
-    }
-
-    private string? GetFromHttp(ParserRuleContext context, Uri uri)
-    {
-        try
-        {
-            using var client = new HttpClient();
-
-            var response = client.GetAsync(uri).Result;
-            response.EnsureSuccessStatusCode();
-
-            return response.Content.ReadAsStringAsync().Result;
-        }
-        catch (Exception)
-        {
-            throw new InvalidCodeException("Failed to import '" + uri + "'", SourceRange.From(context, _file));
-        }
     }
 }
 

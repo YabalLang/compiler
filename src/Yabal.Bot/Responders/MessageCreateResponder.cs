@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Yabal.Bot.Handler;
-using Yabal.Instructions;
 using OneOf;
 using Remora.Discord.API.Abstractions.Gateway.Events;
 using Remora.Discord.API.Abstractions.Objects;
@@ -10,8 +9,8 @@ using Remora.Rest.Core;
 using Remora.Results;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using Yabal;
 using Yabal.Ast;
+using Yabal.Loaders;
 using Zio;
 using Zio.FileSystems;
 
@@ -59,10 +58,14 @@ public class MessageCreateResponder : IResponder<IMessageCreate>
 
     private async Task<Result> Execute(string code, Snowflake channelId)
     {
-        var builder = new YabalBuilder();
+        using var context = new YabalContext()
+            .AddFileLoader(FileType.Font, FontLoader.Instance)
+            .AddFileLoader(FileType.Image, ImageLoader.Instance);
+
+        var builder = new YabalBuilder(context);
         var fileSystem = new MemoryFileSystem();
         fileSystem.WriteAllText("/message.yabal", code);
-        var success = await builder.CompileCodeAsync(code, fileSystem: fileSystem, file: new Uri("file:///message.yabal"));
+        var success = await builder.CompileCodeAsync(code, file: new Uri("file:///message.yabal"));
 
         var sb = new StringBuilder();
         var handler = new ImageHandler();

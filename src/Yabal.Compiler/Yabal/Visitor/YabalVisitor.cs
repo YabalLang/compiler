@@ -15,15 +15,13 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     private Uri _file;
     private BlockCompileStack _block = new();
 
-    public YabalVisitor(Uri file, IFileSystem fileSystem)
+    public YabalVisitor(Uri file, YabalContext context)
     {
         _file = file;
-        FileSystem = fileSystem;
+        Context = context;
     }
 
-    public IFileSystem FileSystem { get; }
-
-    public List<(string, FileType)> Files { get; } = new();
+    public YabalContext Context { get; }
 
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
     {
@@ -32,7 +30,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         void Prepare(IParseTree current)
         {
-            var importDiscover = new ImportDiscover(FileSystem, _file);
+            var importDiscover = new ImportDiscover(Context.FileReader, _file);
 
             walker.Walk(importDiscover, current);
 
@@ -781,8 +779,6 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         }
 
         var path = stringExpression.Value;
-
-        Files.Add((path, type));
 
         return new IncludeFileExpression(
             context,

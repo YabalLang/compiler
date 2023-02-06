@@ -973,7 +973,7 @@ public class AssemblerTest
                 """);
 
         const string code = """
-            import "lib.yabal"
+            import "./lib.yabal"
 
             var pointer = create_pointer(4095)
 
@@ -981,8 +981,9 @@ public class AssemblerTest
             pointer[0] = get_offset()
             """;
 
-        var builder = new YabalBuilder();
-        await builder.CompileCodeAsync(code, optimize, fileSystem: fileSystem);
+        using var context = new YabalContext(fileSystem);
+        var builder = new YabalBuilder(context);
+        await builder.CompileCodeAsync(code, optimize, new Uri("file:///main.yabal"));
 
         var cpu = Create(builder);
         cpu.Run();

@@ -132,11 +132,12 @@ async Task Build(InvocationContext ctx)
 
 async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> formats)
 {
-    var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
-    await builder.CompileCodeAsync(code, fileSystem: fs, file: uri);
+    using var context = new YabalContext(fs);
+    var builder = new YabalBuilder(context);
+    await builder.CompileCodeAsync(code, file: uri);
     PrintErrors(uri, builder.Errors, code);
 
     if (string.IsNullOrEmpty(outPath))
@@ -220,11 +221,12 @@ async Task Execute(InvocationContext ctx)
         return;
     }
 
-    var builder = new YabalBuilder();
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
-    await builder.CompileCodeAsync(code, fileSystem: fs, file: uri);
+    using var context = new YabalContext(fs);
+    var builder = new YabalBuilder(context);
+    await builder.CompileCodeAsync(code, file: uri);
 
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);
     var disableCharacters = ctx.ParseResult.GetValueForOption(disableCharactersOption);
