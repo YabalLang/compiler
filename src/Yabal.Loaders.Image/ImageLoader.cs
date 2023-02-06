@@ -7,7 +7,8 @@ public class ImageLoader : IFileLoader
 {
     public static readonly IFileLoader Instance = new ImageLoader();
 
-    public async ValueTask<FileContent> LoadAsync(SourceRange range, string path, FileReader reader)
+    public async ValueTask<FileContent> LoadAsync(YabalBuilder builder, SourceRange range, string path,
+        FileReader reader)
     {
         var (_, bytes) = await reader.ReadAllTextAsync(range, path);
         using var image = Image.Load<Rgba32>(bytes);

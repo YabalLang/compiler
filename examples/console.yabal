@@ -1,4 +1,4 @@
-var font = include_font("Ubuntu Mono");
+var font = include_font("./font/RobotoMono-Regular.ttf;Size=10");
 var screen = create_pointer(53871, 1);
 var screenWidth = 108;
 var screenHeight = 108;
@@ -35,7 +35,7 @@ void write_string(int[] str) {
     for (var i = 0; true; i++) {
         var c = str[i];
 
-        if (c == 0) {
+        if (c == 0xFFFF) {
             break;
         }
 

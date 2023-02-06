@@ -6,7 +6,9 @@ using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
 using CliWrap;
 using Yabal;
+using Yabal.Ast;
 using Yabal.Devices;
+using Yabal.Loaders;
 using Yabal.Utils;
 using Zio.FileSystems;
 using Command = System.CommandLine.Command;
@@ -54,6 +56,12 @@ var nativeOption = new Option<bool>(
 
 nativeOption.AddAlias("-n");
 
+var output = new Option<bool>(
+    name: "--out",
+    description: "Print the assembly to the console.");
+
+output.AddAlias("-o");
+
 var charactersToConsoleOption = new Option<bool>(
     name: "--console",
     description: "Redirect character set to the console.");
@@ -75,7 +83,8 @@ var run = new Command(
     disableCharactersOption,
     charactersToConsoleOption,
     stateOption,
-    nativeOption
+    nativeOption,
+    output
 };
 
 run.SetHandler(Execute);
@@ -135,7 +144,9 @@ async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> 
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
-    using var context = new YabalContext(fs);
+    using var context = new YabalContext(fs)
+        .AddFileLoader(FileType.Font, FontLoader.Instance)
+        .AddFileLoader(FileType.Image, ImageLoader.Instance);
     var builder = new YabalBuilder(context);
     await builder.CompileCodeAsync(code, file: uri);
     PrintErrors(uri, builder.Errors, code);
@@ -224,10 +235,13 @@ async Task Execute(InvocationContext ctx)
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
-    using var context = new YabalContext(fs);
+    using var context = new YabalContext(fs)
+        .AddFileLoader(FileType.Font, FontLoader.Instance)
+        .AddFileLoader(FileType.Image, ImageLoader.Instance);
     var builder = new YabalBuilder(context);
     await builder.CompileCodeAsync(code, file: uri);
 
+    var showOutput = ctx.ParseResult.GetValueForOption(output);
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);
     var disableCharacters = ctx.ParseResult.GetValueForOption(disableCharactersOption);
     var statePath = ctx.ParseResult.GetValueForOption(stateOption);
@@ -296,6 +310,11 @@ async Task Execute(InvocationContext ctx)
 
     var program = builder.Build();
     PrintErrors(uri, builder.Errors, code);
+
+    if (showOutput)
+    {
+        Console.WriteLine(program.ToAssembly(true));
+    }
 
     cpuBuilder.WithProgram(program);
 

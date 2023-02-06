@@ -10,22 +10,75 @@ public class FontLoader : IFileLoader
 {
     public static readonly IFileLoader Instance = new FontLoader();
 
-    public ValueTask<FileContent> LoadAsync(SourceRange range, string path, FileReader reader)
+    public async ValueTask<FileContent> LoadAsync(YabalBuilder builder, SourceRange range, string path,
+        FileReader reader)
     {
-        const int charWidth = 8;
-        const int charHeight = 8;
-        const int charLength = charWidth * charHeight;
-        var content = new int[charLength * 49];
+        var settingsIndex = path.IndexOf(';');
+        var settings = new FontSettings();
 
-        var font = SystemFonts.Get(path).CreateFont(12, FontStyle.Bold);
+        if (settingsIndex > 0)
+        {
+            var settingsString = path.Substring(settingsIndex + 1);
+            path = path.Substring(0, settingsIndex);
+
+            foreach (var setting in settingsString.Split(','))
+            {
+                var settingParts = setting.Split('=');
+                var settingName = settingParts[0];
+                var settingValue = settingParts[1];
+
+                try
+                {
+                    switch (settingName.ToLowerInvariant())
+                    {
+                        case "size":
+                            settings.Size = int.Parse(settingValue);
+                            break;
+                        case "width":
+                            settings.Width = int.Parse(settingValue);
+                            break;
+                        case "height":
+                            settings.Height = int.Parse(settingValue);
+                            break;
+                        case "antialias":
+                            settings.Antialias = settingValue switch
+                            {
+                                "0" => false,
+                                "1" => true,
+                                _ => bool.Parse(settingValue)
+                            };
+                            break;
+                    }
+                }
+                catch
+                {
+                    builder.AddError(ErrorLevel.Warning, range, $"Invalid font setting '{settingName}'");
+                }
+            }
+        }
+
+        var collection = new FontCollection();
+
+        FontFamily fontFamily;
+        await using (var result = await reader.GetStreamAsync(range, path))
+        {
+            fontFamily = collection.Add(result.Stream);
+        }
+
+        var font = fontFamily.CreateFont(settings.Size, FontStyle.Regular);
 
         var drawingOptions = new DrawingOptions
         {
             GraphicsOptions = new GraphicsOptions
             {
-                //Antialias = false
+                Antialias = settings.Antialias
             }
         };
+
+        var charWidth = settings.Width;
+        var charHeight = settings.Height;
+        var charLength = charWidth * charHeight;
+        var content = new int[charLength * 49];
 
         var options = new TextOptions(font)
         {
@@ -50,10 +103,10 @@ public class FontLoader : IFileLoader
             WriteFont(image, content, index * charLength, charHeight, charWidth);
         }
 
-        return new ValueTask<FileContent>(new FileContent(1, content));
+        return new FileContent(1, content);
     }
 
-    private static void WriteFont(Image<Rgba32> image, int[] content, int i, byte height, byte width)
+    private static void WriteFont(Image<Rgba32> image, int[] content, int i, int height, int width)
     {
         for (var y = 0; y < height; y++)
         {
@@ -67,6 +120,17 @@ public class FontLoader : IFileLoader
                 content[i++] = (r / 8 << 10) | (g / 8 << 5) | (b / 8);
             }
         }
+    }
+
+    public class FontSettings
+    {
+        public int Size { get; set; } = 12;
+
+        public int Width { get; set; } = 8;
+
+        public int Height { get; set; } = 8;
+
+        public bool Antialias { get; set; } = true;
     }
 
 

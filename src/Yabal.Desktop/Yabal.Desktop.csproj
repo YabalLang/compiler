@@ -56,6 +56,8 @@
     <ItemGroup>
       <ProjectReference Include="..\Yabal.Compiler\Yabal.Compiler.csproj" />
       <ProjectReference Include="..\Yabal.Emulator\Yabal.Emulator.csproj" />
+      <ProjectReference Include="..\Yabal.Loaders.Font\Yabal.Loaders.Font.csproj" />
+      <ProjectReference Include="..\Yabal.Loaders.Image\Yabal.Loaders.Image.csproj" />
     </ItemGroup>
 
 </Project>

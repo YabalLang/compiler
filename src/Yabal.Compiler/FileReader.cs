@@ -16,20 +16,20 @@ public sealed class FileReader : IDisposable
 
     public async Task<(Uri Uri, string Content)> ReadAllTextAsync(SourceRange range, string path)
     {
-        await using var result = await GetContent(range, path);
+        await using var result = await GetStreamAsync(range, path);
         using var reader = new StreamReader(result.Stream);
         return (result.Uri, await reader.ReadToEndAsync());
     }
 
     public async Task<(Uri Uri, byte[] Bytes)> ReadAllBytesAsync(SourceRange range, string path)
     {
-        await using var result = await GetContent(range, path);
+        await using var result = await GetStreamAsync(range, path);
         using var memoryStream = new MemoryStream();
         await result.Stream.CopyToAsync(memoryStream);
         return (result.Uri, memoryStream.ToArray());
     }
 
-    private async Task<StreamResult> GetContent(SourceRange range, string path)
+    public async Task<StreamResult> GetStreamAsync(SourceRange range, string path)
     {
         Uri? uri;
 

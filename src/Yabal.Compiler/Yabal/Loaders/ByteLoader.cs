@@ -4,7 +4,8 @@ public class ByteLoader : IFileLoader
 {
     public static readonly IFileLoader Instance = new ByteLoader();
 
-    public async ValueTask<FileContent> LoadAsync(SourceRange range, string path, FileReader reader)
+    public async ValueTask<FileContent> LoadAsync(YabalBuilder builder, SourceRange range, string path,
+        FileReader reader)
     {
         var (_, bytes) = await reader.ReadAllBytesAsync(range, path);
         var content = new int[bytes.Length / 2 + 1];

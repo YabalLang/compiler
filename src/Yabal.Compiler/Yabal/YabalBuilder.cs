@@ -293,7 +293,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                     continue;
                 }
 
-                address.Content = await loader.LoadAsync(range, path, _context.FileReader);
+                address.Content = await loader.LoadAsync(this, range, path, _context.FileReader);
             }
 
             if (optimize)
