@@ -1,0 +1,6 @@
+import "write"
+
+while(true) {
+    setPosition(0, 0)
+    write("Hello World")
+}

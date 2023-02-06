@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Astro8.Compiler\Astro8.Compiler.csproj" />
+      <ProjectReference Include="..\Yabal.Compiler\Yabal.Compiler.csproj" />
     </ItemGroup>
 
 </Project>

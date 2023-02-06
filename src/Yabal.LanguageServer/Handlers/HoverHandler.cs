@@ -1,10 +1,10 @@
 ﻿using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Astro8.Yabal.Ast;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Yabal.Ast;
 
 namespace Yabal.LanguageServer.Handlers;
 

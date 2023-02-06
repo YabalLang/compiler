@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Astro8.Yabal;
-using Astro8.Yabal.Ast;
-using Astro8.Yabal.Visitor;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Yabal.Ast;
+using Yabal.Visitor;
 
 namespace Yabal.LanguageServer;
 

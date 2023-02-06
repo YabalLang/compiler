@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+        <PackageReference Include="Remora.Discord.Commands" Version="26.2.2" />
+        <PackageReference Include="Remora.Discord.Extensions" Version="5.2.5" />
+        <PackageReference Include="Remora.Discord.Gateway" Version="11.0.5" />
+        <PackageReference Include="Remora.Discord.Hosting" Version="6.0.4" />
+        <PackageReference Include="Remora.Discord.API" Version="72.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+        <PackageReference Include="ValueTaskSupplement" Version="1.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Yabal.Compiler\Yabal.Compiler.csproj" />
+      <ProjectReference Include="..\Yabal.Emulator\Yabal.Emulator.csproj" />
+    </ItemGroup>
+
+</Project>
