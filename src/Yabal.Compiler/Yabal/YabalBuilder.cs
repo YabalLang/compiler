@@ -664,7 +664,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 }
             }
 
-            builder.EmitRaw(0);
+            builder.EmitRaw(0xFFFF);
         }
 
         foreach (var ((file, type), pointer) in _files)
