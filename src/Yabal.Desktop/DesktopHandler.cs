@@ -1,4 +1,5 @@
-﻿using System.Threading.Channels;
+﻿using System.Buffers;
+using System.Threading.Channels;
 using Yabal;
 using Yabal.Devices;
 
@@ -15,24 +16,21 @@ public class DesktopHandler : Handler, IDisposable
 {
     private bool _screenEnabled;
     private readonly uint[] _textureData;
+    private readonly int _length;
     private readonly int _pixelScale;
     private IntPtr _window;
     private IntPtr _renderer;
     private IntPtr _texture;
-    private readonly Channel<SetPixel> _channel;
-    private readonly ChannelReader<SetPixel> _reader;
-    private readonly ChannelWriter<SetPixel> _writer;
     private string? _pendingTitle;
+    private bool _updateTexture;
 
     public DesktopHandler(int width = 64, int height = 64, int pixelScale = 9)
     {
         Width = width;
         Height = height;
         _textureData = new uint[width * height];
+        _length = _textureData.Length;
         _pixelScale = pixelScale;
-        _channel = Channel.CreateUnbounded<SetPixel>();
-        _reader = _channel.Reader;
-        _writer = _channel.Writer;
     }
 
     public int Width { get; }
@@ -115,42 +113,30 @@ public class DesktopHandler : Handler, IDisposable
 
     private unsafe void UpdatePixels()
     {
-        int result;
-
-        fixed (uint* p = _textureData)
+        if (!_updateTexture)
         {
-            var changed = false;
-
-            while (_reader.TryRead(out var pixel))
-            {
-                var argb = (uint)pixel.Color.ARGB;
-
-                if (*(p + pixel.Address) == argb)
-                {
-                    continue;
-                }
-
-                *(p + pixel.Address) = argb;
-                changed = true;
-            }
-
-            if (!changed)
-            {
-                return;
-            }
-
-            result = SDL_UpdateTexture
-            (
-                _texture,
-                default,
-                (IntPtr) p,
-                Width * sizeof(uint)
-            );
+            return;
         }
 
-        if (result != 0)
+        _updateTexture = false;
+
+        lock (_textureData)
         {
-            throw new Exception("SDL_UpdateTexture failed");
+            fixed (uint* p = _textureData)
+            {
+                var result = SDL_UpdateTexture
+                (
+                    _texture,
+                    default,
+                    (nint)p,
+                    Width * sizeof(uint)
+                );
+
+                if (result != 0)
+                {
+                    throw new Exception("SDL_UpdateTexture failed");
+                }
+            }
         }
 
         UpdateTexture();
@@ -176,14 +162,15 @@ public class DesktopHandler : Handler, IDisposable
 
     public override void SetPixel(int address, ScreenColor color)
     {
-        if (address < 0 || address >= _textureData.Length)
+        if (address < 0 || address >= _length)
         {
             return;
         }
 
-        _writer.TryWrite(
-            new SetPixel(address, color)
-        );
+        lock (_textureData)
+        {
+            _textureData[address] = (uint)color.ARGB;
+        }
     }
 
     public override void LogSpeed(int steps, float value)
@@ -193,7 +180,7 @@ public class DesktopHandler : Handler, IDisposable
 
     public override void FlushScreen()
     {
-        // TODO
+        _updateTexture = true;
     }
 
     public void Dispose()

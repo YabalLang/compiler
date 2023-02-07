@@ -53,5 +53,6 @@ while (true) {
     currentX = 0;
     currentY = 0;
     write_string("abcdefghijklmnopqrstuvwxyz0123456789");
+    asm { VBUF }
 }
 

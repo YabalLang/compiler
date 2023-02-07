@@ -31,6 +31,9 @@ public class FontLoader : IFileLoader
                 {
                     switch (settingName.ToLowerInvariant())
                     {
+                        case "scale":
+                            settings.Scale = int.Parse(settingValue);
+                            break;
                         case "size":
                             settings.Size = int.Parse(settingValue);
                             break;
@@ -65,7 +68,8 @@ public class FontLoader : IFileLoader
             fontFamily = collection.Add(result.Stream);
         }
 
-        var font = fontFamily.CreateFont(settings.Size, FontStyle.Regular);
+        var scale = settings.Scale;
+        var font = fontFamily.CreateFont(settings.Size * scale, FontStyle.Regular);
 
         var drawingOptions = new DrawingOptions
         {
@@ -85,7 +89,7 @@ public class FontLoader : IFileLoader
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            Origin = new PointF(charWidth / 2f, charHeight / 2f),
+            Origin = new PointF(charWidth * scale / 2f, charHeight * scale / 2f),
             ColorFontSupport = ColorFontSupport.None,
         };
 
@@ -93,11 +97,12 @@ public class FontLoader : IFileLoader
 
         foreach (var (c, index) in CharMappings)
         {
-            using var image = new Image<Rgba32>(charWidth, charHeight);
+            using var image = new Image<Rgba32>(charWidth * scale, charHeight * scale);
 
             image.Mutate(x =>
             {
                 x.DrawText(drawingOptions, options, c.ToString(), brush, null);
+                if (scale > 1) x.Resize(charWidth, charHeight, KnownResamplers.Robidoux);
             });
 
             WriteFont(image, content, index * charLength, charHeight, charWidth);
@@ -117,6 +122,7 @@ public class FontLoader : IFileLoader
                 var r = (int)(pixel.R * alpha);
                 var g = (int)(pixel.G * alpha);
                 var b = (int)(pixel.B * alpha);
+
                 content[i++] = (r / 8 << 10) | (g / 8 << 5) | (b / 8);
             }
         }
@@ -124,6 +130,8 @@ public class FontLoader : IFileLoader
 
     public class FontSettings
     {
+        public int Scale { get; set; } = 1;
+
         public int Size { get; set; } = 12;
 
         public int Width { get; set; } = 8;
