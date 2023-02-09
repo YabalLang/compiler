@@ -1370,4 +1370,61 @@ public class AssemblerTest
         var address = builder.GetVariable("result").Pointer.Address;
         Assert.Equal(6, cpu.Memory[address]);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Using(bool optimize)
+    {
+        var fileSystem = new MemoryFileSystem();
+
+        fileSystem.WriteAllText("/invalid.yabal", """
+                namespace invalid
+
+                void set_offset(int value) {
+                    // no-op
+                }
+                int get_offset() {
+                    return 0
+                }
+                """);
+
+        fileSystem.WriteAllText("/pointers.yabal", """
+                namespace my.pointers
+
+                var offset = 0;
+
+                void set_offset(int value) {
+                    offset = value
+                }
+
+                namespace getters
+                {
+                    int get_offset() {
+                        return offset
+                    }
+                }
+                """);
+
+        const string code = """
+            import "./invalid.yabal"
+            import "./pointers.yabal"
+
+            use my.pointers.getters
+
+            var pointer = create_pointer(4095)
+
+            my.pointers.set_offset(1)
+            pointer[0] = get_offset()
+            """;
+
+        using var context = new YabalContext(fileSystem);
+        var builder = new YabalBuilder(context);
+        await builder.CompileCodeAsync(code, optimize, new Uri("file:///main.yabal"));
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4095]);
+    }
 }

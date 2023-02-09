@@ -19,18 +19,51 @@ public record CallExpression(
 
     public override void Initialize(YabalBuilder builder)
     {
-        if (Callee is not IdentifierExpression { Identifier: var identifier})
+        Namespace? ns = null;
+        Identifier name;
+
+        if (Callee is MemberExpression memberExpression)
+        {
+            var items = new List<string>();
+            var current = memberExpression.Expression;
+
+            while (current is MemberExpression { Expression: var expression, Name: var part })
+            {
+                items.Add(part.Name);
+                current = expression;
+            }
+
+            if (current is IdentifierExpression { Identifier: var identifier })
+            {
+                items.Add(identifier.Name);
+            }
+            else
+            {
+                throw new InvalidCodeException("Callee must be an identifier", Range);
+            }
+
+            items.Reverse();
+            ns = new Namespace(items);
+            name = memberExpression.Name;
+        }
+        else if (Callee is IdentifierExpression { Identifier: var identifier})
+        {
+            name = identifier;
+        }
+        else
         {
             throw new InvalidCodeException("Callee must be an identifier", Range);
         }
 
-        foreach (var argument in Arguments)
+        var arguments = Arguments;
+
+        foreach (var argument in arguments)
         {
             argument.Initialize(builder);
         }
 
-        var argumentTypes = Arguments.Select(i => i.Type).ToArray();
-        Function = builder.GetFunction(identifier.Name, argumentTypes, identifier.Range);
+        var argumentTypes = arguments.Select(i => i.Type).ToArray();
+        Function = builder.GetFunction(ns, name.Name, argumentTypes, name.Range);
         Function.References.Add(this);
 
         if (Function.Inline)
@@ -41,7 +74,7 @@ public record CallExpression(
             _returnLabel = builder.CreateLabel();
             _block.Return = _returnLabel;
 
-            _variables = new (Variable, Expression)[Arguments.Count];
+            _variables = new (Variable, Expression)[arguments.Count];
 
             // Copy variables from parent blocks
             if (Function.Block is { } functionBlock)
@@ -64,10 +97,10 @@ public record CallExpression(
                 }
             }
 
-            for (var i = 0; i < Arguments.Count; i++)
+            for (var i = 0; i < arguments.Count; i++)
             {
                 var parameter = Function.Parameters[i];
-                var expression = Arguments[i];
+                var expression = arguments[i];
                 var variable = builder.CreateVariable(parameter.Name, parameter.Type, expression);
                 _variables[i] = (variable, expression);
             }

@@ -96,7 +96,9 @@ underscore
 
 // Statements
 statement
-    : importStatement
+    : namespaceStatement
+    | useStatement
+    | importStatement
     | variableDeclaration
     | structDeclaration
 	| returnStatement
@@ -177,29 +179,37 @@ expressionStatement
 	;
 
 whileStatement
-	: While OpenBrace expression CloseBrace blockStatement
+	: While OpenBrace expression CloseBrace blockOrSingleStatement
 	;
 
 importStatement
     : Import string
     ;
 
+namespaceStatement
+    : Namespace identifierName (Dot identifierName)* blockStatement?
+    ;
+
+useStatement
+    : Use identifierName (Dot identifierName)*
+    ;
+
 // If-statement
 ifStatement
-	: If OpenBrace expression CloseBrace blockStatement elseIfStatement* elseStatement?
+	: If OpenBrace expression CloseBrace blockOrSingleStatement elseIfStatement* elseStatement?
 	;
 
 elseIfStatement
-	: Else If OpenBrace expression CloseBrace blockStatement
+	: Else If OpenBrace expression CloseBrace blockOrSingleStatement
 	;
 
 elseStatement
-	: Else blockStatement
+	: Else blockOrSingleStatement
 	;
 
 // For-statement
 forStatement
-	: For OpenBrace forInit? SemiColon expression SemiColon statement? CloseBrace blockStatement
+	: For OpenBrace forInit? SemiColon expression SemiColon statement? CloseBrace blockOrSingleStatement
 	;
 
 forInit
@@ -211,9 +221,13 @@ expressionList
     : (expression (Comma expression)*)?
     ;
 
+blockOrSingleStatement
+    : blockStatement
+    | statement
+    ;
+
 blockStatement
 	: OpenCurly (statement (eos statement)*)? eos? CloseCurly
-	| statement
 	;
 
 // Function

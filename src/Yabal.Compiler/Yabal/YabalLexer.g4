@@ -80,6 +80,8 @@ Static              : 'static';
 Operator            : 'operator';
 Inline              : 'inline';
 Ref                 : 'ref';
+Namespace           : 'namespace';
+Use                 : 'use';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

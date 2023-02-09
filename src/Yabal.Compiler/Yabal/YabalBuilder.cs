@@ -219,11 +219,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
-    public bool TryGetFunction(string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
+    public bool TryGetFunction(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
     {
         if (_functions.TryGetValue(name, out var functions))
         {
             function = functions.FirstOrDefault(i =>
+                (ns is null ? i.Namespace.Contains(Block.EnumerateUsing()) : i.Namespace.Equals(ns)) &&
                 types.Length >= i.RequiredParameterCount &&
                 types.Zip(i.Parameters, (a, b) => a == b.Type).All(b => b));
 
@@ -233,30 +234,58 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
 
             function = functions.FirstOrDefault(i =>
+                (ns is null ? i.Namespace.Contains(Block.EnumerateUsing()) : i.Namespace.Equals(ns)) &&
                 types.Length >= i.RequiredParameterCount &&
                 types.Zip(i.Parameters, (a, b) => a.Size == b.Type.Size).All(b => b));
 
             if (function != null)
             {
-                AddError(ErrorLevel.Warning, function.Range, $"Function {function} is being called with a different types ({string.Join(", ", types.Select(i => i.ToString()))}), it's suggested to make an overload");
+                AddError(ErrorLevel.Warning, callRange, $"Function {function} is being called with a different types ({string.Join(", ", types.Select(i => i.ToString()))}), it's suggested to make an overload");
                 return true;
             }
         }
 
         if (_parent != null)
         {
-            return _parent.TryGetFunction(name, types, out function);
+            return _parent.TryGetFunction(callRange, ns, name, types, out function);
         }
 
         function = default;
         return false;
     }
 
-    public Function GetFunction(string name, LanguageType[] types, SourceRange range)
+    public IEnumerable<Function> GetFunctions(string name)
     {
-        if (!TryGetFunction(name, types, out var function))
+        if (_functions.TryGetValue(name, out var functions))
         {
-            throw new InvalidCodeException($"Function {name}({string.Join(", ", types.Select(i => i.ToString()))}) not found", range);
+            foreach (var function in functions)
+            {
+                yield return function;
+            }
+        }
+
+        if (_parent != null)
+        {
+            foreach (var function in _parent.GetFunctions(name))
+            {
+                yield return function;
+            }
+        }
+    }
+
+    public Function GetFunction(Namespace? ns, string name, LanguageType[] types, SourceRange callRange)
+    {
+        if (!TryGetFunction(callRange, ns, name, types, out var function))
+        {
+            var error = $"Function {name}({string.Join(", ", types.Select(i => i.ToString()))}) not found";
+            var functions = GetFunctions(name).ToArray();
+
+            if (functions.Length > 0)
+            {
+                error += $", did you mean {string.Join(", ", functions.Select(i => $"{i.Namespace}.{i.Name}"))}?";
+            }
+
+            throw new InvalidCodeException(error, callRange);
         }
 
         return function;
@@ -745,7 +774,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 _functions.Add(identifier.Name, functions);
             }
 
-            if (functions.Any(i => i.Parameters.Count == function.Parameters.Count && i.Parameters.Zip(function.Parameters).All(j => j.First.Type == j.Second.Type)))
+            if (functions.Any(i =>
+                    i.Namespace.Equals(function.Namespace) &&
+                    i.Parameters.Count == function.Parameters.Count &&
+                    i.Parameters.Zip(function.Parameters).All(j => j.First.Type == j.Second.Type)))
             {
                 throw new InvalidCodeException($"Function '{identifier.Name}' with the same parameters already exists.", identifier.Range);
             }

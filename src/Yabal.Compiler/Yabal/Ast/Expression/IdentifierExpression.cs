@@ -2,6 +2,43 @@
 
 namespace Yabal.Ast;
 
+public record Namespace(IReadOnlyList<string> Namespaces)
+{
+    public static readonly Namespace Global = new(Array.Empty<string>());
+
+    public bool Contains(IEnumerable<Namespace> ns) => Namespaces.Count == 0 || ns.Any(Contains);
+
+    public bool Contains(Namespace ns)
+    {
+        if (Namespaces.Count == 0)
+        {
+            return true;
+        }
+
+        return Namespaces.Count <= ns.Namespaces.Count && Namespaces.SequenceEqual(ns.Namespaces.Take(Namespaces.Count));
+    }
+
+    public virtual bool Equals(Namespace? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        return ReferenceEquals(this, other) || Namespaces.SequenceEqual(other.Namespaces);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Namespaces);
+    }
+
+    public override string ToString()
+    {
+        return string.Join(".", Namespaces);
+    }
+}
+
 public record Identifier(SourceRange Range, string Name)
 {
     public override string ToString()

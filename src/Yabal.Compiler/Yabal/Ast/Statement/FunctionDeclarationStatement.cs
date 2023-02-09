@@ -8,6 +8,7 @@ public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefa
 
 public record Function(
     SourceRange Range,
+    Namespace Namespace,
     Either<Identifier, BinaryOperator> Name,
     InstructionLabel Label,
     LanguageType ReturnType,
@@ -48,6 +49,7 @@ public record FunctionDeclarationStatement(
 
         _function = new Function(
             Range,
+            builder.Block.Namespace,
             Name,
             builder.CreateLabel(),
             ReturnType,

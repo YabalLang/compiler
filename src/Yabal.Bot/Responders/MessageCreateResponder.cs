@@ -78,7 +78,8 @@ public class MessageCreateResponder : IResponder<IMessageCreate>
 
         if (success)
         {
-            cpu.Run();
+            cpu.Step(1000);
+
         }
 
         var hasError = false;

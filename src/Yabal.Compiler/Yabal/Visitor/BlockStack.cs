@@ -11,9 +11,11 @@ public class BlockStack
     private readonly Dictionary<int, int> _globalOffset = new();
     private readonly Dictionary<int, int> _stackOffset = new();
     private readonly Dictionary<string, Variable> _variables = new();
+    private readonly List<Namespace> _using = new();
     private InstructionLabel? _continue;
     private InstructionLabel? _break;
     private InstructionLabel? _return;
+    private Namespace? _ns;
 
     public BlockStack()
     {
@@ -67,6 +69,32 @@ public class BlockStack
     {
         get => _return ?? Parent?.Return;
         set => _return = value;
+    }
+
+    public Namespace Namespace
+    {
+        get => _ns ?? Parent?._ns ?? Namespace.Global;
+        set => _ns = value;
+    }
+
+    public IEnumerable<Namespace> EnumerateUsing()
+    {
+        var current = this;
+
+        while (current != null)
+        {
+            foreach (var ns in current._using)
+            {
+                yield return ns;
+            }
+
+            current = current.Parent;
+        }
+    }
+
+    public void AddUsing(Namespace ns)
+    {
+        _using.Add(ns);
     }
 
     public void DeclareVariable(string name, Variable variable)

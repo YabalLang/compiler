@@ -94,6 +94,16 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                throw new InvalidCodeException($"Cannot assign to {context.GetType().Name}.", SourceRange.From(context, _file));
     }
 
+    public override BlockStatement VisitBlockOrSingleStatement(YabalParser.BlockOrSingleStatementContext context)
+    {
+        if (context.statement() is { } statement)
+        {
+            return new BlockStatement(SourceRange.From(context, _file), new List<Statement>(1) { VisitStatement(statement) });
+        }
+
+        return VisitBlockStatement(context.blockStatement());
+    }
+
     public override BlockStatement VisitBlockStatement(YabalParser.BlockStatementContext context)
     {
         var parent = _block;
@@ -108,8 +118,6 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         return statement;
     }
-
-
 
     public override Node VisitDefaultVariableDeclaration(YabalParser.DefaultVariableDeclarationContext context)
     {
@@ -252,6 +260,30 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitIdentifierExpression(YabalParser.IdentifierExpressionContext context)
     {
         return new IdentifierExpression(SourceRange.From(context, _file), GetIdentifier(context.identifierName()));
+    }
+
+    public override Node VisitNamespaceStatement(YabalParser.NamespaceStatementContext context)
+    {
+        if (context.blockStatement() is { } blockStatement)
+        {
+            return new NamespaceStatement(
+                SourceRange.From(context, _file),
+                new Namespace(context.identifierName().Select(i => i.GetText()).ToArray()),
+                VisitBlockStatement(blockStatement));
+        }
+
+        return new GlobalNamespaceStatement(
+            SourceRange.From(context, _file),
+            new Namespace(context.identifierName().Select(i => i.GetText()).ToArray())
+        );
+    }
+
+    public override Node VisitUseStatement(YabalParser.UseStatementContext context)
+    {
+        return new UsingStatement(
+            SourceRange.From(context, _file),
+            new Namespace(context.identifierName().Select(i => i.GetText()).ToArray())
+        );
     }
 
     public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
@@ -464,7 +496,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new WhileStatement(
             SourceRange.From(context, _file),
             VisitExpression(context.expression()),
-            VisitBlockStatement(context.blockStatement())
+            VisitBlockOrSingleStatement(context.blockOrSingleStatement())
         );
     }
 
@@ -513,7 +545,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         if (context.elseStatement() != null)
         {
-            elseStatement = VisitStatement(context.elseStatement().blockStatement());
+            elseStatement = VisitStatement(context.elseStatement().blockOrSingleStatement());
         }
 
         if (context.elseIfStatement() != null)
@@ -525,7 +557,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 elseStatement = new IfStatement(
                     SourceRange.From(elseIf, _file),
                     test,
-                    (BlockStatement) Visit(elseIf.blockStatement()),
+                    (BlockStatement) Visit(elseIf.blockOrSingleStatement()),
                     elseStatement);
             }
         }
@@ -535,7 +567,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new IfStatement(
             SourceRange.From(context, _file),
             test,
-            (BlockStatement) Visit(context.blockStatement()),
+            (BlockStatement) Visit(context.blockOrSingleStatement()),
             elseStatement);
     }
 
@@ -570,7 +602,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             context.forInit()?.statement() is { } init ? VisitStatement(init) : null,
             context.statement() is {} statement ? VisitStatement(statement) : null,
             VisitExpression(context.expression()),
-            VisitBlockStatement(context.blockStatement())
+            VisitBlockOrSingleStatement(context.blockOrSingleStatement())
         );
     }
 
@@ -885,7 +917,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         return new MemberExpression(
             SourceRange.From(context, _file),
             VisitAddressExpression(context.expression()),
-            context.identifierName().GetText()
+            GetIdentifier(context.identifierName())
         );
     }
 

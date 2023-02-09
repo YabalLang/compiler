@@ -3,7 +3,7 @@ using Yabal.Visitor;
 
 namespace Yabal.Ast;
 
-public record MemberExpression(SourceRange Range, AddressExpression Expression, string Name) : AddressExpression(Range), IVariableSource
+public record MemberExpression(SourceRange Range, AddressExpression Expression, Identifier Name) : AddressExpression(Range), IVariableSource
 {
     private LanguageStructField _field = null!;
 
@@ -18,7 +18,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
             type = type.ElementType!;
         }
 
-        var field = type.StructReference?.Fields.FirstOrDefault(f => f.Name == Name);
+        var field = type.StructReference?.Fields.FirstOrDefault(f => f.Name == Name.Name);
         _field = field ?? throw new InvalidCodeException($"Struct {Expression.Type} does not contain a field named {Name}", Range);
     }
 
@@ -84,7 +84,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
     public override bool DirectCopy => !_field.Bit.HasValue;
 
     public override LanguageType Type =>
-        Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name)?.Type ??
+        Expression.Type.StructReference?.Fields.FirstOrDefault(i => i.Name == Name.Name)?.Type ??
         LanguageType.Unknown;
 
     public override Pointer? Pointer => Expression is { Pointer: {} pointer } && !_field.Bit.HasValue
