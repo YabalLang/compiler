@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
+using System.ComponentModel;
 using System.IO.Compression;
 using static SDL2.SDL;
 using static SDL2.SDL.SDL_EventType;
@@ -259,16 +260,7 @@ async Task Execute(InvocationContext ctx)
         }
 
         await BuildOutput(path, null, new List<OutputFormat> { OutputFormat.AssemblyWithComments });
-
-        await Cli.Wrap(fileName)
-            .WithArguments(new[]
-            {
-                Path.ChangeExtension(path.FullName, ".asmc"),
-            })
-            .WithStandardOutputPipe(PipeTarget.ToDelegate(s => ctx.Console.WriteLine(s)))
-            .WithStandardErrorPipe(PipeTarget.ToDelegate(s => ctx.Console.WriteLine(s)))
-            .WithValidation(CommandResultValidation.None)
-            .ExecuteAsync();
+        await RunNativeAsync(ctx.Console, fileName, path);
 
         return;
     }
@@ -450,6 +442,58 @@ async Task Execute(InvocationContext ctx)
         using var file = File.Open(statePath, FileMode.Open);
         using var stream = new GZipStream(file, CompressionMode.Decompress);
         cpu.Load(stream);
+    }
+}
+
+async Task RunNativeAsync(IConsole console, string fileName, FileSystemInfo fileInfo, bool chmod = true)
+{
+    try
+    {
+        (int Left, int Top)? lastFreq = null;
+
+        await Cli.Wrap(fileName)
+            .WithArguments(new[]
+            {
+                Path.ChangeExtension(fileInfo.FullName, ".asmc"),
+            })
+            .WithStandardOutputPipe(PipeTarget.ToDelegate(s =>
+            {
+                if (string.IsNullOrWhiteSpace(s))
+                {
+                    return;
+                }
+
+                if (s.StartsWith("Freq:"))
+                {
+                    if (lastFreq is { } freq)
+                    {
+                        Console.SetCursorPosition(freq.Left, freq.Top);
+                    }
+                    else
+                    {
+                        lastFreq = Console.GetCursorPosition();
+                    }
+                }
+                else
+                {
+                    lastFreq = null;
+                }
+
+                console.WriteLine(s);
+            }))
+            .WithStandardErrorPipe(PipeTarget.ToDelegate(console.WriteLine))
+            .WithValidation(CommandResultValidation.None)
+            .ExecuteAsync();
+    }
+    catch (Win32Exception) when (OperatingSystem.IsLinux() && chmod)
+    {
+        // Try to chmod +x and run again
+        await Cli.Wrap("chmod")
+            .WithArguments(new[] { "+x", fileName })
+            .WithValidation(CommandResultValidation.None)
+            .ExecuteAsync();
+
+        await RunNativeAsync(console, fileName, fileInfo, false);
     }
 }
 
