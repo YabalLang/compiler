@@ -30,6 +30,7 @@ public static class ExpressionExtensions
 public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expression Left, Expression Right) : Expression(Range), IComparisonExpression
 {
     private LanguageType? _type;
+    private CallExpression? _callExpression;
 
     public override void Initialize(YabalBuilder builder)
     {
@@ -39,6 +40,8 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         if (builder.BinaryOperators.TryGetValue((Operator, Left.Type, Right.Type), out var function))
         {
             _type = function.ReturnType;
+            _callExpression = new CallExpression(Range, function, new List<Expression> { Left, Right });
+            _callExpression.Initialize(builder);
         }
         else
         {
@@ -69,10 +72,9 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
     {
-        if (builder.BinaryOperators.TryGetValue((Operator, Left.Type, Right.Type), out var function))
+        if (_callExpression != null)
         {
-            function.References.Add(this);
-            builder.Call(function.Label, new[] { Left, Right });
+            _callExpression.BuildExpression(builder, isVoid);
             return;
         }
 
@@ -185,6 +187,12 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
     public void CreateComparison(YabalBuilder builder, InstructionLabel falseLabel, InstructionLabel trueLabel)
     {
+        if (_callExpression != null)
+        {
+            _callExpression.CreateComparison(builder, falseLabel, trueLabel);
+            return;
+        }
+
         if (Operator == BinaryOperator.OrElse)
         {
             Left.Build(builder);
@@ -302,6 +310,11 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
     public override Expression Optimize()
     {
+        if (_callExpression != null)
+        {
+            return _callExpression.Optimize();
+        }
+
         var left = Left.Optimize();
         var right = Right.Optimize();
 

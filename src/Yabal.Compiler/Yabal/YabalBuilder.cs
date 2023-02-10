@@ -81,6 +81,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _strings = new Dictionary<string, InstructionPointer>();
         _errors = new Dictionary<SourceRange, List<CompileError>>();
         BinaryOperators = new Dictionary<(BinaryOperator, LanguageType, LanguageType), Function>();
+        CastOperators = new Dictionary<(LanguageType, LanguageType), Function>();
 
         _visitor = new TypeVisitor();
         _globalBlock = new BlockStack { IsGlobal = true };
@@ -110,9 +111,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _strings = parent._strings;
         _errors = parent._errors;
         BinaryOperators = parent.BinaryOperators;
+        CastOperators = parent.CastOperators;
     }
 
-    public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; } = new();
+    public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; }
+
+    public Dictionary<(LanguageType, LanguageType), Function> CastOperators { get; } = new();
 
     public InstructionPointer StackAllocPointer => _stackAllocPointer;
 
@@ -219,7 +223,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
-    public bool TryGetFunction(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
+    public bool TryGetFunctionExact(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
     {
         if (_functions.TryGetValue(name, out var functions))
         {
@@ -232,7 +236,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             {
                 return true;
             }
+        }
 
+        if (_parent != null)
+        {
+            return _parent.TryGetFunctionExact(callRange, ns, name, types, out function);
+        }
+
+        function = default;
+        return false;
+    }
+
+    public bool TryGetFunctionFuzzy(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
+    {
+        if (_functions.TryGetValue(name, out var functions))
+        {
             function = functions.FirstOrDefault(i =>
                 (ns is null ? i.Namespace.Contains(Block.EnumerateUsing()) : i.Namespace.Equals(ns)) &&
                 types.Length >= i.RequiredParameterCount &&
@@ -247,7 +265,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         if (_parent != null)
         {
-            return _parent.TryGetFunction(callRange, ns, name, types, out function);
+            return _parent.TryGetFunctionExact(callRange, ns, name, types, out function);
         }
 
         function = default;
@@ -273,22 +291,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
     }
 
-    public Function GetFunction(Namespace? ns, string name, LanguageType[] types, SourceRange callRange)
+    public IEnumerable<Function> GetFunctions(Namespace? ns, string name)
     {
-        if (!TryGetFunction(callRange, ns, name, types, out var function))
+        if (_functions.TryGetValue(name, out var functions))
         {
-            var error = $"Function {name}({string.Join(", ", types.Select(i => i.ToString()))}) not found";
-            var functions = GetFunctions(name).ToArray();
-
-            if (functions.Length > 0)
+            foreach (var function in functions)
             {
-                error += $", did you mean {string.Join(", ", functions.Select(i => $"{i.Namespace}.{i.Name}"))}?";
+                if (ns is null ? function.Namespace.Contains(Block.EnumerateUsing()) : function.Namespace.Equals(ns))
+                {
+                    yield return function;
+                }
             }
-
-            throw new InvalidCodeException(error, callRange);
         }
 
-        return function;
+        if (_parent != null)
+        {
+            foreach (var function in _parent.GetFunctions(name))
+            {
+                yield return function;
+            }
+        }
     }
 
     public InstructionPointer GetString(string value)
@@ -634,7 +656,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     private void AddHeader(InstructionBuilder builder)
     {
-        var hasFunction = Functions.Where(i => !i.Inline).Concat(BinaryOperators.Values).Any();
+        var hasFunction = Functions.Where(i => !i.Inline)
+            .Concat(BinaryOperators.Values)
+            .Concat(CastOperators.Values)
+            .Any();
 
         if (Globals.Count == 0 &&
             Temporary.Count == 0 &&
@@ -688,11 +713,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             CreateReturn(builder);
         }
 
-        foreach (var function in Functions.Concat(BinaryOperators.Values))
+        foreach (var function in Functions.Concat(BinaryOperators.Values).Concat(CastOperators.Values))
         {
             if (function.References.Count == 0)
             {
-                AddError(ErrorLevel.Debug, function.Name.Left?.Range ?? default, $"Function '{function.Name}' is never called and will be excluded from the output.");
+                AddError(ErrorLevel.Debug, function.Name.Range, $"Function '{function.Name}' is never called and will be excluded from the output.");
                 continue;
             }
 
@@ -764,10 +789,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public void DeclareFunction(Function function)
     {
-        if (function.Name.IsLeft)
+        if (function.Name is FunctionIdentifier identifier)
         {
-            var identifier = function.Name.Left;
-
             if (!_functions.TryGetValue(identifier.Name, out var functions))
             {
                 functions = new List<Function>();
@@ -784,16 +807,27 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             functions.Add(function);
         }
-        else
+        else if (function.Name is FunctionOperator op)
         {
-            var op = function.Name.Right;
-
             if (function.Parameters.Count != 2)
             {
                 throw new InvalidCodeException("Binary operator must have 2 parameters.", function.Range);
             }
 
-            BinaryOperators.Add((op, function.Parameters[0].Type, function.Parameters[1].Type), function);
+            BinaryOperators.Add((op.Operator, function.Parameters[0].Type, function.Parameters[1].Type), function);
+        }
+        else if (function.Name is FunctionCast cast)
+        {
+            if (function.Parameters.Count != 1)
+            {
+                throw new InvalidCodeException("Cast operator must have 1 parameter.", function.Range);
+            }
+
+            CastOperators.Add((function.Parameters[0].Type, function.ReturnType), function);
+        }
+        else
+        {
+            throw new InvalidCodeException("Invalid function name.", function.Range);
         }
     }
 

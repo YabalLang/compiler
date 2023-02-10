@@ -238,9 +238,10 @@ functionBody
 
 // Variable
 variableDeclaration
-    : Const? type identifierName (Assign (expression|initStruct))?                      # DefaultVariableDeclaration
-    | Const? Var identifierName Assign expression                                       # AutoVariableDeclaration
-    | Export? Inline? returnType (identifierName|operatorName) functionParameterList functionBody      # FunctionDeclaration
+    : Const? type identifierName (Assign (expression|initStruct))?                          # DefaultVariableDeclaration
+    | Const? Var identifierName Assign expression                                           # AutoVariableDeclaration
+    | Inline? returnType (identifierName|operatorName) functionParameterList functionBody   # FunctionDeclaration
+    | Inline? Operator type functionParameterList functionBody                              # OperatorFunctionDeclaration
     ;
 
 operatorName

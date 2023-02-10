@@ -286,83 +286,102 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
+    public override Node VisitOperatorFunctionDeclaration(YabalParser.OperatorFunctionDeclarationContext context)
+    {
+        var type = _typeVisitor.Visit(context.type());
+
+        return new FunctionDeclarationStatement(
+            SourceRange.From(context, _file),
+            new FunctionCast(SourceRange.From(context, _file), type),
+            type,
+            GetArguments(context.functionParameterList()),
+            VisitFunctionBody(context.functionBody()),
+            context.Inline() != null
+        );
+    }
+
     public override Node VisitFunctionDeclaration(YabalParser.FunctionDeclarationContext context)
     {
-        Either<Identifier, BinaryOperator> name;
+        FunctionName name;
 
         if (context.identifierName() is { } identifierName)
         {
-            name = GetIdentifier(identifierName);
+            name = new FunctionIdentifier(SourceRange.From(identifierName, _file), identifierName.GetText());
         }
         else if (context.operatorName() is { } operatorName)
         {
+            var range = SourceRange.From(operatorName, _file);
+
             if (operatorName.Add() is not null)
             {
-                name = BinaryOperator.Add;
+                name = new FunctionOperator(range, BinaryOperator.Add);
             }
             else if (operatorName.Sub() is not null)
             {
-                name = BinaryOperator.Subtract;
+                name = new FunctionOperator(range, BinaryOperator.Subtract);
             }
             else if (operatorName.Mul() is not null)
             {
-                name = BinaryOperator.Multiply;
+                name = new FunctionOperator(range, BinaryOperator.Multiply);
             }
             else if (operatorName.Div() is not null)
             {
-                name = BinaryOperator.Divide;
+                name = new FunctionOperator(range, BinaryOperator.Divide);
             }
             else if (operatorName.Mod() is not null)
             {
-                name = BinaryOperator.Modulo;
+                name = new FunctionOperator(range, BinaryOperator.Modulo);
             }
             else if (operatorName.Less() is not null)
             {
-                name = BinaryOperator.LessThan;
+                name = new FunctionOperator(range, BinaryOperator.LessThan);
             }
             else if (operatorName.LessEqual() is not null)
             {
-                name = BinaryOperator.LessThanOrEqual;
+                name = new FunctionOperator(range, BinaryOperator.LessThanOrEqual);
             }
             else if (operatorName.Greater() is not null)
             {
-                name = BinaryOperator.GreaterThan;
+                name = new FunctionOperator(range, BinaryOperator.GreaterThan);
             }
             else if (operatorName.GreaterEqual() is not null)
             {
-                name = BinaryOperator.GreaterThanOrEqual;
+                name = new FunctionOperator(range, BinaryOperator.GreaterThanOrEqual);
             }
             else if (operatorName.Equals() is not null)
             {
-                name = BinaryOperator.Equal;
+                name = new FunctionOperator(range, BinaryOperator.Equal);
             }
             else if (operatorName.NotEquals() is not null)
             {
-                name = BinaryOperator.NotEqual;
+                name = new FunctionOperator(range, BinaryOperator.NotEqual);
             }
             else if (operatorName.And() is not null)
             {
-                name = BinaryOperator.And;
+                name = new FunctionOperator(range, BinaryOperator.And);
             }
             else if (operatorName.Or() is not null)
             {
-                name = BinaryOperator.Or;
+                name = new FunctionOperator(range, BinaryOperator.Or);
             }
             else if (operatorName.Xor() is not null)
             {
-                name = BinaryOperator.Xor;
+                name = new FunctionOperator(range, BinaryOperator.Xor);
             }
             else if (operatorName.ShiftLeft() is not null)
             {
-                name = BinaryOperator.LeftShift;
+                name = new FunctionOperator(range, BinaryOperator.LeftShift);
             }
             else if (operatorName.ShiftRight() is not null)
             {
-                name = BinaryOperator.RightShift;
+                name = new FunctionOperator(range, BinaryOperator.RightShift);
             }
             else
             {
-                throw new NotSupportedException();
+                name = new FunctionCast(
+                    SourceRange.From(operatorName, _file),
+                    _typeVisitor.Visit(context.returnType())
+                );
             }
         }
         else
@@ -370,7 +389,19 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
             throw new NotSupportedException();
         }
 
-        var arguments = context.functionParameterList().functionParameter()
+        return new FunctionDeclarationStatement(
+            SourceRange.From(context, _file),
+            name,
+            _typeVisitor.Visit(context.returnType()),
+            GetArguments(context.functionParameterList()),
+            VisitFunctionBody(context.functionBody()),
+            context.Inline() != null
+        );
+    }
+
+    private List<FunctionParameter> GetArguments(YabalParser.FunctionParameterListContext context)
+    {
+        return context.functionParameter()
             .Select(p =>
             {
                 var type = _typeVisitor.Visit(p.type());
@@ -387,15 +418,6 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                 );
             })
             .ToList();
-
-        return new FunctionDeclarationStatement(
-            SourceRange.From(context, _file),
-            name,
-            _typeVisitor.Visit(context.returnType()),
-            arguments,
-            VisitFunctionBody(context.functionBody()),
-            context.Inline() != null
-        );
     }
 
     public override BlockStatement VisitFunctionBody(YabalParser.FunctionBodyContext context)

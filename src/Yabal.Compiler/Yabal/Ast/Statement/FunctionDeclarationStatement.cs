@@ -6,10 +6,18 @@ namespace Yabal.Ast;
 
 public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefault);
 
+public record FunctionName(SourceRange Range);
+
+public record FunctionIdentifier(SourceRange Range, string Name) : FunctionName(Range);
+
+public record FunctionOperator(SourceRange Range, BinaryOperator Operator) : FunctionName(Range);
+
+public record FunctionCast(SourceRange Range, LanguageType Type) : FunctionName(Range);
+
 public record Function(
     SourceRange Range,
     Namespace Namespace,
-    Either<Identifier, BinaryOperator> Name,
+    FunctionName Name,
     InstructionLabel Label,
     LanguageType ReturnType,
     YabalBuilder Builder,
@@ -30,7 +38,7 @@ public record Function(
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
-    Either<Identifier, BinaryOperator> Name,
+    FunctionName Name,
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
     BlockStatement Body,
