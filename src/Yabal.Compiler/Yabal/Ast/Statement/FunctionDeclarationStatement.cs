@@ -8,11 +8,29 @@ public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefa
 
 public record FunctionName(SourceRange Range);
 
-public record FunctionIdentifier(SourceRange Range, string Name) : FunctionName(Range);
+public record FunctionIdentifier(SourceRange Range, string Name) : FunctionName(Range)
+{
+    public override string ToString()
+    {
+        return Name;
+    }
+}
 
-public record FunctionOperator(SourceRange Range, BinaryOperator Operator) : FunctionName(Range);
+public record FunctionOperator(SourceRange Range, BinaryOperator Operator) : FunctionName(Range)
+{
+    public override string ToString()
+    {
+        return $"operator:{Operator}";
+    }
+}
 
-public record FunctionCast(SourceRange Range, LanguageType Type) : FunctionName(Range);
+public record FunctionCast(SourceRange Range, LanguageType Type) : FunctionName(Range)
+{
+    public override string ToString()
+    {
+        return $"cast:{Type}";
+    }
+}
 
 public record Function(
     SourceRange Range,
