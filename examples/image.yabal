@@ -33,7 +33,7 @@ To get the width and height in Yabal, you can do the following:
 In the following example, the image "image_apple.webp" is loaded and displayed.
 */
 
-var file = include_image("image_apple.webp")
+var file = include_image("./image_apple.webp")
 var screen = create_pointer(53871, 1)
 
 var meta = file[-1]
@@ -54,4 +54,6 @@ while(true) {
             }
         }
     }
+
+    asm { VBUF }
 }

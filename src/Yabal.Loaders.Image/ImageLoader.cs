@@ -10,7 +10,7 @@ public class ImageLoader : IFileLoader
     public async ValueTask<FileContent> LoadAsync(YabalBuilder builder, SourceRange range, string path,
         FileReader reader)
     {
-        var (_, bytes) = await reader.ReadAllTextAsync(range, path);
+        var (_, bytes) = await reader.ReadAllBytesAsync(range, path);
         using var image = Image.Load<Rgba32>(bytes);
 
         var width = (byte)image.Width;

@@ -2,4 +2,5 @@ import "write"
 
 while(true) {
     write("Hello World")
+    asm { VBUF }
 }
