@@ -436,6 +436,6 @@ fabric.properties
 .packages/
 
 src/Yabal.Bot/appsettings.json
-examples/*.asmc
-examples/*.asmc.aexe
-examples/*.hex
+examples/**/*.asmc
+examples/**/*.asmc.aexe
+examples/**/*.hex

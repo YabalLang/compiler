@@ -1,7 +1,13 @@
 import "write"
 
+struct string {
+    int[] data
+    int length
+}
+
 while(true) {
     setPosition(0, 0)
-    write("Hello World")
+    write("Hello")
+    write("world")
     asm { VBUF }
 }

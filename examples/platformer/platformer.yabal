@@ -1,0 +1,73 @@
+import "./console.yabal"
+
+var screen = create_pointer(53870, 1)
+
+void clear() {
+	for (var i = 0; i < 108*108; i++) {
+		screen[i] = 0
+	}
+}
+
+inline int get_color(Color color) => color
+inline int get_color(int r, int g, int b) => (r / 8 << 10) + (g / 8 << 5) + (b / 8)
+
+inline int get_offset(Position pos) => pos.y * 108 + pos.x
+inline int get_offset(int x, int y) => y * 108 + x
+
+inline operator int(Position pos) => get_offset(pos)
+
+inline char get_key() => asm { 
+    LDW 53500
+    BNK 1
+    LDAIN 
+    BNK 0
+};
+
+Player player = {
+    position: { x: 10, y: 0 },
+    color: { r: 255, g: 0, b: 0 }
+}
+
+while (true) {
+    clear()
+
+    if (player.position > 10) {
+        player.position.x = 0
+    }
+
+    player.position.x += 1
+
+    screen[player.position] = get_color(255, 0, 0)
+
+    var key = get_key()
+
+    console.setPosition(0, 0)
+    console.write('A')
+    console.write(" Test ")
+    console.write(123)
+    console.write(456)
+    console.write(789)
+    console.write(0)
+
+    console.setPosition(0, 1)
+    console.write("Key: ")
+    console.write(key)
+
+    asm { VBUF }
+}
+
+struct Color {
+    int r : 5
+    int g : 5
+    int b : 5
+}
+
+struct Position {
+    int x
+    int y 
+}
+
+struct Player {
+    Position position
+    Color color
+}

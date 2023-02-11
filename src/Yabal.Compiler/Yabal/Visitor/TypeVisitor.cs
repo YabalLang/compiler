@@ -8,19 +8,21 @@ namespace Yabal.Visitor;
 public class TypeDiscover : YabalParserBaseListener
 {
     private readonly TypeVisitor _typeVisitor;
+    private readonly YabalVisitor _visitor;
 
-    public TypeDiscover(TypeVisitor typeVisitor)
+    public TypeDiscover(TypeVisitor typeVisitor, YabalVisitor visitor)
     {
         _typeVisitor = typeVisitor;
+        _visitor = visitor;
     }
 
-    public override void EnterStructType(YabalParser.StructTypeContext context)
+    public override void EnterStructDeclaration(YabalParser.StructDeclarationContext context)
     {
         var reference = new LanguageStruct(
-            context.identifierName().GetText()
+            _visitor.GetIdentifier(context.identifierName())
         );
 
-        _typeVisitor.Structs[reference.Name] = reference;
+        _typeVisitor.Structs[reference.Name] = (context, reference);
     }
 }
 
@@ -62,7 +64,7 @@ public class ImportDiscover : YabalParserBaseListener
 
 public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
 {
-    public Dictionary<string, LanguageStruct> Structs { get; } = new();
+    public Dictionary<string, (YabalParser.StructDeclarationContext Context, LanguageStruct Value)> Structs { get; } = new();
 
     public override LanguageType VisitIntType(YabalParser.IntTypeContext context)
     {
@@ -76,9 +78,13 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
 
     public override LanguageType VisitStructType(YabalParser.StructTypeContext context)
     {
-        return LanguageType.Struct(
-            Structs[context.identifierName().GetText()]
-        );
+        var name = context.identifierName().GetText();
+
+        return name switch
+        {
+            "char" => LanguageType.Char,
+            _ => LanguageType.Struct(GetStruct(context.identifierName()))
+        };
     }
 
     public override LanguageType VisitArrayType(YabalParser.ArrayTypeContext context)
@@ -92,5 +98,79 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
     public override LanguageType VisitVoidReturnType(YabalParser.VoidReturnTypeContext context)
     {
         return LanguageType.Void;
+    }
+
+    public LanguageStruct GetStruct(YabalParser.IdentifierNameContext identifier)
+    {
+        var name = identifier.GetText();
+
+        if (!Structs.TryGetValue(name, out var value))
+        {
+            throw new InvalidCodeException($"Unknown struct '{name}'", SourceRange.From(identifier, new Uri("file://unknown"))); // TODO: Fix this
+        }
+
+        var (context, reference) = value;
+
+        if (reference.State == LanguageStructState.Initialized)
+        {
+            return reference;
+        }
+
+        var file = reference.Identifier.Range.File;
+
+        if (reference.State == LanguageStructState.Visiting)
+        {
+            throw new InvalidCodeException("Recursive struct definition", SourceRange.From(context, file));
+        }
+
+        reference.State = LanguageStructState.Visiting;
+
+        var offset = 0;
+        var bitOffset = 0;
+
+        foreach (var item in context.structItem())
+        {
+            if (item.structField() is { } field)
+            {
+                var type = VisitType(field.type());
+                var bitSize = field.integer() is { } integer ? (int?)YabalVisitor.ParseInt(integer.GetText()) : null;
+
+                reference.Fields.Add(new LanguageStructField(
+                    field.identifierName().GetText(),
+                    type,
+                    offset,
+                    bitSize.HasValue ? new Bit(bitOffset, bitSize.Value) : null
+                ));
+
+                if (bitSize.HasValue)
+                {
+                    if (type.StaticType != StaticType.Integer)
+                    {
+                        throw new InvalidCodeException("Bitfields can only be applied to integers", SourceRange.From(field, file));
+                    }
+
+                    bitOffset += bitSize.Value;
+
+                    if (bitOffset > 16)
+                    {
+                        throw new InvalidCodeException("Bitfields cannot span more than 16 bits", SourceRange.From(field, file));
+                    }
+
+                    if (bitOffset == 16)
+                    {
+                        offset++;
+                        bitOffset = 0;
+                    }
+                }
+                else
+                {
+                    offset += type.Size;
+                }
+            }
+        }
+
+        reference.State = LanguageStructState.Initialized;
+
+        return reference;
     }
 }

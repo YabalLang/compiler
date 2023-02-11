@@ -60,6 +60,7 @@ expression
 	| expression Assign expression                                      # AssignExpression
 	| Asm OpenCurly asmItems CloseCurly                                 # AsmExpression
 	| Throw expression												    # ThrowExpression
+	| OpenBrace type CloseBrace expression                              # CastExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
     | string                                                            # StringExpression
     | char                                                              # CharExpression

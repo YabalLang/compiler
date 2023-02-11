@@ -2,6 +2,8 @@
 
 public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, Expression Key) : AddressExpression(Range)
 {
+    public Expression Key { get; private set; } = Key;
+
     public override void Initialize(YabalBuilder builder)
     {
         Array.Initialize(builder);
@@ -14,7 +16,20 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
         if (Key.Type.StaticType != StaticType.Integer)
         {
-            builder.AddError(ErrorLevel.Error, Key.Range, ErrorMessages.ArrayOnlyIntegerKey);
+            if (builder.CastOperators.TryGetValue((Key.Type, LanguageType.Integer), out var cast))
+            {
+                Key = new CallExpression(
+                    Key.Range,
+                    cast,
+                    new List<Expression> { Key }
+                );
+
+                Key.Initialize(builder);
+            }
+            else
+            {
+                builder.AddError(ErrorLevel.Error, Key.Range, ErrorMessages.ArrayOnlyIntegerKey);
+            }
         }
     }
 

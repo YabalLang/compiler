@@ -2,11 +2,11 @@
 
 namespace Yabal.Ast;
 
-public record ReturnStatement(SourceRange Range, Expression Expression) : Statement(Range)
+public record ReturnStatement(SourceRange Range, Expression? Expression) : Statement(Range)
 {
     public override void Initialize(YabalBuilder builder)
     {
-        Expression.Initialize(builder);
+        Expression?.Initialize(builder);
 
         if (builder.Block.Return == null)
         {
@@ -18,7 +18,11 @@ public record ReturnStatement(SourceRange Range, Expression Expression) : Statem
     {
         var returnType = builder.ReturnType ?? throw new InvalidCodeException("Cannot return outside of a function", Range);
 
-        if (Expression is InitStructExpression initStruct)
+        if (Expression is null)
+        {
+            // ignore
+        }
+        else if (Expression is InitStructExpression initStruct)
         {
             builder.InitStruct(returnType, builder.ReturnValue, initStruct);
         }

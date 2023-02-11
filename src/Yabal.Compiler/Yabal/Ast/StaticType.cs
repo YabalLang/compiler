@@ -9,5 +9,6 @@ public enum StaticType
     Struct,
     Assembly,
     Reference,
-    Unknown
+    Unknown,
+    Char
 }

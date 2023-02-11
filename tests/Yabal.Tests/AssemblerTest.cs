@@ -1455,4 +1455,45 @@ public class AssemblerTest
         var address = builder.GetVariable("result").Pointer.Address;
         Assert.Equal(2, cpu.Memory[address]);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DeepStruct(bool optimize)
+    {
+        const string code = """
+            struct Player {
+                Position position
+                Color color
+            }
+
+            struct Color {
+                int r : 5
+                int g : 5
+                int b : 5
+            }
+
+            struct Position {
+                int x
+                int y
+            }
+
+
+            Player player = {
+                position: { x: 1, y: 2 },
+                color: { r: 255, g: 0, b: 0 }
+            }
+
+            var result = player.position.x + player.position.y
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var address = builder.GetVariable("result").Pointer.Address;
+        Assert.Equal(3, cpu.Memory[address]);
+    }
 }

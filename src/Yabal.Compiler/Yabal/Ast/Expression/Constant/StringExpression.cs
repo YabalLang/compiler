@@ -23,7 +23,7 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
 
     public override bool OverwritesB => false;
 
-    public override LanguageType Type => LanguageType.Pointer(LanguageType.Integer);
+    public override LanguageType Type => LanguageType.Pointer(LanguageType.Char);
 
     object IConstantValue.Value => StringAddress.From(Value, _pointer);
 

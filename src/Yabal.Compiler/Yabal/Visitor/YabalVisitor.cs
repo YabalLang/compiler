@@ -10,7 +10,7 @@ namespace Yabal.Visitor;
 
 public class YabalVisitor : YabalParserBaseVisitor<Node>
 {
-    private readonly TypeVisitor _typeVisitor = new();
+    private readonly TypeVisitor _typeVisitor;
     private readonly Dictionary<YabalParser.ImportStatementContext, (Uri, YabalParser.ProgramContext)> _importByContext = new();
     private Uri _file;
     private BlockCompileStack _block = new();
@@ -18,6 +18,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public YabalVisitor(Uri file, YabalContext context)
     {
         _file = file;
+        _typeVisitor = new TypeVisitor();
         Context = context;
     }
 
@@ -25,7 +26,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override ProgramStatement VisitProgram(YabalParser.ProgramContext context)
     {
-        var typeDiscover = new TypeDiscover(_typeVisitor);
+        var typeDiscover = new TypeDiscover(_typeVisitor, this);
         var walker = new ParseTreeWalker();
 
         void Prepare(IParseTree current)
@@ -132,7 +133,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
-    private Identifier GetIdentifier(YabalParser.IdentifierNameContext context)
+    public Identifier GetIdentifier(YabalParser.IdentifierNameContext context)
     {
         return new Identifier(SourceRange.From(context, _file), context.GetText());
     }
@@ -508,7 +509,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new ReturnStatement(
             SourceRange.From(context, _file),
-            VisitExpression(context.expression())
+            context.expression() is {} expression ? VisitExpression(expression) : null
         );
     }
 
@@ -841,6 +842,15 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
         );
     }
 
+    public override Node VisitCastExpression(YabalParser.CastExpressionContext context)
+    {
+        return new CastExpression(
+            SourceRange.From(context, _file),
+            _typeVisitor.Visit(context.type()),
+            VisitExpression(context.expression())
+        );
+    }
+
     public override Node VisitStringExpression(YabalParser.StringExpressionContext context)
     {
         var value = GetStringValue(context.@string());
@@ -888,48 +898,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitStructDeclaration(YabalParser.StructDeclarationContext context)
     {
-        var offset = 0;
-
-        var reference = _typeVisitor.Structs[context.identifierName().GetText()];
-        var bitOffset = 0;
-
-        foreach (var item in context.structItem())
-        {
-            if (item.structField() is { } field)
-            {
-                var type = _typeVisitor.VisitType(field.type());
-                var bitSize = field.integer() is { } integer ? (int?) ParseInt(integer.GetText()) : null;
-
-                reference.Fields.Add(new LanguageStructField(
-                    field.identifierName().GetText(),
-                    type,
-                    offset,
-                    bitSize.HasValue ? new Bit(bitOffset, bitSize.Value) : null
-                ));
-
-                if (bitSize is { } size)
-                {
-                    bitOffset += size;
-
-                    if (bitOffset > 16)
-                    {
-                        throw new InvalidCodeException("Bitfields cannot span more than 16 bits", SourceRange.From(field, _file));
-                    }
-
-                    if (bitOffset == 16)
-                    {
-                        offset++;
-                        bitOffset = 0;
-                    }
-                }
-                else
-                {
-                    offset++;
-                }
-            }
-        }
-
-        _typeVisitor.Structs[reference.Name] = reference;
+        var reference = _typeVisitor.Structs[context.identifierName().GetText()].Value;
 
         return new StructDeclarationStatement(SourceRange.From(context, _file), reference);
     }

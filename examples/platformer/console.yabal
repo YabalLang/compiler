@@ -1,0 +1,59 @@
+var chars = create_pointer(53546,1)
+var offset = 0
+var maxOffset = 13 * 13
+
+namespace console;
+
+void write(char character) {
+    chars[offset] = character
+    offset++
+
+    if (maxOffset >= 170) {
+        offset = 0
+    }
+}
+
+void write(char[] str) {
+    for (var i = 0; true; i++) {
+        var c = str[i];
+
+        if (c == 0xFFFF) {
+            break;
+        }
+
+        write(c);
+    }
+}
+
+void write(int value) {
+    if (value < 10) {
+        write((char)(value + 39))
+        return
+    }
+
+    var temp = stackalloc char[5]
+    var i = 0
+
+    while (value > 0) {
+        temp[i] = (value % 10) + 39
+        value /= 10
+        i += 1
+    }
+
+    while (i > 0) {
+        i -= 1
+        write(temp[i])
+    }
+}
+
+void setPosition(int x, int y) {
+    offset = x + y * 18
+}
+
+void clear() {
+    for (var i = 0; i < maxOffset; i++) {
+        chars[i] = 0
+    }
+
+    offset = 0
+}

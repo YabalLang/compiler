@@ -1,17 +1,37 @@
-﻿namespace Yabal.Ast;
+﻿using Yabal.Exceptions;
+using Yabal.Visitor;
+
+namespace Yabal.Ast;
 
 public record struct Bit(int Offset, int Size);
 
 public record LanguageStructField(string Name, LanguageType Type, int Offset, Bit? Bit);
 
-public record LanguageStruct(string Name)
+internal enum LanguageStructState
 {
+    Declared,
+    Visiting,
+    Initialized
+}
+
+public record LanguageStruct(Identifier Identifier)
+{
+    internal LanguageStructState State { get; set; }
+
+    public string Name => Identifier.Name;
+
     public List<LanguageStructField> Fields { get; } = new();
 
-    public int Size => Fields
-        .Select(f => f.Offset + f.Type.Size)
-        .DefaultIfEmpty()
-        .Max();
+    public int Size
+    {
+        get
+        {
+            return Fields
+                .Select(f => f.Offset + f.Type.Size)
+                .DefaultIfEmpty()
+                .Max();
+        }
+    }
 }
 
 public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null, bool IsReference = false)
@@ -21,6 +41,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     public static readonly LanguageType Void = new(StaticType.Void);
     public static readonly LanguageType Assembly = new(StaticType.Assembly);
     public static readonly LanguageType Unknown = new(StaticType.Unknown);
+    public static readonly LanguageType Char = new(StaticType.Char);
 
     public static LanguageType Pointer(LanguageType elementType) => new(StaticType.Pointer, elementType);
 
@@ -43,6 +64,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Assembly => 1,
         StaticType.Pointer => 2,
         StaticType.Reference => 1,
+        StaticType.Char => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
         _ => throw new ArgumentOutOfRangeException()
     };
