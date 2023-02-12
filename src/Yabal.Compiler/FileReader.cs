@@ -31,6 +31,18 @@ public sealed class FileReader : IDisposable
 
     public async Task<StreamResult> GetStreamAsync(SourceRange range, string path)
     {
+        var uri = GetUri(range, path);
+
+        if (uri == null)
+        {
+            throw new InvalidOperationException();
+        }
+
+        return new StreamResult(uri, await GetFromUri(range, uri));
+    }
+
+    public Uri GetUri(SourceRange range, string path)
+    {
         Uri? uri;
 
         if (path.StartsWith("."))
@@ -46,12 +58,7 @@ public sealed class FileReader : IDisposable
             uri = new Uri($"https://yabal.dev/x/{path}.yabal");
         }
 
-        if (uri == null)
-        {
-            throw new InvalidOperationException();
-        }
-
-        return new StreamResult(uri, await GetFromUri(range, uri));
+        return uri;
     }
 
     private Task<Stream> GetFromUri(SourceRange range, Uri uri)

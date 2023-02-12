@@ -31,7 +31,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         void Prepare(IParseTree current)
         {
-            var importDiscover = new ImportDiscover(Context.FileReader, _file);
+            var importDiscover = new ImportDiscover(Context.FileReader, _file, Context);
 
             walker.Walk(importDiscover, current);
 

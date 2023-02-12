@@ -81,6 +81,11 @@ public class BlockStack
     {
         var current = this;
 
+        if (Namespace != Namespace.Global)
+        {
+            yield return Namespace;
+        }
+
         while (current != null)
         {
             foreach (var ns in current._using)

@@ -25,6 +25,8 @@ public sealed class YabalContext : IDisposable
         [FileType.Byte] = ByteLoader.Instance
     };
 
+    public List<Uri> LoadedFiles { get; } = new();
+
     public Dictionary<(Uri, string, FileType type), (SourceRange Range, FileAddress Address)> Files { get; } = new();
 
     public YabalContext AddFileLoader(FileType type, IFileLoader loader)
@@ -258,14 +260,19 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             if (function != null)
             {
-                AddError(ErrorLevel.Warning, callRange, $"Function {function} is being called with a different types ({string.Join(", ", types.Select(i => i.ToString()))}), it's suggested to make an overload");
+                if (!function.DidWarnFuzzy)
+                {
+                    AddError(ErrorLevel.Warning, callRange, $"Function {function} is being called with a different types ({string.Join(", ", types.Select(i => i.ToString()))})");
+                }
+
+                function.DidWarnFuzzy = true;
                 return true;
             }
         }
 
         if (_parent != null)
         {
-            return _parent.TryGetFunctionExact(callRange, ns, name, types, out function);
+            return _parent.TryGetFunctionFuzzy(callRange, ns, name, types, out function);
         }
 
         function = default;

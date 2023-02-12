@@ -1,0 +1,22 @@
+namespace input
+
+inline char getKey() => asm { 
+    LDW 53500
+    BNK 1
+    LDAIN 
+    BNK 0
+};
+
+inline Mouse getMouse() => asm { 
+    LDW 53501
+    BNK 1
+    LDAIN 
+    BNK 0
+};
+
+struct Mouse {
+	int y : 7
+	int x : 7
+	int left : 1
+	int right : 1
+}

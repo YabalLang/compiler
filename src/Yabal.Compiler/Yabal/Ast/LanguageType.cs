@@ -81,6 +81,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
             StaticType.Assembly => "assembly",
             StaticType.Reference => $"ref {ElementType}",
             StaticType.Unknown => "unknown",
+            StaticType.Char => "char",
             _ => throw new ArgumentOutOfRangeException()
         };
     }

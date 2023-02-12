@@ -1,70 +1,45 @@
 import "./console.yabal"
-
-var screen = create_pointer(53870, 1)
-
-void clear() {
-	for (var i = 0; i < 108*108; i++) {
-		screen[i] = 0
-	}
-}
-
-inline int get_color(Color color) => color
-inline int get_color(int r, int g, int b) => (r / 8 << 10) + (g / 8 << 5) + (b / 8)
-
-inline int get_offset(Position pos) => pos.y * 108 + pos.x
-inline int get_offset(int x, int y) => y * 108 + x
-
-inline operator int(Position pos) => get_offset(pos)
-
-inline char get_key() => asm { 
-    LDW 53500
-    BNK 1
-    LDAIN 
-    BNK 0
-};
+import "./input.yabal"
+import "./screen.yabal"
 
 Player player = {
-    position: { x: 10, y: 0 },
-    color: { r: 255, g: 0, b: 0 }
+    position: { x: 64, y: 64 },
+    color: { r: 31, g: 0, b: 0 }
 }
 
 while (true) {
-    clear()
+    var key = input.getKey()
+    var mouse = input.getMouse()
 
-    if (player.position > 10) {
-        player.position.x = 0
+    if (key == 'W') {
+        player.position.y -= 1
+    } else if (key == 'S') {
+        player.position.y += 1
+    } else if (key == 'A') {
+        player.position.x -= 1
+    } else if (key == 'D') {
+        player.position.x += 1
     }
 
-    player.position.x += 1
+    Size size = { width: 3, height: 3 }
+    screen.draw(player.position, size, player.color)
 
-    screen[player.position] = get_color(255, 0, 0)
-
-    var key = get_key()
-
+    console.clear()
     console.setPosition(0, 0)
-    console.write('A')
-    console.write(" Test ")
-    console.write(123)
-    console.write(456)
-    console.write(789)
-    console.write(0)
-
-    console.setPosition(0, 1)
-    console.write("Key: ")
+    console.write("K: ")
+    console.write((int)key)
+    console.write(' ')
     console.write(key)
 
-    asm { VBUF }
-}
+    console.setPosition(0, 1)
+    console.write("X: ")
+    console.write(player.position.x)
 
-struct Color {
-    int r : 5
-    int g : 5
-    int b : 5
-}
+    console.setPosition(0, 2)
+    console.write("Y: ")
+    console.write(player.position.y)
 
-struct Position {
-    int x
-    int y 
+    screen.flush()
 }
 
 struct Player {

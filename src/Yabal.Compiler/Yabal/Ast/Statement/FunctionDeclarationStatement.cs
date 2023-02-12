@@ -48,6 +48,8 @@ public record Function(
 
     public List<Expression> References { get; } = new();
 
+    public bool DidWarnFuzzy { get; set; }
+
     public override string ToString()
     {
         return $"{Name}({string.Join(", ", Parameters.Select(i => $"{i.Type} {i.Name}"))})";

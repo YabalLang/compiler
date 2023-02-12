@@ -71,7 +71,7 @@ public record CallExpression(
 
             var argumentTypes = Arguments.Select(i => i.Type).ToArray();
 
-            if (builder.TryGetFunctionExact(name.Range, ns, name.Name, argumentTypes, out var exactFunction))
+            if (builder.TryGetFunctionExact(Range, ns, name.Name, argumentTypes, out var exactFunction))
             {
                 Function = exactFunction;
             }
@@ -80,7 +80,7 @@ public record CallExpression(
                 Function = result.function;
                 _arguments = result.arguments;
             }
-            else if (builder.TryGetFunctionFuzzy(name.Range, ns, name.Name, argumentTypes, out var fuzzyFunction))
+            else if (builder.TryGetFunctionFuzzy(Range, ns, name.Name, argumentTypes, out var fuzzyFunction))
             {
                 Function = fuzzyFunction;
             }
@@ -96,6 +96,11 @@ public record CallExpression(
         {
             _body = Function.Body.CloneStatement();
             _block = builder.PushBlock();
+
+            if (Function.Block?.Namespace is { } functionNamespace)
+            {
+                _block.Namespace = functionNamespace;
+            }
 
             _returnLabel = builder.CreateLabel();
             _block.Return = _returnLabel;

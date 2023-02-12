@@ -1,6 +1,6 @@
 var chars = create_pointer(53546,1)
 var offset = 0
-var maxOffset = 13 * 13
+var maxOffset = 18 * 18
 
 namespace console;
 
@@ -8,7 +8,7 @@ void write(char character) {
     chars[offset] = character
     offset++
 
-    if (maxOffset >= 170) {
+    if (offset >= 170) {
         offset = 0
     }
 }

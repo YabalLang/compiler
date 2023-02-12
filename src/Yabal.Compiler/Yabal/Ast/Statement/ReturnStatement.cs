@@ -31,6 +31,10 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
             Expression.BuildExpression(builder, false);
             builder.StoreA(builder.ReturnValue);
         }
+        else if (returnType.Size == 0)
+        {
+            Expression.BuildExpression(builder, false);
+        }
         else
         {
             throw new NotImplementedException();

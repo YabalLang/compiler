@@ -1,0 +1,51 @@
+namespace screen;
+
+var screen = create_pointer(53870, 1)
+
+inline void clear() {
+	for (var i = 0; i < 108 * 108; i++) {
+		screen[i] = 0
+	}
+}
+
+inline void flush() {
+    asm { VBUF }
+    clear()
+}
+
+inline int getColor(Color color) => color
+inline int getColor(int r, int g, int b) => (r / 8 << 10) + (g / 8 << 5) + (b / 8)
+
+inline int getOffset(Position pos) => pos.y * 108 + pos.x
+inline int getOffset(int x, int y) => y * 108 + x
+
+inline operator int(Position pos) => getOffset(pos)
+
+inline void set(Position pos, Color color) => screen[getOffset(pos)] = color
+inline void set(int x, int y, Color color) => screen[getOffset(x, y)] = color
+inline void set(Position pos, int r, int g, int b) => screen[getOffset(pos)] = getColor(r, g, b)
+inline void set(int x, int y, int r, int g, int b) => screen[getOffset(x, y)] = getColor(r, g, b)
+
+void draw(Position pos, Size size, Color color) {
+    for (var y = 0; y < size.height; y++) {
+        for (var x = 0; x < size.width; x++) {
+            screen.set(pos.x + x, pos.y + y, color)
+        }
+    }
+}
+
+struct Color {
+    int b : 5
+    int g : 5
+    int r : 5
+}
+
+struct Position {
+    int x
+    int y 
+}
+
+struct Size {
+    int width
+    int height
+}

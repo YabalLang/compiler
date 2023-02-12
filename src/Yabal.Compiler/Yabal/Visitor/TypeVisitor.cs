@@ -30,11 +30,13 @@ public class ImportDiscover : YabalParserBaseListener
 {
     private readonly FileReader _fileSystem;
     private readonly Uri _file;
+    private readonly YabalContext _context;
 
-    public ImportDiscover(FileReader fileSystem, Uri file)
+    public ImportDiscover(FileReader fileSystem, Uri file, YabalContext context)
     {
         _fileSystem = fileSystem;
         _file = file;
+        _context = context;
     }
 
     public Dictionary<Uri, YabalParser.ProgramContext> ImportByUrl { get; } = new();
@@ -44,8 +46,16 @@ public class ImportDiscover : YabalParserBaseListener
     public override void EnterImportStatement(YabalParser.ImportStatementContext context)
     {
         var path = YabalVisitor.GetStringValue(context.@string());
+        var uri = _fileSystem.GetUri(SourceRange.From(context, _file), path);
 
-        var (uri, code) = _fileSystem.ReadAllTextAsync(SourceRange.From(context, _file), path).GetAwaiter().GetResult();
+        if (_context.LoadedFiles.Contains(uri))
+        {
+            return;
+        }
+
+        _context.LoadedFiles.Add(uri);
+
+        var (_, code) = _fileSystem.ReadAllTextAsync(SourceRange.From(context, _file), path).GetAwaiter().GetResult();
         var inputStream = new AntlrInputStream(code);
         var lexer = new YabalLexer(inputStream);
 
