@@ -1529,4 +1529,32 @@ public class AssemblerTest
         var address = builder.GetVariable("result").Pointer.Address;
         Assert.Equal(1, cpu.Memory[address]);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PointerVariable(bool optimize)
+    {
+        const string code = """
+            var points = create_pointer(12000, 1);
+
+            points[1] = 1
+            
+            int RotatePoint(int index){
+                var value = points[index];
+                
+                return value;
+            }
+            
+            var result = RotatePoint(1);
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
+    }
 }

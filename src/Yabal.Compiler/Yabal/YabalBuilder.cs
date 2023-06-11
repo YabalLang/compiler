@@ -913,14 +913,25 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 for (var i = 0; i < size; i++)
                 {
                     addressExpression.StoreAddressInA(this);
-
+                    
                     if (i > 0)
                     {
                         SetB(i);
                         Add();
                     }
 
+                    if (addressExpression.Bank > 0)
+                    {
+                        SetBank(addressExpression.Bank.Value);
+                    }
+
                     LoadA_FromAddressUsingA();
+                    
+                    if (addressExpression.Bank > 0)
+                    {
+                        SetBank(0);
+                    }
+                    
                     StorePointer(pointer.Add(i));
                 }
 
@@ -960,6 +971,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
+    }
+    
+    public void LoadPointer(Pointer pointer)
+    {
+        if (pointer.Bank == 0)
+        {
+            LoadA_Large(pointer);
+        }
+        else
+        {
+            SetA_Large(pointer);
+            SetBank(pointer.Bank);
+            LoadA_FromAddressUsingA();
+            SetBank(0);
+        }
     }
 
     public void StorePointer(Pointer pointer)
