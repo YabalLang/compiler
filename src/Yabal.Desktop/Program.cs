@@ -207,6 +207,7 @@ string? GetNativePath()
         "astro8"
     };
 
+    // Local path
     if (Path.GetDirectoryName(typeof(Program).Assembly.Location) is { } location)
     {
         paths.Add(Path.Combine(location, "astro8.exe"));
@@ -219,6 +220,23 @@ string? GetNativePath()
             paths.Add(Path.Combine(nativeFolder, "astro8.exe"));
             paths.Add(Path.Combine(nativeFolder, "astro8"));
         }
+    }
+
+    // Environment path
+    if (Environment.GetEnvironmentVariable("PATH") is { } pathVariables)
+    {
+        foreach (var path in pathVariables.Split(Path.PathSeparator))
+        {
+            paths.Add(Path.Combine(path, "astro8.exe"));
+            paths.Add(Path.Combine(path, "astro8"));
+        }
+    }
+
+    // Default install path
+    if (OperatingSystem.IsWindows())
+    {
+        paths.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Astro8\\astro8.exe"));
+        paths.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Astro8\\astro8"));
     }
 
     return paths.FirstOrDefault(File.Exists);
