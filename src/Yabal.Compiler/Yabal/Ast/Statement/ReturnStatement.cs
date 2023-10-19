@@ -48,11 +48,11 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
 
     public override Statement CloneStatement()
     {
-        return new ReturnStatement(Range, Expression.CloneExpression());
+        return new ReturnStatement(Range, Expression?.CloneExpression());
     }
 
     public override Statement Optimize()
     {
-        return new ReturnStatement(Range, Expression.Optimize());
+        return new ReturnStatement(Range, Expression?.Optimize());
     }
 }
