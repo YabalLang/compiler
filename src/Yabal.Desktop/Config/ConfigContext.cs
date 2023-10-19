@@ -26,6 +26,7 @@ internal partial class ConfigContext : JsonSerializerContext
                 new JsonSerializerOptions
                 {
                     ReadCommentHandling = JsonCommentHandling.Skip,
+                    AllowTrailingCommas = true,
                     Converters =
                     {
                         new IntJsonConverter(),
@@ -34,7 +35,15 @@ internal partial class ConfigContext : JsonSerializerContext
                 }
             );
 
-            config = JsonSerializer.Deserialize(json, context.Config);
+            try
+            {
+                config = JsonSerializer.Deserialize(json, context.Config);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine($"Failed to parse config file: {path}: {e.Message}");
+                config = null;
+            }
         }
 
         return config ?? new Config();
