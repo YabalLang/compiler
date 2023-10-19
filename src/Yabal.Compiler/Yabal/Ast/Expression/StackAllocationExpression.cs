@@ -7,14 +7,14 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
         builder.HasStackAllocation = true;
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         using var temp = builder.GetTemporaryVariable(global: true);
 
         builder.LoadA(builder.StackAllocPointer);
         builder.StoreA(temp);
 
-        Length.BuildExpression(builder, false);
+        Length.BuildExpression(builder, false, suggestedType);
         builder.LoadB(builder.StackAllocPointer);
         builder.Add();
         builder.StoreA(builder.StackAllocPointer);
@@ -32,7 +32,7 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
 
     public override void StoreAddressInA(YabalBuilder builder)
     {
-        BuildExpressionCore(builder, false);
+        BuildExpressionCore(builder, false, null);
     }
 
     public override AddressExpression CloneExpression()

@@ -44,7 +44,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         base.Assign(builder, expression);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         StoreAddressInA(builder);
         builder.LoadA_FromAddressUsingA();

@@ -9,7 +9,7 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
 
     public override void Build(YabalBuilder builder)
     {
-        Expression.BuildExpression(builder, true);
+        Expression.BuildExpression(builder, true, null);
     }
 
     public override Statement CloneStatement()

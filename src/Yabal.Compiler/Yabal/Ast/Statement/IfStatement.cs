@@ -40,7 +40,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
             }
             default:
             {
-                Expression.BuildExpression(builder, false);
+                Expression.BuildExpression(builder, false, LanguageType.Boolean);
                 builder.SetB(0);
                 builder.Sub();
                 builder.JumpIfZero(alternateLabel ?? end);

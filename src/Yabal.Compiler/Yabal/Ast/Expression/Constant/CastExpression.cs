@@ -20,15 +20,15 @@ public record CastExpression(SourceRange Range, LanguageType CastType, Expressio
         }
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (_callExpression is { } callExpression)
         {
-            callExpression.BuildExpression(builder, isVoid);
+            callExpression.BuildExpression(builder, isVoid, suggestedType);
         }
         else
         {
-            Expression.BuildExpression(builder, false);
+            Expression.BuildExpression(builder, false, suggestedType);
         }
     }
 

@@ -202,7 +202,7 @@ public record CallExpression(
         return false;
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (Function.Inline)
         {

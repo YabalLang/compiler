@@ -2,7 +2,7 @@
 
 public record BooleanExpression(SourceRange Range, bool Value) : Expression(Range), IConstantValue, IExpressionToB
 {
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.SetA(Value ? 1 : 0);
         builder.SetComment($"load boolean {(Value ? "true" : "false")}");

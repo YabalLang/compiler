@@ -59,7 +59,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         _variable.References.Add(this);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.LoadA(Variable.Pointer);
     }

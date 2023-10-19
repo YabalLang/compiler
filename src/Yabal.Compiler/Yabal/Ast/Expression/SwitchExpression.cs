@@ -1,4 +1,6 @@
-﻿namespace Yabal.Ast;
+﻿using Yabal.Instructions;
+
+namespace Yabal.Ast;
 
 public record SwitchItem(List<Expression> Cases, Expression Value);
 
@@ -21,9 +23,19 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
         Default.Initialize(builder);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        Value.BuildExpression(builder, isVoid);
+        BuildSwitch(builder, suggestedType, e => e.BuildExpression(builder, suggestedType, pointer));
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
+    {
+        BuildSwitch(builder, suggestedType, e => e.BuildExpression(builder, false, suggestedType));
+    }
+
+    private void BuildSwitch(YabalBuilder builder, LanguageType? suggestedType, Action<Expression> callback)
+    {
+        Value.BuildExpression(builder, false, suggestedType);
 
         using var tempValue = builder.GetTemporaryVariable();
         builder.StoreA(tempValue);
@@ -37,7 +49,7 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
 
             foreach (var caseValue in item.Cases)
             {
-                caseValue.BuildExpression(builder, isVoid);
+                caseValue.BuildExpression(builder, false, suggestedType);
                 builder.LoadB(tempValue);
                 builder.Sub();
                 builder.JumpIfZero(returnValue);
@@ -45,12 +57,12 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             }
 
             builder.Mark(returnValue);
-            item.Value.BuildExpression(builder, isVoid);
+            callback(item.Value);
             builder.Jump(end);
             builder.Mark(next);
         }
 
-        Default.BuildExpression(builder, isVoid);
+        callback(Default);
         builder.Mark(end);
     }
 

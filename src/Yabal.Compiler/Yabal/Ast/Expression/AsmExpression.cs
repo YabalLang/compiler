@@ -36,7 +36,7 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
         }
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         var labels = new Dictionary<string, InstructionPointer>();
 

@@ -9,22 +9,22 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         Value.Initialize(builder);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         switch (Operator)
         {
             case UnaryOperator.Not:
-                Value.BuildExpression(builder, isVoid);
+                Value.BuildExpression(builder, isVoid, suggestedType);
                 builder.Not();
                 break;
             case UnaryOperator.Minus:
-                Value.BuildExpression(builder, isVoid);
+                Value.BuildExpression(builder, isVoid, suggestedType);
                 builder.SetB(-1);
                 builder.Mult();
                 break;
             case UnaryOperator.Negate:
             {
-                Value.BuildExpression(builder, isVoid);
+                Value.BuildExpression(builder, isVoid, suggestedType);
                 var skip = builder.CreateLabel();
 
                 builder.SetB(1);
@@ -53,7 +53,7 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
             return;
         }
 
-        Value.BuildExpression(builder, false);
+        Value.BuildExpression(builder, false, null);
         builder.SetB(0);
         builder.Sub();
         builder.JumpIfZero(falseLabel);

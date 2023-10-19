@@ -8,6 +8,8 @@ public abstract record Statement(SourceRange Range) : Node(Range)
     {
     }
 
+    public abstract void Build(YabalBuilder builder);
+
     public abstract Statement CloneStatement();
 
     public abstract Statement Optimize();

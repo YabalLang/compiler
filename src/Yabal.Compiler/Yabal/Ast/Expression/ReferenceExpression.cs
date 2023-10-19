@@ -36,11 +36,11 @@ public record ReferenceExpression(SourceRange Range, Expression Expression) : Ex
 
     public override LanguageType Type => LanguageType.Reference(Expression.Type);
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (Expression.Type.StaticType == StaticType.Reference)
         {
-            Expression.BuildExpression(builder, isVoid);
+            Expression.BuildExpression(builder, isVoid, suggestedType);
             return;
         }
 

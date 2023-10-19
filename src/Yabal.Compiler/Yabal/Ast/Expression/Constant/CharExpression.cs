@@ -2,7 +2,7 @@
 
 public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue, IExpressionToB
 {
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (Character.CharToInt.TryGetValue(Value, out var intValue))
         {

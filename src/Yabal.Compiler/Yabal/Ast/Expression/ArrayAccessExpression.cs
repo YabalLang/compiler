@@ -33,7 +33,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         }
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         StoreAddressInA(builder);
 
@@ -103,7 +103,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         {
             var offset = intValue * elementSize;
 
-            Array.BuildExpression(builder, false);
+            Array.BuildExpression(builder, false, null);
 
             if (offset == 0)
             {
@@ -119,17 +119,17 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
         if (elementSize > 1 && !Array.OverwritesB)
         {
-            Key.BuildExpression(builder, false);
+            Key.BuildExpression(builder, false, null);
             builder.SetB(elementSize);
             builder.Mult();
             builder.SwapA_B();
 
-            Array.BuildExpression(builder, false);
+            Array.BuildExpression(builder, false, null);
             builder.Add();
             return;
         }
 
-        Array.BuildExpression(builder, false);
+        Array.BuildExpression(builder, false, null);
 
         if (elementSize == 1)
         {
@@ -144,7 +144,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
             if (builder.DisallowC == 0 && !Key.OverwritesB)
             {
                 builder.SwapA_B();
-                Key.BuildExpression(builder, false);
+                Key.BuildExpression(builder, false, null);
                 builder.Add();
                 builder.SetComment("add to pointer address");
                 return;
@@ -154,7 +154,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         using var variable = builder.GetTemporaryVariable();
         builder.StoreA(variable);
 
-        Key.BuildExpression(builder, false);
+        Key.BuildExpression(builder, false, null);
 
         if (elementSize > 1)
         {

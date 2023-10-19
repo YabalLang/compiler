@@ -11,7 +11,7 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
         _pointer = builder.GetString(Value);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.SetA_Large(_pointer);
     }

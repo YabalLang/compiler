@@ -157,7 +157,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                 return;
             }
 
-            expression.BuildExpression(builder, false);
+            expression.BuildExpression(builder, false, Type);
             AssignRegisterA(builder);
         }
     }

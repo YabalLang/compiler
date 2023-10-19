@@ -1,4 +1,6 @@
-﻿namespace Yabal.Ast;
+﻿using Yabal.Exceptions;
+
+namespace Yabal.Ast;
 
 public record InitStructItem(Identifier? Name, Expression Value);
 
@@ -12,9 +14,14 @@ public record InitStructExpression(SourceRange Range, List<InitStructItem> Items
         }
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        throw new InvalidOperationException();
+        builder.InitStruct(suggestedType, pointer, this);
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
+    {
+        throw new InvalidCodeException("Cannot use struct initializer as an expression", Range);
     }
 
     public override bool OverwritesB => false;

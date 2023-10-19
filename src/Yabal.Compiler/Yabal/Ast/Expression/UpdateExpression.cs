@@ -9,12 +9,12 @@ public record UpdateExpression(SourceRange Range, AssignableExpression Value, bo
         Value.MarkModified();
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         var isPrefix = !isVoid && !Prefix;
         var variable = isPrefix ? builder.GetTemporaryVariable() : null;
 
-        Value.BuildExpression(builder, false);
+        Value.BuildExpression(builder, false, suggestedType);
 
         if (variable != null)
         {

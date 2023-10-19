@@ -9,7 +9,17 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         Alternate.Initialize(builder);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildTernary(builder, suggestedType, e => e.BuildExpression(builder, suggestedType, pointer));
+    }
+
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
+    {
+        BuildTernary(builder, suggestedType, e => e.BuildExpression(builder, false, suggestedType));
+    }
+
+    private void BuildTernary(YabalBuilder builder, LanguageType? suggestedType, Action<Expression> callback)
     {
         var consequentLabel = builder.CreateLabel();
         var alternateLabel = builder.CreateLabel();
@@ -19,12 +29,12 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         expression.CreateComparison(builder, alternateLabel, consequentLabel);
 
         builder.Mark(consequentLabel);
-        Consequent.BuildExpression(builder, isVoid);
+        callback(Consequent);
 
         builder.Jump(end);
         builder.Mark(alternateLabel);
 
-        Alternate.BuildExpression(builder, isVoid);
+        callback(Alternate);
         builder.Mark(end);
     }
 

@@ -6,5 +6,5 @@ public interface IExpression : INode
 
     bool OverwritesB { get; }
 
-    void BuildExpression(YabalBuilder builder, bool isVoid);
+    void BuildExpression(YabalBuilder builder, bool isVoid, LanguageType? suggestedType);
 }

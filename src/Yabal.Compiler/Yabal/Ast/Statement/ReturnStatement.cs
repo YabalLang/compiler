@@ -18,27 +18,7 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
     {
         var returnType = builder.ReturnType ?? throw new InvalidCodeException("Cannot return outside of a function", Range);
 
-        if (Expression is null)
-        {
-            // ignore
-        }
-        else if (Expression is InitStructExpression initStruct)
-        {
-            builder.InitStruct(returnType, builder.ReturnValue, initStruct);
-        }
-        else if (returnType.Size == 1)
-        {
-            Expression.BuildExpression(builder, false);
-            builder.StoreA(builder.ReturnValue);
-        }
-        else if (returnType.Size == 0)
-        {
-            Expression.BuildExpression(builder, false);
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
+        Expression?.BuildExpression(builder, returnType, builder.ReturnValue);
 
         if (builder.Block.Return != null)
         {

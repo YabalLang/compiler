@@ -939,7 +939,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
             case {} when expression.Type is { StaticType: StaticType.Pointer, IsReference: true } && size == 2:
             {
-                expression.BuildExpression(this, false);
+                expression.BuildExpression(this, false, type);
                 StorePointer(pointer);
 
                 SetA(0);
@@ -948,7 +948,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
             case StringExpression when type.StaticType == StaticType.Pointer:
             {
-                expression.BuildExpression(this, false);
+                expression.BuildExpression(this, false, type);
                 StorePointer(pointer);
 
                 SetA(0);
@@ -959,7 +959,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             {
                 if (size == 1)
                 {
-                    expression.BuildExpression(this, false);
+                    expression.BuildExpression(this, false, type);
                     StorePointer(pointer);
                 }
                 else
@@ -1061,7 +1061,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
         else
         {
-            expression.BuildExpression(this, false);
+            expression.BuildExpression(this, false, null);
             StoreBitInA(target, bit);
         }
     }

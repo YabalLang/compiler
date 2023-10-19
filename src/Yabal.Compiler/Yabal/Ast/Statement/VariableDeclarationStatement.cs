@@ -30,7 +30,7 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
 
         if (Value is IPointerSource createPointer)
         {
-            createPointer.BuildExpression(builder, false);
+            createPointer.BuildExpression(builder, false, Type);
             builder.StoreA(Variable.Pointer);
 
             builder.SetA(createPointer.Bank);

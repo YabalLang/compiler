@@ -18,7 +18,7 @@ public static class ExpressionExtensions
         }
         else
         {
-            expression.BuildExpression(builder, false);
+            expression.BuildExpression(builder, false, LanguageType.Boolean);
             builder.SetB(0);
             builder.Sub();
             builder.JumpIfZero(falseLabel);
@@ -70,11 +70,11 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (_callExpression != null)
         {
-            _callExpression.BuildExpression(builder, isVoid);
+            _callExpression.BuildExpression(builder, isVoid, suggestedType);
             return;
         }
 
@@ -124,10 +124,10 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
                 using var left = builder.GetTemporaryVariable(global: true);
                 using var right = builder.GetTemporaryVariable(global: true);
 
-                Left.Build(builder);
+                Left.BuildExpression(builder, false, LanguageType.Integer);
                 builder.StoreA(left);
 
-                Right.Build(builder);
+                Right.BuildExpression(builder, false, LanguageType.Integer);
                 builder.StoreA(right);
 
                 builder.LoadA(left);
@@ -195,12 +195,12 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
         if (Operator == BinaryOperator.OrElse)
         {
-            Left.Build(builder);
+            Left.BuildExpression(builder, false, LanguageType.Boolean);
             builder.SetB(1);
             builder.Sub();
             builder.JumpIfZero(trueLabel);
 
-            Right.Build(builder);
+            Right.BuildExpression(builder, false, LanguageType.Boolean);
             builder.SetB(1);
             builder.Sub();
             builder.JumpIfZero(trueLabel);
@@ -211,12 +211,12 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
 
         if (Operator == BinaryOperator.AndAlso)
         {
-            Left.Build(builder);
+            Left.BuildExpression(builder, false, LanguageType.Boolean);
             builder.SetB(0);
             builder.Sub();
             builder.JumpIfZero(falseLabel);
 
-            Right.Build(builder);
+            Right.BuildExpression(builder, false, LanguageType.Boolean);
             builder.SetB(0);
             builder.Sub();
             builder.JumpIfZero(falseLabel);
@@ -283,25 +283,25 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
     {
         if (Right is IExpressionToB { OverwritesA: false } right)
         {
-            Left.Build(builder);
+            Left.BuildExpression(builder, false, LanguageType.Integer);
             right.BuildExpressionToB(builder);
         }
         else if (!Right.OverwritesB)
         {
-            Left.Build(builder);
+            Left.BuildExpression(builder, false, LanguageType.Integer);
             builder.SwapA_B();
 
-            Right.Build(builder);
+            Right.BuildExpression(builder, false, LanguageType.Integer);
             builder.SwapA_B();
         }
         else
         {
             using var variable = builder.GetTemporaryVariable();
 
-            Left.Build(builder);
+            Left.BuildExpression(builder, false, LanguageType.Integer);
             builder.StoreA(variable);
 
-            Right.Build(builder);
+            Right.BuildExpression(builder, false, LanguageType.Integer);
             builder.LoadB(variable);
 
             builder.SwapA_B();

@@ -12,7 +12,7 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
         _address = builder.GetFile(Range, Path, FileType);
     }
 
-    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid)
+    protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.SetA_Large(_address.Pointer);
     }
