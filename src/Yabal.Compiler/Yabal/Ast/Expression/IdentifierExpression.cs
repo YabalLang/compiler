@@ -139,6 +139,21 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
             : null
         : null;
 
+    public bool HasConstantValue => Value is not null;
+
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        if (Value is int value)
+        {
+            buffer[0] = value;
+            buffer[1] = 0;
+        }
+        else
+        {
+            throw new InvalidOperationException("Cannot store a null value.");
+        }
+    }
+
     public override Pointer? Pointer
     {
         get

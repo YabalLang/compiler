@@ -31,9 +31,24 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
         Value.BuildExpression(builder, false, null);
     }
 
+    public bool HasConstantValue => Pointer is not null;
+
     object? IConstantValue.Value => Pointer is {} pointer
         ? RawAddress.From(ElementType, pointer)
         : null;
+
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        if (Pointer is { } pointer)
+        {
+            buffer[0] = pointer.Address;
+            buffer[1] = pointer.Bank;
+        }
+        else
+        {
+            throw new InvalidOperationException("Cannot store a null pointer.");
+        }
+    }
 
     public override bool OverwritesB => Value.OverwritesB;
 

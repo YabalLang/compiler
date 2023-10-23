@@ -161,7 +161,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return address;
     }
 
-    public InstructionPointer ReturnValue { get; set; }
+    public Pointer ReturnValue { get; set; }
 
     public BlockStack Block { get; private set; }
 
@@ -695,7 +695,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
         }
 
-        builder.Mark(ReturnValue);
+        builder.Mark((InstructionPointer) ReturnValue);
 
         for (var i = 0; i < 10; i++)
         {
@@ -704,7 +704,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         if (hasFunction)
         {
-            var stackAllocStart = 0xEF6E;
+            var stackAllocStart = 61294;
             var stackStart = stackAllocStart - (1 + Stack.Sum(i => i.Size) * 16);
 
             builder.Mark(_stackPointer);

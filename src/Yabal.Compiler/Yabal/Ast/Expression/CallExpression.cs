@@ -233,11 +233,38 @@ public record CallExpression(
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        BuildExpression(builder, false, suggestedType);
-
-        for (var i = 0; i < suggestedType.Size; i++)
+        if (Function.Inline)
         {
-            builder.ReturnValue.CopyTo(builder, pointer, i);
+            var previousReturn = builder.ReturnType;
+            var previousPointer = builder.ReturnValue;
+
+            builder.ReturnType = Function.ReturnType;
+            builder.ReturnValue = pointer;
+            builder.PushBlock(_block);
+
+            foreach (var (variable, expression) in _variables)
+            {
+                if (!variable.CanBeRemoved)
+                {
+                    builder.SetValue(variable.Pointer, variable.Type, expression);
+                }
+            }
+
+            _body!.Build(builder);
+            builder.Mark(_returnLabel);
+
+            builder.PopBlock();
+            builder.ReturnValue = previousPointer;
+            builder.ReturnType = previousReturn;
+        }
+        else
+        {
+            BuildExpression(builder, false, suggestedType);
+
+            for (var i = 0; i < suggestedType.Size; i++)
+            {
+                builder.ReturnValue.CopyTo(builder, pointer, i);
+            }
         }
     }
 

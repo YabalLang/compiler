@@ -32,7 +32,17 @@ public abstract class InstructionBuilderBase
 
     public void LoadC(PointerOrData address) => Emit("CIN", address);
 
-    public void SetA(PointerOrData value) => Emit("LDIA", value);
+    public void SetA(PointerOrData value)
+    {
+        if (value is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
+        {
+            SetA_Large(value);
+        }
+        else
+        {
+            Emit("LDIA", value);
+        }
+    }
 
     public void SetA_Large(PointerOrData value)
     {

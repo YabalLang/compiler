@@ -29,6 +29,12 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
 
     public object Value => _address;
 
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        buffer[0] = _address.Pointer.Address;
+        buffer[1] = _address.Pointer.Bank;
+    }
+
     public override IncludeFileExpression CloneExpression()
     {
         return new IncludeFileExpression(Range, Path, FileType)

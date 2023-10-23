@@ -40,6 +40,11 @@ public record CharExpression(SourceRange Range, char Value) : Expression(Range),
 
     object? IConstantValue.Value => Character.CharToInt.TryGetValue(Value, out var intValue) ? intValue : 0;
 
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        buffer[0] = Character.CharToInt.TryGetValue(Value, out var intValue) ? intValue : 0;
+    }
+
     public override bool OverwritesB => false;
 
     public override LanguageType Type => LanguageType.Char;

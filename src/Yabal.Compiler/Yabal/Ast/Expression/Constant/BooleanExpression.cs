@@ -22,6 +22,11 @@ public record BooleanExpression(SourceRange Range, bool Value) : Expression(Rang
 
     object? IConstantValue.Value => Value;
 
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        buffer[0] = Value ? 1 : 0;
+    }
+
     public override bool OverwritesB => false;
 
     public override LanguageType Type => LanguageType.Boolean;

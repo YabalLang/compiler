@@ -99,6 +99,6 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
             return defaultValue;
         }
 
-        return this;
+        return new SwitchExpression(Range, value, items, defaultValue);
     }
 }

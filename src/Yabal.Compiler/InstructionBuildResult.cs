@@ -16,6 +16,8 @@ public class InstructionBuildResult : IProgram
         (_pointerOffsets, _length) = GetPointers(_references, offset);
     }
 
+    public int Length => _references.Count;
+
     public void ToAssembly(TextWriter writer, bool addComments = false, bool htmlHighlight = false)
     {
         var i = 0;

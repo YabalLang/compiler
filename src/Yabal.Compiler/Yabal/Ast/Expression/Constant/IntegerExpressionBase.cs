@@ -14,6 +14,11 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
 {
     public abstract int Value { get; init; }
 
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        buffer[0] = Value;
+    }
+
     public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxData;
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)

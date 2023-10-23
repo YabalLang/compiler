@@ -33,6 +33,12 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
 
     object IConstantValue.Value => StringAddress.From(Value, _pointer);
 
+    public void StoreConstantValue(Span<int> buffer)
+    {
+        buffer[0] = _pointer.Address;
+        buffer[1] = _pointer.Bank;
+    }
+
     public override string ToString()
     {
         return $"\"{Value}\"";

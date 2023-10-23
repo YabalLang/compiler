@@ -30,8 +30,10 @@ public class AssemblerTest
             _output.WriteLine("");
         }
 
-        _output.WriteLine("Instructions:");
-        _output.WriteLine(builder.Build().ToAssembly(addComments: true));
+        var result = builder.Build();
+        _output.WriteLine($"Instructions ({result.Length}):");
+
+        _output.WriteLine(result.ToAssembly(addComments: true));
 
         var mock = Mock.Of<Handler>();
         var cpu = CpuBuilder.Create(mock)
@@ -1568,17 +1570,17 @@ public class AssemblerTest
                 int a
                 int b
             }
-            
-            Test result(int value) {
+
+            inline Test result(int value) {
                 return value switch {
                     1 => { a: 1, b: 1 },
                     2 => { a: 2, b: 2 },
                     _ => { a: 0, b: 0 }
                 };
             }
-            
+
             var pointer = create_pointer<Test>(4000)
-            
+
             pointer[0] = result(1)
             pointer[1] = result(2)
             pointer[2] = result(3)
