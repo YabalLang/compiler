@@ -73,6 +73,24 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
             return;
         }
 
+        if (expression is InitStructExpression initStructExpression)
+        {
+            if (Type.Size == 1)
+            {
+                initStructExpression.BuildExpression(builder, false, Type);
+                StoreFromA(builder, 0);
+            }
+            else
+            {
+                using var tempVariable = builder.GetTemporaryVariable(size: Type.Size);
+                initStructExpression.BuildExpressionToPointer(builder, Type, tempVariable);
+
+                CopyFromPointer(builder, Type, tempVariable, range);
+            }
+
+            return;
+        }
+
         if (expression.Type.StaticType is StaticType.Pointer)
         {
             if (expression is IdentifierExpression {Variable: var variable})
@@ -148,21 +166,25 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 
             if (expression is AddressExpression { Pointer: {} valuePointer })
             {
-                for (var i = 0; i < size; i++)
-                {
-                    valuePointer.LoadToA(builder, i);
-                    StoreFromA(builder, i);
-                }
-
-                ZeroRemainingBytes(builder, expression.Type, range);
-
+                CopyFromPointer(builder, expression.Type, valuePointer, range);
                 return;
             }
 
-            expression.BuildExpression(builder, false, Type);
-            StoreFromA(builder, 0);
-            ZeroRemainingBytes(builder, expression.Type, range);
+            using var tempVariable = builder.GetTemporaryVariable(size: Type.Size);
+            expression.BuildExpressionToPointer(builder, Type, tempVariable);
+            CopyFromPointer(builder, expression.Type, tempVariable, range);
         }
+    }
+
+    private void CopyFromPointer(YabalBuilder builder, LanguageType type, Pointer valuePointer, SourceRange range)
+    {
+        for (var i = 0; i < type.Size; i++)
+        {
+            valuePointer.LoadToA(builder, i);
+            StoreFromA(builder, i);
+        }
+
+        ZeroRemainingBytes(builder, type, range);
     }
 
     private void ZeroRemainingBytes(YabalBuilder builder, LanguageType expressionType, SourceRange range)

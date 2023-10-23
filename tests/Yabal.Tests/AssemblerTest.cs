@@ -1643,7 +1643,7 @@ public class AssemblerTest
             void func(int x, int y) {
                 int off = y * grid_width + x;
 
-                grid[off] = 0;
+                grid[off] = {};
             }
             
             Cell temp = { type: 2, rot: 0, updated: true };

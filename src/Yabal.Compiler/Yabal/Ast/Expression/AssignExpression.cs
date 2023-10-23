@@ -31,6 +31,6 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
 
     public override Expression Optimize(LanguageType? suggestedType)
     {
-        return new AssignExpression(Range, Object, Value.Optimize(suggestedType));
+        return new AssignExpression(Range, Object, Value.Optimize(suggestedType ?? Object.Type));
     }
 }
