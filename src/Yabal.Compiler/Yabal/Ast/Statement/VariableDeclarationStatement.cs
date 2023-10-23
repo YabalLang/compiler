@@ -49,7 +49,7 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
 
     public override Statement Optimize()
     {
-        return new VariableDeclarationStatement(Range, Name, Constant, Value?.Optimize(), Type)
+        return new VariableDeclarationStatement(Range, Name, Constant, Value?.Optimize(Type), Type)
         {
             Variable = Variable
         };

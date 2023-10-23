@@ -46,9 +46,22 @@ public abstract class InstructionBuilderBase
         EmitRaw(value);
     }
 
-    public void SetB(PointerOrData value) => Emit("LDIB", value);
+    public void SetB(PointerOrData value)
+    {
+        Emit("LDIB", value);
+    }
 
-    public void StoreA(PointerOrData address, int? index = null) => Emit("STA", address, index);
+    public void StoreA(PointerOrData address, int? index = null)
+    {
+        if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
+        {
+            StoreA_Large(address);
+        }
+        else
+        {
+            Emit("STA", address, index);
+        }
+    }
 
     public void Add() => Emit("ADD");
 

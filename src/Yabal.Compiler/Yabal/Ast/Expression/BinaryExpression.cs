@@ -70,6 +70,19 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        if (_callExpression != null)
+        {
+            _callExpression.BuildExpressionToPointer(builder, suggestedType, pointer);
+        }
+        else
+        {
+            BuildExpressionCore(builder, false, suggestedType);
+            pointer.StoreA(builder);
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (_callExpression != null)
@@ -308,15 +321,15 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         }
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
         if (_callExpression != null)
         {
-            return _callExpression.Optimize();
+            return _callExpression.Optimize(suggestedType);
         }
 
-        var left = Left.Optimize();
-        var right = Right.Optimize();
+        var left = Left.Optimize(suggestedType);
+        var right = Right.Optimize(suggestedType);
 
         if (Operator is BinaryOperator.Equal or BinaryOperator.NotEqual &&
             left is IConstantValue { Value: {} leftValue } &&

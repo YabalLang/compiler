@@ -16,6 +16,12 @@ public abstract record IntegerExpressionBase(SourceRange Range) : Expression(Ran
 
     public bool IsSmall => Value is >= 0 and <= InstructionReference.MaxData;
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        pointer.StoreA(builder);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (IsSmall)

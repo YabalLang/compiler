@@ -2,6 +2,12 @@
 
 public record BooleanExpression(SourceRange Range, bool Value) : Expression(Range), IConstantValue, IExpressionToB
 {
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        pointer.StoreA(builder);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.SetA(Value ? 1 : 0);

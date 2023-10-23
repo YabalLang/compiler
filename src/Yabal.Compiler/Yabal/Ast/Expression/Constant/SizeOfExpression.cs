@@ -25,7 +25,7 @@ public record SizeOfExpression(SourceRange Range, Expression Expression) : Integ
         return new SizeOfExpression(Range, Expression.CloneExpression());
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
         return new IntegerExpression(Range, Value);
     }

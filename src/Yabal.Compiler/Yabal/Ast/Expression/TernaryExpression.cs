@@ -9,9 +9,9 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         Alternate.Initialize(builder);
     }
 
-    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        BuildTernary(builder, suggestedType, e => e.BuildExpression(builder, suggestedType, pointer));
+        BuildTernary(builder, suggestedType, e => e.BuildExpressionToPointer(builder, suggestedType, pointer));
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
@@ -24,7 +24,7 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         var consequentLabel = builder.CreateLabel();
         var alternateLabel = builder.CreateLabel();
         var end = builder.CreateLabel();
-        var expression = Expression.Optimize();
+        var expression = Expression.Optimize(LanguageType.Boolean);
 
         expression.CreateComparison(builder, alternateLabel, consequentLabel);
 
@@ -38,11 +38,11 @@ public record TernaryExpression(SourceRange Range, Expression Expression, Expres
         builder.Mark(end);
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        var expression = Expression.Optimize();
-        var consequent = Consequent.Optimize();
-        var alternate = Alternate.Optimize();
+        var expression = Expression.Optimize(suggestedType);
+        var consequent = Consequent.Optimize(suggestedType);
+        var alternate = Alternate.Optimize(suggestedType);
 
         if (expression is IConstantValue { Value: bool value })
         {

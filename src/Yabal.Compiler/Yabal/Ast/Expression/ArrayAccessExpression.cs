@@ -33,9 +33,23 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         }
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        for (var i = 0; i < suggestedType.Size; i++)
+        {
+            LoadValue(builder, i);
+            pointer.StoreA(builder, i);
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
-        StoreAddressInA(builder);
+        LoadValue(builder, 0);
+    }
+
+    public void LoadValue(YabalBuilder builder, int offset)
+    {
+        StoreAddressInA(builder, offset);
 
         if (Array.Bank > 0) builder.SetBank(Array.Bank.Value);
         builder.LoadA_FromAddressUsingA();
@@ -46,9 +60,9 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
     public override LanguageType Type => Array.Type.ElementType ?? LanguageType.Integer;
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        var key = Key.Optimize();
+        var key = Key.Optimize(suggestedType);
 
         if (Array is not IConstantValue {Value: IAddress address} ||
             key is not IConstantValue {Value: int index})
@@ -90,18 +104,23 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
     public override void StoreAddressInA(YabalBuilder builder)
     {
+        StoreAddressInA(builder, 0);
+    }
+
+    public void StoreAddressInA(YabalBuilder builder, int pointerOffset)
+    {
         var elementSize = Array.Type.ElementType?.Size ?? 1;
 
         if (Array is { Pointer: {} pointer } &&
             Key is IConstantValue { Value: int constantKey })
         {
-            builder.SetA_Large(pointer.Add(constantKey * elementSize));
+            builder.SetA_Large(pointer.Add(constantKey * elementSize + pointerOffset));
             return;
         }
 
         if (Key is IConstantValue { Value: int intValue })
         {
-            var offset = intValue * elementSize;
+            var offset = intValue * elementSize + pointerOffset;
 
             Array.BuildExpression(builder, false, null);
 
@@ -120,7 +139,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         if (elementSize > 1 && !Array.OverwritesB)
         {
             Key.BuildExpression(builder, false, null);
-            builder.SetB(elementSize);
+            builder.SetB(elementSize + pointerOffset);
             builder.Mult();
             builder.SwapA_B();
 
@@ -137,6 +156,13 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
             {
                 expressionToB.BuildExpressionToB(builder);
                 builder.Add();
+
+                if (pointerOffset > 0)
+                {
+                    builder.SetB(pointerOffset);
+                    builder.Add();
+                }
+
                 builder.SetComment("add to pointer address");
                 return;
             }
@@ -146,6 +172,13 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
                 builder.SwapA_B();
                 Key.BuildExpression(builder, false, null);
                 builder.Add();
+
+                if (pointerOffset > 0)
+                {
+                    builder.SetB(pointerOffset);
+                    builder.Add();
+                }
+
                 builder.SetComment("add to pointer address");
                 return;
             }
@@ -164,6 +197,12 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
         builder.LoadB(variable);
         builder.Add();
+
+        if (pointerOffset > 0)
+        {
+            builder.SetB(pointerOffset);
+            builder.Add();
+        }
 
         builder.SetComment("add to pointer address");
     }

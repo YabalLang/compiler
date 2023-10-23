@@ -9,6 +9,12 @@ public record UpdateExpression(SourceRange Range, AssignableExpression Value, bo
         Value.MarkModified();
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpression(builder, false, suggestedType);
+        builder.StoreA(pointer);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         var isPrefix = !isVoid && !Prefix;

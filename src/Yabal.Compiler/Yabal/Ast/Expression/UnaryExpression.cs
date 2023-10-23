@@ -9,6 +9,12 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         Value.Initialize(builder);
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpression(builder, false, suggestedType);
+        builder.StoreA(pointer);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         switch (Operator)
@@ -60,9 +66,9 @@ public record UnaryExpression(SourceRange Range, Expression Value, UnaryOperator
         builder.Jump(trueLabel);
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        var value = Value.Optimize();
+        var value = Value.Optimize(suggestedType);
 
         return Operator switch
         {

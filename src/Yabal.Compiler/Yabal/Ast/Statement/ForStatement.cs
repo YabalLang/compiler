@@ -68,7 +68,7 @@ public record ForStatement(SourceRange Range, Statement? Init, Statement? Update
             Range,
             Init?.Optimize(),
             Update?.Optimize(),
-            Test.Optimize(),
+            Test.Optimize(LanguageType.Boolean),
             Body.Optimize()
         )
         {

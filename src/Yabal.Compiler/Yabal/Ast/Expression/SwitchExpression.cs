@@ -23,9 +23,9 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
         Default.Initialize(builder);
     }
 
-    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        BuildSwitch(builder, suggestedType, e => e.BuildExpression(builder, suggestedType, pointer));
+        BuildSwitch(builder, suggestedType, e => e.BuildExpressionToPointer(builder, suggestedType, pointer));
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
@@ -80,11 +80,11 @@ public record SwitchExpression(SourceRange Range, Expression Value, List<SwitchI
         );
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        var value = Value.Optimize();
-        var items = Items.Select(i => new SwitchItem(i.Cases.Select(c => c.Optimize()).ToList(), i.Value.Optimize())).ToList();
-        var defaultValue = Default.Optimize();
+        var value = Value.Optimize(null);
+        var items = Items.Select(i => new SwitchItem(i.Cases.Select(c => c.Optimize(suggestedType)).ToList(), i.Value.Optimize(suggestedType))).ToList();
+        var defaultValue = Default.Optimize(suggestedType);
 
         if (value is IConstantValue { Value: { } constantValue } &&
             items.All(i => i.Cases.All(c => c is IConstantValue )))

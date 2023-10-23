@@ -68,7 +68,7 @@ public abstract class Pointer
         LoadToA(builder, offset);
         builder.SetComment("load value");
 
-        if (pointer.Bank == 0 && pointer.IsSmall)
+        if (pointer is { Bank: 0, IsSmall: true })
         {
             builder.StoreA(pointer.Add(offset));
         }

@@ -28,7 +28,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
 
     public override void OnBuild(YabalBuilder builder)
     {
-        var expression = Expression.Optimize();
+        var expression = Expression.Optimize(LanguageType.Boolean);
 
         builder.Mark(_nextLabel);
 
@@ -50,7 +50,7 @@ public record WhileStatement(SourceRange Range, Expression Expression, BlockStat
 
     public override Statement Optimize()
     {
-        return new WhileStatement(Range, Expression.Optimize(), Body.Optimize())
+        return new WhileStatement(Range, Expression.Optimize(LanguageType.Boolean), Body.Optimize())
         {
             Block = Block,
             _nextLabel = _nextLabel,

@@ -231,6 +231,16 @@ public record CallExpression(
         }
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpression(builder, false, suggestedType);
+
+        for (var i = 0; i < suggestedType.Size; i++)
+        {
+            builder.ReturnValue.CopyTo(builder, pointer, i);
+        }
+    }
+
     public override bool OverwritesB => true;
 
     public override LanguageType Type => Function.ReturnType;
@@ -244,12 +254,12 @@ public record CallExpression(
         );
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
         return new CallExpression(
             Range,
-            Callee.IsLeft ? Callee.Left.Optimize() : Callee.Right,
-            (_arguments ?? Arguments).Select(x => x.Optimize()).ToList()
+            Callee.IsLeft ? Callee.Left.Optimize(suggestedType) : Callee.Right,
+            (_arguments ?? Arguments).Select(x => x.Optimize(suggestedType)).ToList()
         )
         {
             _block = _block,

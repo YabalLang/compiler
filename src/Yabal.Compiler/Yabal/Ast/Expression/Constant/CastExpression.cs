@@ -20,6 +20,18 @@ public record CastExpression(SourceRange Range, LanguageType CastType, Expressio
         }
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        if (_callExpression is { } callExpression)
+        {
+            callExpression.BuildExpressionToPointer(builder, suggestedType, pointer);
+        }
+        else
+        {
+            Expression.BuildExpressionToPointer(builder, suggestedType, pointer);
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (_callExpression is { } callExpression)
@@ -52,9 +64,9 @@ public record CastExpression(SourceRange Range, LanguageType CastType, Expressio
         }
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        return _callExpression?.Optimize() ?? new CastExpression(Range, CastType, Expression.Optimize()) { _callExpression = _callExpression };
+        return _callExpression?.Optimize(suggestedType) ?? new CastExpression(Range, CastType, Expression.Optimize(suggestedType)) { _callExpression = _callExpression };
     }
 
     public override AddressExpression CloneExpression()

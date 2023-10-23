@@ -10,15 +10,11 @@ public abstract record Expression(SourceRange Range) : Node(Range), IExpression
         BuildExpressionCore(builder, isVoid, suggestedType);
     }
 
-    public virtual void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
-    {
-        BuildExpression(builder, false, suggestedType);
-        builder.SetValue(pointer, Type, this);
-    }
+    public abstract void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer);
 
     protected abstract void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType);
 
-    public virtual Expression Optimize() => this;
+    public virtual Expression Optimize(LanguageType? suggestedType) => this;
 
     public abstract bool OverwritesB { get; }
 

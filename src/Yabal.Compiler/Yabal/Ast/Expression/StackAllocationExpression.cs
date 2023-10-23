@@ -7,6 +7,12 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
         builder.HasStackAllocation = true;
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        builder.StoreA(pointer);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         using var temp = builder.GetTemporaryVariable(global: true);
@@ -40,8 +46,8 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
         return new StackAllocationExpression(Range, PointerType, Length);
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        return new StackAllocationExpression(Range, PointerType, Length.Optimize());
+        return new StackAllocationExpression(Range, PointerType, Length.Optimize(suggestedType));
     }
 }

@@ -59,6 +59,15 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         _variable.References.Add(this);
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        for (var i = 0; i < suggestedType.Size; i++)
+        {
+            builder.LoadA(Variable.Pointer.Add(i));
+            builder.StoreA(pointer, i);
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         builder.LoadA(Variable.Pointer);
@@ -89,7 +98,6 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
     public bool CanGetVariable => true;
 
     public override LanguageType Type => Variable.Type;
-
 
     bool IExpressionToB.OverwritesA => false;
 
@@ -126,7 +134,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
     }
 
     public object? Value => _variable is { Constant: true, Initializer: {} initializer }
-        ? initializer.Optimize() is IConstantValue { Value: var value }
+        ? initializer.Optimize(Type) is IConstantValue { Value: var value }
             ? value
             : null
         : null;
@@ -151,7 +159,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         }
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
         if (_variable == null)
         {

@@ -7,6 +7,18 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
         Value.Initialize(builder);
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        Value.BuildExpression(builder, false, null);
+        pointer.StoreA(builder);
+
+        if (suggestedType.Size == 2)
+        {
+            builder.SetA(1);
+            pointer.StoreA(builder, offset: 1);
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         Value.BuildExpression(builder, isVoid, suggestedType);

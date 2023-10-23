@@ -1557,4 +1557,121 @@ public class AssemblerTest
 
         Assert.Equal(1, cpu.Memory[builder.GetVariable("result").Pointer.Address]);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task InitStructWithSwitchExpression(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a
+                int b
+            }
+            
+            Test result(int value) {
+                return value switch {
+                    1 => { a: 1, b: 1 },
+                    2 => { a: 2, b: 2 },
+                    _ => { a: 0, b: 0 }
+                };
+            }
+            
+            var pointer = create_pointer<Test>(4000)
+            
+            pointer[0] = result(1)
+            pointer[1] = result(2)
+            pointer[2] = result(3)
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4000]);
+        Assert.Equal(1, cpu.Memory[4001]);
+
+        Assert.Equal(2, cpu.Memory[4002]);
+        Assert.Equal(2, cpu.Memory[4003]);
+
+        Assert.Equal(0, cpu.Memory[4004]);
+        Assert.Equal(0, cpu.Memory[4005]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SetFromVariable(bool optimize)
+    {
+        const string code = """
+            const var grid = create_pointer<Cell>(10420, 1);
+            
+            Cell temp = { type: 2, rot: 0 };
+            grid[0] = temp;
+            
+            struct Cell {
+                bool updated;
+                int type : 5;
+                int rot : 2;
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(0, cpu.Banks[1][10420]);
+        Assert.Equal(2, cpu.Banks[1][10421]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task StructSetFromFunction(bool optimize)
+    {
+        const string code = """
+            const var screen = create_pointer(53870, 1);
+            const var grid = create_pointer<Cell>(10420, 1);
+            const var grid_width = 18;
+            
+            void func(int x, int y) {
+                int off = y * grid_width + x;
+                grid[off] = 0;
+            }
+            
+            Cell temp = { type: 2, rot: 0 };
+            grid[0] = temp;
+            
+            Cell c1 = grid[0];
+            if (c1.type == 2) { // Should be true
+                screen[0] = 65535;
+            }
+            
+            func(0, 0); // grid[0] = 0;
+            
+            Cell c2 = grid[0];
+            if (c2.type == 2) { // Should be false
+                screen[1] = 255;
+            }
+            
+            struct Cell {
+                bool updated;
+                int type : 5;
+                int rot : 2;
+            }
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(65535, cpu.Banks[1][53870]);
+        Assert.Equal(255, cpu.Banks[1][53871]);
+    }
 }

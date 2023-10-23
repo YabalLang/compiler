@@ -871,7 +871,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         switch (expression)
         {
-            case AddressExpression { DirectCopy: true } addressExpression when addressExpression.Type.StaticType == StaticType.Pointer:
+            case AddressExpression { DirectCopy: true, Type.StaticType: StaticType.Pointer } addressExpression:
             {
                 if (addressExpression is IdentifierExpression {Variable: var variable})
                 {
@@ -937,7 +937,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
                 break;
             }
-            case {} when expression.Type is { StaticType: StaticType.Pointer, IsReference: true } && size == 2:
+            case { Type: { StaticType: StaticType.Pointer, IsReference: true } } when size == 2:
             {
                 expression.BuildExpression(this, false, type);
                 StorePointer(pointer);
@@ -956,7 +956,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 break;
             }
             default:
-            {
                 if (size == 1)
                 {
                     expression.BuildExpression(this, false, type);
@@ -964,11 +963,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    expression.BuildExpressionToPointer(this, type, pointer);
                 }
 
                 break;
-            }
         }
 
     }

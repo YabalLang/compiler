@@ -14,7 +14,7 @@ public record InitStructExpression(SourceRange Range, List<InitStructItem> Items
         }
     }
 
-    public override void BuildExpression(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
         builder.InitStruct(suggestedType, pointer, this);
     }
@@ -37,11 +37,11 @@ public record InitStructExpression(SourceRange Range, List<InitStructItem> Items
         );
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
         return new InitStructExpression(
             Range,
-            Items.Select(i => i with { Value = i.Value.Optimize() }).ToList(),
+            Items.Select(i => i with { Value = i.Value.Optimize(suggestedType) }).ToList(),
             StructType
         );
     }

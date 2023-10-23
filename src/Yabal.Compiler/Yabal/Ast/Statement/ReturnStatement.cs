@@ -4,6 +4,8 @@ namespace Yabal.Ast;
 
 public record ReturnStatement(SourceRange Range, Expression? Expression) : Statement(Range)
 {
+    public LanguageType? ReturnType { get; set; }
+
     public override void Initialize(YabalBuilder builder)
     {
         Expression?.Initialize(builder);
@@ -12,13 +14,15 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
         {
             builder.AddError(ErrorLevel.Error, Range, ErrorMessages.ReturnOutsideFunction);
         }
+
+        ReturnType = builder.ReturnType;
     }
 
     public override void Build(YabalBuilder builder)
     {
         var returnType = builder.ReturnType ?? throw new InvalidCodeException("Cannot return outside of a function", Range);
 
-        Expression?.BuildExpression(builder, returnType, builder.ReturnValue);
+        Expression?.BuildExpressionToPointer(builder, returnType, builder.ReturnValue);
 
         if (builder.Block.Return != null)
         {
@@ -28,11 +32,17 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
 
     public override Statement CloneStatement()
     {
-        return new ReturnStatement(Range, Expression?.CloneExpression());
+        return new ReturnStatement(Range, Expression?.CloneExpression())
+        {
+            ReturnType = ReturnType
+        };
     }
 
     public override Statement Optimize()
     {
-        return new ReturnStatement(Range, Expression?.Optimize());
+        return new ReturnStatement(Range, Expression?.Optimize(ReturnType))
+        {
+            ReturnType = ReturnType
+        };
     }
 }

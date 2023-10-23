@@ -64,7 +64,7 @@ public record IfStatement(SourceRange Range, Expression Expression, Statement Co
 
     public override Statement Optimize()
     {
-        var expression = Expression.Optimize();
+        var expression = Expression.Optimize(LanguageType.Boolean);
         var consequent = Consequent.Optimize();
         var alternate = Alternate?.Optimize();
 

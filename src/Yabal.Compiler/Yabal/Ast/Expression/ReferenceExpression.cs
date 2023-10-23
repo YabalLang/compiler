@@ -36,6 +36,12 @@ public record ReferenceExpression(SourceRange Range, Expression Expression) : Ex
 
     public override LanguageType Type => LanguageType.Reference(Expression.Type);
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        builder.StoreA(pointer);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (Expression.Type.StaticType == StaticType.Reference)
@@ -64,8 +70,8 @@ public record ReferenceExpression(SourceRange Range, Expression Expression) : Ex
         return new ReferenceExpression(Range, Expression.CloneExpression());
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        return new ReferenceExpression(Range, Expression.Optimize());
+        return new ReferenceExpression(Range, Expression.Optimize(suggestedType));
     }
 }

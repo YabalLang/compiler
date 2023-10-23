@@ -7,6 +7,7 @@
         <RootNamespace>Yabal</RootNamespace>
         <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
         <DebugType>embedded</DebugType>
+        <WarningsAsErrors>True</WarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>

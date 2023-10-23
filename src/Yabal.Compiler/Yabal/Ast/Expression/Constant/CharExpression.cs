@@ -2,6 +2,12 @@
 
 public record CharExpression(SourceRange Range, char Value) : Expression(Range), IConstantValue, IExpressionToB
 {
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        pointer.StoreA(builder);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         if (Character.CharToInt.TryGetValue(Value, out var intValue))

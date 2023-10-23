@@ -36,6 +36,12 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
         }
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        BuildExpressionCore(builder, false, suggestedType);
+        pointer.StoreA(builder);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         var labels = new Dictionary<string, InstructionPointer>();

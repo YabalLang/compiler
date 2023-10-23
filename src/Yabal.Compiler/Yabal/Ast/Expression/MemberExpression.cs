@@ -44,6 +44,33 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         base.Assign(builder, expression);
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        if (_field.Bit is not null)
+        {
+            BuildExpressionCore(builder, false, suggestedType);
+            builder.StoreA(pointer);
+        }
+        else
+        {
+            var offset = _field.Offset;
+
+            for (var i = 0; i < suggestedType.Size; i++)
+            {
+                Expression.StoreAddressInA(builder);
+
+                if (i > 0)
+                {
+                    builder.SetB(offset + i);
+                    builder.Add();
+                }
+
+                builder.LoadA_FromAddressUsingA();
+                builder.StoreA(pointer.Add(i));
+            }
+        }
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         StoreAddressInA(builder);

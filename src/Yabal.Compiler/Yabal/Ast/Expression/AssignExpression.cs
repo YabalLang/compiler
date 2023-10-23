@@ -10,6 +10,12 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
         Object.MarkModified();
     }
 
+    public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
+    {
+        Object.Assign(builder, Value);
+        Object.BuildExpressionToPointer(builder, suggestedType, pointer);
+    }
+
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         Object.Assign(builder, Value);
@@ -24,8 +30,8 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
         return new AssignExpression(Range, Object.CloneExpression(), Value.CloneExpression());
     }
 
-    public override Expression Optimize()
+    public override Expression Optimize(LanguageType? suggestedType)
     {
-        return new AssignExpression(Range, Object, Value.Optimize());
+        return new AssignExpression(Range, Object, Value.Optimize(suggestedType));
     }
 }

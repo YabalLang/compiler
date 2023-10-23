@@ -17,5 +17,5 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
         return new ExpressionStatement(Range, Expression.CloneExpression());
     }
 
-    public override Statement Optimize() => new ExpressionStatement(Range, Expression.Optimize());
+    public override Statement Optimize() => new ExpressionStatement(Range, Expression.Optimize(null));
 }
