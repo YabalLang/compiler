@@ -37,7 +37,17 @@ public class InstructionBuildResult : IProgram
 
                     writer.Write(", ");
                     writer.Write(either.Left is InstructionLabel ? "label " : "reference ");
-                    writer.WriteLine(either.Left.ToString());
+
+                    writer.Write(either.Left.ToString());
+
+                    if (either.Left is { Comment: { } pointerComment })
+                    {
+                        writer.Write(" (");
+                        writer.Write(pointerComment);
+                        writer.Write(") ");
+                    }
+
+                    writer.WriteLine();
 
                     if (htmlHighlight)
                     {

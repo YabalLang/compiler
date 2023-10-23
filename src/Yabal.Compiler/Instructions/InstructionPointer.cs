@@ -27,6 +27,8 @@ public class InstructionPointer : Pointer
 
     public override int Address => _address ?? throw new InvalidOperationException($"No address has been set, make sure {nameof(InstructionBuilder)}.{nameof(InstructionBuilder.CopyTo)} is called before accessing the value");
 
+    public string? Comment { get; set; }
+
     public override string? ToString()
     {
         return $"[{Address}:{Bank}]";

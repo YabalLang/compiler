@@ -734,6 +734,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             }
 
             builder.Mark(function.Label);
+            builder.SetComment($"declaration of function {function.Name}");
             builder.AddRange(function.Builder._builder);
             builder.Jump(_returnLabel);
         }

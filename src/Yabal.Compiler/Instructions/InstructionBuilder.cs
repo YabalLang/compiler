@@ -168,13 +168,15 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
         if (item.IsLeft)
         {
-            return;
+            item.Left.Comment = comment;
         }
-
-        _references[lastIndex] = item.Right with
+        else
         {
-            Comment = comment
-        };
+            _references[lastIndex] = item.Right with
+            {
+                Comment = comment
+            };
+        }
     }
 
     private void Add(Either<InstructionPointer, InstructionItem> instruction)
