@@ -26,7 +26,17 @@ public abstract class InstructionBuilderBase
 
     public void SetBank_FromC() => Emit("BNKC");
 
-    public void LoadA(PointerOrData address) => Emit("AIN", address);
+    public void LoadA(PointerOrData address)
+    {
+        if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
+        {
+            LoadA_Large(address);
+        }
+        else
+        {
+            Emit("AIN", address);
+        }
+    }
 
     public void LoadB(PointerOrData address) => Emit("BIN", address);
 

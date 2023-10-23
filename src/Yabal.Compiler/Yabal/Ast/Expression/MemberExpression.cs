@@ -22,7 +22,13 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
         _field = field ?? throw new InvalidCodeException($"Struct {Expression.Type} does not contain a field named {Name}", Range);
     }
 
-    public override void AssignRegisterA(YabalBuilder builder)
+    public override void LoadToA(YabalBuilder builder, int offset)
+    {
+        base.LoadToA(builder, offset);
+        AfterLoad(builder);
+    }
+
+    public override void StoreFromA(YabalBuilder builder, int offset)
     {
         if (_field.Bit is {} bit)
         {
@@ -30,10 +36,10 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
             return;
         }
 
-        base.AssignRegisterA(builder);
+        base.StoreFromA(builder, offset);
     }
 
-    public override void Assign(YabalBuilder builder, Expression expression)
+    public override void Assign(YabalBuilder builder, Expression expression, SourceRange range)
     {
         if (_field.Bit is {} bit)
         {
@@ -41,7 +47,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
             return;
         }
 
-        base.Assign(builder, expression);
+        base.Assign(builder, expression, range);
     }
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
@@ -75,7 +81,11 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
     {
         StoreAddressInA(builder);
         builder.LoadA_FromAddressUsingA();
+        AfterLoad(builder);
+    }
 
+    private void AfterLoad(YabalBuilder builder)
+    {
         if (_field.Bit is {} bit)
         {
             if (bit.Offset > 0)
@@ -120,9 +130,9 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override int? Bank => Expression.Bank;
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
-        Expression.StoreAddressInA(builder);
+        Expression.StoreAddressInA(builder, offset);
 
         if (_field.Offset > 0)
         {

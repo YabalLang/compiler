@@ -43,7 +43,7 @@ public record UpdateExpression(SourceRange Range, AssignableExpression Value, bo
                 throw new InvalidOperationException("Unknown operator");
         }
 
-        Value.AssignRegisterA(builder);
+        Value.StoreFromA(builder, 0);
 
         if (variable != null)
         {

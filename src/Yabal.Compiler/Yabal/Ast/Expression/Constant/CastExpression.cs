@@ -52,11 +52,11 @@ public record CastExpression(SourceRange Range, LanguageType CastType, Expressio
 
     public override bool DirectCopy => _callExpression is null && ((Expression as AddressExpression)?.DirectCopy ?? false);
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
         if (_callExpression is null && Expression is AddressExpression addressExpression)
         {
-            addressExpression.StoreAddressInA(builder);
+            addressExpression.StoreAddressInA(builder, offset);
         }
         else
         {

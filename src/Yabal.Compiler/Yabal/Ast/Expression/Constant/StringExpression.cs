@@ -22,9 +22,9 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
         builder.SetA_Large(_pointer);
     }
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
-        builder.SetA_Large(_pointer);
+        builder.SetA_Large(_pointer.Add(offset));
     }
 
     public override bool OverwritesB => false;

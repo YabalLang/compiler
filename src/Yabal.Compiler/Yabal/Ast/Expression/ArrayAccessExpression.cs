@@ -102,12 +102,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
 
     public override int? Bank => Array.Bank;
 
-    public override void StoreAddressInA(YabalBuilder builder)
-    {
-        StoreAddressInA(builder, 0);
-    }
-
-    public void StoreAddressInA(YabalBuilder builder, int pointerOffset)
+    public override void StoreAddressInA(YabalBuilder builder, int pointerOffset)
     {
         var elementSize = Array.Type.ElementType?.Size ?? 1;
 
@@ -139,8 +134,15 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         if (elementSize > 1 && !Array.OverwritesB)
         {
             Key.BuildExpression(builder, false, null);
-            builder.SetB(elementSize + pointerOffset);
+            builder.SetB(elementSize);
             builder.Mult();
+
+            if (pointerOffset > 0)
+            {
+                builder.SetB(pointerOffset);
+                builder.Add();
+            }
+
             builder.SwapA_B();
 
             Array.BuildExpression(builder, false, null);

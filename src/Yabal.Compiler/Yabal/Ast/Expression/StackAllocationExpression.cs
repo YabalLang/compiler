@@ -36,7 +36,7 @@ public record StackAllocationExpression(SourceRange Range, LanguageType PointerT
 
     public override Pointer? Pointer => null;
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
         BuildExpressionCore(builder, false, null);
     }

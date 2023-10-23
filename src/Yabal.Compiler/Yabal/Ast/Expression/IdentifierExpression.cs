@@ -114,17 +114,17 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         }
     }
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
         Variable.Usages++;
 
         if (Variable.Type.IsReference)
         {
-            builder.LoadA(Variable.Pointer);
+            builder.LoadA(Variable.Pointer.Add(offset));
         }
         else
         {
-            builder.SetA(Variable.Pointer);
+            builder.SetA(Variable.Pointer.Add(offset));
         }
     }
 

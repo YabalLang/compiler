@@ -26,7 +26,7 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
 
     public override int? Bank => BankValue;
 
-    public override void StoreAddressInA(YabalBuilder builder)
+    public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
         Value.BuildExpression(builder, false, null);
     }

@@ -8,28 +8,44 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
 
     public virtual bool DirectCopy => true;
 
-    public abstract void StoreAddressInA(YabalBuilder builder);
+    public virtual void StoreAddressInA(YabalBuilder builder)
+    {
+        StoreAddressInA(builder, 0);
+    }
+
+    public abstract void StoreAddressInA(YabalBuilder builder, int offset);
 
     public virtual void StoreBankInC(YabalBuilder builder)
     {
         throw new NotImplementedException();
     }
 
-    public override void AssignRegisterA(YabalBuilder builder)
+    public override void LoadToA(YabalBuilder builder, int offset)
     {
-        if (Type.Size > 1)
-        {
-            throw new NotSupportedException();
-        }
-
         if (Pointer is { } pointer)
         {
-            builder.StoreA(pointer);
+            builder.LoadA(pointer.Add(offset));
+        }
+        else
+        {
+            StoreAddressInA(builder, offset);
+
+            if (Bank > 0) builder.SetBank(Bank.Value);
+            builder.LoadA_FromAddressUsingA();
+            if (Bank > 0) builder.SetBank(0);
+        }
+    }
+
+    public override void StoreFromA(YabalBuilder builder, int offset)
+    {
+        if (Pointer is { } pointer)
+        {
+            builder.StoreA(pointer.Add(offset));
         }
         else if (!OverwritesB)
         {
             builder.SwapA_B();
-            StoreAddressInA(builder);
+            StoreAddressInA(builder, offset);
             builder.SwapA_B();
 
             if (Bank > 0) builder.SetBank(Bank.Value);
@@ -40,7 +56,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
         {
             using var temp = builder.GetTemporaryVariable();
             builder.StoreA(temp);
-            StoreAddressInA(builder);
+            StoreAddressInA(builder, offset);
             builder.LoadB(temp);
 
             if (Bank > 0) builder.SetBank(Bank.Value);
@@ -49,7 +65,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
         }
     }
 
-    public override void Assign(YabalBuilder builder, Expression expression)
+    public override void Assign(YabalBuilder builder, Expression expression, SourceRange range)
     {
         if (Pointer is {} pointer)
         {
@@ -125,40 +141,45 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                     builder.SetBank(0);
                 }
 
+                ZeroRemainingBytes(builder, expression.Type, range);
+
                 return;
             }
 
             if (expression is AddressExpression { Pointer: {} valuePointer })
             {
-                if (expression.Type.StaticType == StaticType.Pointer)
-                {
-                    StoreAddressInA(builder);
-
-                    return;
-                }
-
                 for (var i = 0; i < size; i++)
                 {
-                    StoreAddressInA(builder);
-
-                    if (i > 0)
-                    {
-                        builder.SetB(i);
-                        builder.Add();
-                    }
-
-                    builder.SwapA_B();
                     valuePointer.LoadToA(builder, i);
-
-                    builder.SwapA_B();
-                    builder.StoreB_ToAddressInA();
+                    StoreFromA(builder, i);
                 }
+
+                ZeroRemainingBytes(builder, expression.Type, range);
 
                 return;
             }
 
             expression.BuildExpression(builder, false, Type);
-            AssignRegisterA(builder);
+            StoreFromA(builder, 0);
+            ZeroRemainingBytes(builder, expression.Type, range);
+        }
+    }
+
+    private void ZeroRemainingBytes(YabalBuilder builder, LanguageType expressionType, SourceRange range)
+    {
+        var missingBytes = Type.Size - expressionType.Size;
+
+        if (missingBytes == 0)
+        {
+            return;
+        }
+
+        builder.AddError(ErrorLevel.Warning, range, $"Assigning a value of type {expressionType} to a variable of type {Type} will only copy the first byte(s) of the value, the remaining byte(s) will be set to 0.");
+
+        for (var i = expressionType.Size; i < Type.Size; i++)
+        {
+            builder.SetA(0);
+            StoreFromA(builder, i);
         }
     }
 

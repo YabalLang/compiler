@@ -1642,10 +1642,11 @@ public class AssemblerTest
             
             void func(int x, int y) {
                 int off = y * grid_width + x;
+
                 grid[off] = 0;
             }
             
-            Cell temp = { type: 2, rot: 0 };
+            Cell temp = { type: 2, rot: 0, updated: true };
             grid[0] = temp;
             
             Cell c1 = grid[0];
@@ -1658,6 +1659,8 @@ public class AssemblerTest
             Cell c2 = grid[0];
             if (c2.type == 2) { // Should be false
                 screen[1] = 255;
+            } else {
+                screen[1] = 0;
             }
             
             struct Cell {
@@ -1673,7 +1676,10 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
+        Assert.Equal(0, cpu.Banks[1][10420]);
+        Assert.Equal(0, cpu.Banks[1][10421]);
+
         Assert.Equal(65535, cpu.Banks[1][53870]);
-        Assert.Equal(255, cpu.Banks[1][53871]);
+        Assert.Equal(0, cpu.Banks[1][53871]);
     }
 }
