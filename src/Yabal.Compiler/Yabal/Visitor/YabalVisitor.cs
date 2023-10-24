@@ -461,6 +461,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         var instructions = new List<AsmStatement>();
         var items = context.asmItems().asmStatementItem();
+        var visitor = new AsmArgumentVisitor(_file);
 
         if (items != null)
         {
@@ -472,7 +473,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                         instructions.Add(new AsmInstruction(
                             SourceRange.From(item, _file),
                             instruction.asmIdentifier().GetText(),
-                            instruction.asmArgument() is {} arg ? AsmArgumentVisitor.Instance.Visit(arg) : null
+                            instruction.asmArgument() is {} arg ? visitor.Visit(arg) : null
                         ));
                         break;
                     case YabalParser.AsmLabelContext label:
@@ -484,7 +485,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                     case YabalParser.AsmRawValueContext rawValue:
                         instructions.Add(new AsmRawValue(
                             SourceRange.From(item, _file),
-                            AsmArgumentVisitor.Instance.Visit(rawValue.asmArgument())
+                            visitor.Visit(rawValue.asmArgument())
                         ));
                         break;
                     default:
@@ -750,6 +751,31 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     public override Node VisitExpressionExpression(YabalParser.ExpressionExpressionContext context)
     {
         return VisitExpression(context.expression());
+    }
+
+    public override Node VisitArrowFunctionExpression(YabalParser.ArrowFunctionExpressionContext context)
+    {
+        BlockStatement block;
+
+        if (context.arrowFunction().expression() is { } expressionContext)
+        {
+            var expression = VisitExpression(expressionContext);
+
+            block = new BlockStatement(expression.Range, new List<Statement>
+            {
+                new ReturnStatement(expression.Range, expression)
+            });
+        }
+        else
+        {
+            block = VisitBlockStatement(context.arrowFunction().blockStatement());
+        }
+
+        return new ArrowFunctionExpression(
+            SourceRange.From(context, _file),
+            context.arrowFunction().identifierName().Select(GetIdentifier).ToList(),
+            block
+        );
     }
 
     public override Node VisitNegateExpression(YabalParser.NegateExpressionContext context)

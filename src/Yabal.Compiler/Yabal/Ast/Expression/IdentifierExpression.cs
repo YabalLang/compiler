@@ -1,4 +1,5 @@
-﻿using Yabal.Visitor;
+﻿using Yabal.Exceptions;
+using Yabal.Visitor;
 
 namespace Yabal.Ast;
 
@@ -49,43 +50,83 @@ public record Identifier(SourceRange Range, string Name)
 
 public record IdentifierExpression(SourceRange Range, Identifier Identifier) : AddressExpression(Range), IExpressionToB, IConstantValue, IVariableSource
 {
-    private Variable? _variable;
+    private IVariable? _variable;
 
-    public Variable Variable => _variable ?? throw new InvalidOperationException("Variable not set");
+    public IVariable Variable => _variable ?? throw new InvalidOperationException("Variable not set");
 
     public override void Initialize(YabalBuilder builder)
     {
-        _variable = builder.GetVariable(Identifier.Name, Identifier.Range);
-        _variable.References.Add(this);
+        if (builder.TryGetVariable(Identifier.Name, out var variable))
+        {
+            _variable = variable;
+        }
+        else
+        {
+            _variable = builder.GetFunctions(Identifier.Name).FirstOrDefault();
+        }
+
+        if (_variable == null)
+        {
+            throw new InvalidCodeException($"Variable '{Identifier.Name}' not found", Range);
+        }
+
+        _variable.AddReference(Identifier);
     }
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        for (var i = 0; i < suggestedType.Size; i++)
+        if (Variable.IsDirectReference)
         {
-            builder.LoadA(Variable.Pointer.Add(i));
-            builder.StoreA(pointer.Add(i));
+            builder.SetA(Variable.Pointer);
+            builder.StoreA(pointer);
+        }
+        else
+        {
+            for (var i = 0; i < suggestedType.Size; i++)
+            {
+                builder.LoadA(Variable.Pointer.Add(i));
+                builder.StoreA(pointer.Add(i));
+            }
         }
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
-        builder.LoadA(Variable.Pointer);
+        if (Variable.IsDirectReference)
+        {
+            builder.SetA(Variable.Pointer);
+        }
+        else
+        {
+            builder.LoadA(Variable.Pointer);
+        }
     }
 
     public override void MarkModified()
     {
+        if (Variable.ReadOnly)
+        {
+            throw new InvalidCodeException($"Cannot modify read-only variable {Identifier.Name}", Range);
+        }
+
         Variable.Constant = false;
     }
 
     void IExpressionToB.BuildExpressionToB(YabalBuilder builder)
     {
-        builder.LoadB(Variable.Pointer);
+        if (Variable.IsDirectReference)
+        {
+            builder.SetB(Variable.Pointer);
+        }
+        else
+        {
+            builder.LoadB(Variable.Pointer);
+        }
     }
 
     public override bool OverwritesB => false;
 
-    public (Variable, int? Offset) GetVariable(YabalBuilder builder)
+    public (IVariable, int? Offset) GetVariable(YabalBuilder builder)
     {
         if (Variable.Initializer is IVariableSource variable && Type.StaticType == StaticType.Reference)
         {
@@ -97,7 +138,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
 
     public bool CanGetVariable => true;
 
-    public override LanguageType Type => Variable.Type;
+    public override LanguageType Type => _variable?.Type ?? LanguageType.Unknown;
 
     bool IExpressionToB.OverwritesA => false;
 
@@ -116,9 +157,9 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
 
     public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
-        Variable.Usages++;
+        Variable.AddUsage();
 
-        if (Variable.Type.IsReference)
+        if (Variable.Type.IsReference || Variable.IsDirectReference)
         {
             builder.LoadA(Variable.Pointer.Add(offset));
         }
@@ -158,7 +199,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
     {
         get
         {
-            Variable.Usages++;
+            Variable.AddUsage();
 
             if (Variable.Type.IsReference)
             {
@@ -181,7 +222,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
             return this;
         }
 
-        _variable.HasBeenUsed = true;
+        _variable.MarkUsed();
 
         switch (Value)
         {
@@ -190,7 +231,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
             case bool boolValue:
                 return new BooleanExpression(Range, boolValue);
             default:
-                _variable.Usages++;
+                _variable.AddUsage();
                 return this;
         }
     }

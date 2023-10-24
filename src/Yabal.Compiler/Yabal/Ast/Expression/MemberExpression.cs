@@ -101,7 +101,7 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override bool OverwritesB => true;
 
-    public (Variable, int? Offset) GetVariable(YabalBuilder builder)
+    public (IVariable, int? Offset) GetVariable(YabalBuilder builder)
     {
         if (_field.Bit.HasValue)
         {

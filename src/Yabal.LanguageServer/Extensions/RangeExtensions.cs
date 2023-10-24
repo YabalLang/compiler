@@ -32,11 +32,11 @@ public static class RangeExtensions
                 return (variable.Identifier, variable);
             }
 
-            foreach (var reference in variable.References)
+            foreach (var identifier in variable.References)
             {
-                if (reference.Range.IsInRange(position))
+                if (identifier.Range.IsInRange(position))
                 {
-                    return (reference.Identifier, variable);
+                    return (identifier, variable);
                 }
             }
         }

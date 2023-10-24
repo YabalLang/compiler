@@ -15,8 +15,11 @@ public record CallExpression(
     private BlockStatement? _body;
     private InstructionLabel _returnLabel = null!;
     private IReadOnlyList<Expression>? _arguments;
+    private LanguageFunction? _functionType;
 
-    public Function Function { get; private set; } = null!;
+    public Function? Function { get; private set; }
+
+    public Pointer? FunctionReference { get; private set; }
 
     public override void Initialize(YabalBuilder builder)
     {
@@ -30,11 +33,14 @@ public record CallExpression(
         if (Callee.IsRight)
         {
             Function = Callee.Right;
+            Function.MarkUsed();
         }
         else
         {
             Namespace? ns = null;
             Identifier name;
+
+            var argumentTypes = Arguments.Select(i => i.Type).ToList();
 
             if (Callee.Left is MemberExpression memberExpression)
             {
@@ -62,14 +68,31 @@ public record CallExpression(
             }
             else if (Callee.Left is IdentifierExpression { Identifier: var identifier })
             {
+                if (builder.TryGetVariable(identifier.Name, out var variable) &&
+                    variable is { Type: { StaticType: StaticType.Function, FunctionType: {} functionType} })
+                {
+                    FunctionReference = variable.Pointer;
+                    _functionType = functionType;
+
+                    if (argumentTypes.Count != functionType.Parameters.Count)
+                    {
+                        builder.AddError(ErrorLevel.Error, Range, $"Function reference has {functionType.Parameters.Count} parameters, but {argumentTypes.Count} arguments were provided");
+                    }
+
+                    if (!argumentTypes.SequenceEqual(functionType.Parameters))
+                    {
+                        builder.AddError(ErrorLevel.Error, Range, $"Function reference has parameters {string.Join(", ", functionType.Parameters)}, but arguments were {string.Join(", ", argumentTypes)}");
+                    }
+
+                    return;
+                }
+
                 name = identifier;
             }
             else
             {
                 throw new InvalidCodeException("Callee must be an identifier", Range);
             }
-
-            var argumentTypes = Arguments.Select(i => i.Type).ToArray();
 
             if (builder.TryGetFunctionExact(Range, ns, name.Name, argumentTypes, out var exactFunction))
             {
@@ -80,17 +103,32 @@ public record CallExpression(
                 Function = result.function;
                 _arguments = result.arguments;
             }
+            else if (builder.TryGetSingleFunction(Range, ns, name.Name, out var singleFunction))
+            {
+                Function = singleFunction;
+            }
             else if (builder.TryGetFunctionFuzzy(Range, ns, name.Name, argumentTypes, out var fuzzyFunction))
             {
                 Function = fuzzyFunction;
             }
             else
             {
-                throw new InvalidCodeException($"Could not find function {name.Name} with {argumentTypes.Length} arguments", Range);
+                throw new InvalidCodeException($"Could not find function {name.Name} with {argumentTypes.Count} arguments", Range);
             }
-        }
 
-        Function.References.Add(this);
+            var count = Math.Min(Arguments.Count, Function.Parameters.Count);
+
+            for (var i = 0; i < count; i++)
+            {
+                if (Arguments[i] is ITypeExpression typeExpression)
+                {
+                    typeExpression.Initialize(builder, Function.Parameters[i].Type);
+                }
+            }
+
+            Function.References.Add(name);
+            Function.MarkUsed();
+        }
 
         if (Function.Inline)
         {
@@ -204,6 +242,17 @@ public record CallExpression(
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
+        if (FunctionReference != null)
+        {
+            builder.Call(FunctionReference, _arguments ?? Arguments, isReference: true);
+            return;
+        }
+
+        if (Function is null)
+        {
+            throw new InvalidOperationException("Function not set");
+        }
+
         if (Function.Inline)
         {
             var previousReturn = builder.ReturnType;
@@ -233,7 +282,7 @@ public record CallExpression(
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        if (Function.Inline)
+        if (Function is { Inline: true })
         {
             var previousReturn = builder.ReturnType;
             var previousPointer = builder.ReturnValue;
@@ -270,7 +319,7 @@ public record CallExpression(
 
     public override bool OverwritesB => true;
 
-    public override LanguageType Type => Function.ReturnType;
+    public override LanguageType Type => _functionType?.ReturnType ?? Function?.ReturnType ?? LanguageType.Unknown;
 
     public override Expression CloneExpression()
     {
@@ -278,7 +327,11 @@ public record CallExpression(
             Range,
             Callee.IsLeft ? Callee.Left.CloneExpression() : Callee.Right,
             (_arguments ?? Arguments).Select(x => x.CloneExpression()).ToList()
-        );
+        )
+        {
+            _functionType = _functionType,
+            FunctionReference = FunctionReference,
+        };
     }
 
     public override Expression Optimize(LanguageType? suggestedType)
@@ -289,6 +342,8 @@ public record CallExpression(
             (_arguments ?? Arguments).Select(x => x.Optimize(suggestedType)).ToList()
         )
         {
+            _functionType = _functionType,
+            FunctionReference = FunctionReference,
             _block = _block,
             _variables = _variables,
             _body = _body?.Optimize(),

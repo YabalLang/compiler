@@ -13,12 +13,17 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
 
         var type = Type ?? Value?.Type;
 
-        if (type is null)
+        if (type is null || type.StaticType == StaticType.Unknown)
         {
             throw new InvalidCodeException("Variable type is not specified", Name.Range);
         }
 
         Variable = builder.CreateVariable(Name, type, Value);
+
+        if (Value is ITypeExpression typeExpression)
+        {
+            typeExpression.Initialize(builder, type);
+        }
     }
 
     public override void Build(YabalBuilder builder)

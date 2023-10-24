@@ -120,6 +120,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public Dictionary<(LanguageType, LanguageType), Function> CastOperators { get; } = new();
 
+    public List<Function> ArrowFunctions { get; } = new();
+
     public InstructionPointer StackAllocPointer => _stackAllocPointer;
 
     public List<Variable> Variables { get; } = new();
@@ -186,10 +188,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         Block = block;
     }
 
-    public bool TryGetVariable(string name, [NotNullWhen(true)] out Variable? variable)
+    public bool TryGetVariable(string name, [NotNullWhen(true)] out IVariable? variable)
     {
-        if (Block.TryGetVariable(name, out variable))
+        if (Block.TryGetVariable(name, out var result))
         {
+            variable = result;
             return true;
         }
 
@@ -202,7 +205,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return false;
     }
 
-    public Variable GetVariable(string name, SourceRange? range = default)
+    public IVariable GetVariable(string name, SourceRange? range = default)
     {
         if (!TryGetVariable(name, out var variable))
         {
@@ -212,26 +215,40 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return variable;
     }
 
-    public Variable CreateVariable(Identifier name, LanguageType type, Expression? initializer = null)
+    public Variable CreateVariable(Identifier name, LanguageType type, Expression? initializer = null, bool isDirectReference = false)
     {
         var pointer = Block.IsGlobal
             ? Globals.GetNext(Block, type)
             : Stack.GetNext(Block, type);
 
-        var variable = new Variable(name, pointer, type, initializer, Block.IsGlobal);
+        var variable = new Variable(name, pointer, type, initializer, Block.IsGlobal, isDirectReference);
         Block.DeclareVariable(name.Name, variable);
         pointer.AssignedVariables.Add(variable);
         Variables.Add(variable);
         return variable;
     }
 
-    public bool TryGetFunctionExact(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
+    public bool TryGetSingleFunction(SourceRange callRange, Namespace? ns, string name, [NotNullWhen(true)] out Function? function)
+    {
+        var functions = GetFunctions(ns, name).ToList();
+
+        if (functions.Count == 1)
+        {
+            function = functions[0];
+            return true;
+        }
+
+        function = default;
+        return false;
+    }
+
+    public bool TryGetFunctionExact(SourceRange callRange, Namespace? ns, string name, List<LanguageType> types, [NotNullWhen(true)] out Function? function)
     {
         if (_functions.TryGetValue(name, out var functions))
         {
             function = functions.FirstOrDefault(i =>
                 (ns is null ? i.Namespace.Contains(Block.EnumerateUsing()) : i.Namespace.Equals(ns)) &&
-                types.Length >= i.RequiredParameterCount &&
+                types.Count >= i.RequiredParameterCount &&
                 types.Zip(i.Parameters, (a, b) => a == b.Type).All(b => b));
 
             if (function != null)
@@ -249,13 +266,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return false;
     }
 
-    public bool TryGetFunctionFuzzy(SourceRange callRange, Namespace? ns, string name, LanguageType[] types, [NotNullWhen(true)] out Function? function)
+    public bool TryGetFunctionFuzzy(SourceRange callRange, Namespace? ns, string name, List<LanguageType> types, [NotNullWhen(true)] out Function? function)
     {
         if (_functions.TryGetValue(name, out var functions))
         {
             function = functions.FirstOrDefault(i =>
                 (ns is null ? i.Namespace.Contains(Block.EnumerateUsing()) : i.Namespace.Equals(ns)) &&
-                types.Length >= i.RequiredParameterCount &&
+                types.Count >= i.RequiredParameterCount &&
                 types.Zip(i.Parameters, (a, b) => a.Size == b.Type.Size).All(b => b));
 
             if (function != null)
@@ -429,14 +446,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.JumpToA();
     }
 
-    public void Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null)
+    public void Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null, bool isReference = false)
     {
         var hasArguments = arguments is { Count: > 0 };
         var hasReferenceArguments = arguments?.Any(a => a is IVariableSource) ?? false;
         var returnAddress = _builder.CreateLabel();
         var setArguments = _builder.CreateLabel();
 
-        _builder.SetA_Large(hasArguments ? setArguments : address);
+        if (hasArguments)
+        {
+            _builder.SetA_Large(setArguments);
+        }
+        else if (isReference)
+        {
+            _builder.LoadA(address);
+        }
+        else
+        {
+            _builder.SetA(address);
+        }
+
         _builder.SwapA_C();
 
         using var currentStackPointer = GetTemporaryVariable(global: true);
@@ -479,7 +508,20 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                     var stackVariable = Stack.FirstOrDefault(s => s.AssignedVariables.Contains(sourceVariable));
                     var stackOffset = 1 + (sourceOffset ?? 0) + Stack.TakeWhile(s => s != stackVariable).Sum(item => item.Size);
 
-                    if (argument.Type.StaticType == StaticType.Reference)
+                    if (argument.Type.StaticType == StaticType.Function)
+                    {
+                        if (sourceVariable.IsDirectReference)
+                        {
+                            _builder.SetA(sourceVariable.Pointer);
+                            _builder.StoreA(variable);
+                        }
+                        else
+                        {
+                            _builder.LoadA(sourceVariable.Pointer);
+                            _builder.StoreA(variable);
+                        }
+                    }
+                    else if (argument.Type.StaticType == StaticType.Reference)
                     {
                         if (sourceVariable.IsGlobal)
                         {
@@ -536,7 +578,15 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 sizes[size] = offset + 1;
             }
 
-            _builder.Jump(address);
+            if (isReference)
+            {
+                _builder.LoadA(address);
+                _builder.JumpToA();
+            }
+            else
+            {
+                _builder.Jump(address);
+            }
         }
 
         _builder.Mark(returnAddress);
@@ -667,6 +717,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         var hasFunction = Functions.Where(i => !i.Inline)
             .Concat(BinaryOperators.Values)
             .Concat(CastOperators.Values)
+            .Concat(ArrowFunctions)
             .Any();
 
         if (Globals.Count == 0 &&
@@ -721,11 +772,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             CreateReturn(builder);
         }
 
-        foreach (var function in Functions.Concat(BinaryOperators.Values).Concat(CastOperators.Values))
+        foreach (var function in Functions
+                     .Concat(BinaryOperators.Values)
+                     .Concat(CastOperators.Values)
+                     .Concat(ArrowFunctions))
         {
-            if (function.References.Count == 0)
+            if (function.CanBeRemoved)
             {
-                AddError(ErrorLevel.Debug, function.Name.Range, $"Function '{function.Name}' is never called and will be excluded from the output.");
+                AddError(ErrorLevel.Debug, function.Name?.Range ?? function.Range, $"Function '{function.Name?.ToString() ?? "<arrow-function>"}' is never called and will be excluded from the output.");
                 continue;
             }
 
@@ -834,6 +888,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             CastOperators.Add((function.Parameters[0].Type, function.ReturnType), function);
         }
+        else if (function.Name is null)
+        {
+            ArrowFunctions.Add(function);
+        }
         else
         {
             throw new InvalidCodeException("Invalid function name.", function.Range);
@@ -869,6 +927,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             return;
         }
 
+        if (expression.Type.StaticType == StaticType.Unknown && expression is ITypeExpression typeExpression)
+        {
+            typeExpression.Initialize(this, type);
+        }
+
         var size = expression.Type.Size;
 
         switch (expression)
@@ -897,6 +960,21 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 else
                 {
                     throw new NotImplementedException();
+                }
+
+                break;
+            }
+            case IdentifierExpression { Type.StaticType: StaticType.Function, Variable: {} variable, Pointer: {} valuePointer }:
+            {
+                if (variable.IsDirectReference)
+                {
+                    _builder.SetA(valuePointer);
+                    pointer.StoreA(this);
+                }
+                else
+                {
+                    _builder.LoadA(valuePointer);
+                    pointer.StoreA(this);
                 }
 
                 break;

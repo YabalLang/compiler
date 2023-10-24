@@ -10,9 +10,15 @@ public record CastExpression(SourceRange Range, LanguageType CastType, Expressio
     {
         Expression.Initialize(builder);
 
+        if (Expression is ITypeExpression typeExpression)
+        {
+            typeExpression.Initialize(builder, CastType);
+        }
+
         if (builder.CastOperators.TryGetValue((Expression.Type, CastType), out var castOperator))
         {
             _callExpression = new CallExpression(Range, castOperator, new List<Expression> { Expression });
+            castOperator.MarkUsed();
         }
         else if (CastType.Size != Expression.Type.Size)
         {

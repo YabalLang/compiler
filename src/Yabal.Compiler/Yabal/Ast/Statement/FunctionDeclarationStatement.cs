@@ -35,7 +35,7 @@ public record FunctionCast(SourceRange Range, LanguageType Type) : FunctionName(
 public record Function(
     SourceRange Range,
     Namespace Namespace,
-    FunctionName Name,
+    FunctionName? Name,
     InstructionLabel Label,
     LanguageType ReturnType,
     YabalBuilder Builder,
@@ -43,10 +43,17 @@ public record Function(
     BlockStatement Body,
     List<FunctionParameter> Parameters,
     int RequiredParameterCount)
+    : IVariable
 {
+    private bool _isUsed;
+
+    public bool ReadOnly => true;
+
     public BlockStack? Block { get; set; }
 
-    public List<Expression> References { get; } = new();
+    public List<Identifier> References { get; } = new();
+
+    public bool CanBeRemoved => References.Count == 0 && !_isUsed;
 
     public bool DidWarnFuzzy { get; set; }
 
@@ -54,11 +61,38 @@ public record Function(
     {
         return $"{Name}({string.Join(", ", Parameters.Select(i => $"{i.Type} {i.Name}"))})";
     }
+
+    bool IVariable.IsGlobal => true;
+
+    public bool IsDirectReference => true;
+
+    Pointer IVariable.Pointer => Label;
+
+    LanguageType IVariable.Type => new(StaticType.Function, FunctionType: new LanguageFunction(ReturnType, Parameters.Select(i => i.Type).ToList()));
+
+    Expression? IVariable.Initializer => null;
+
+    bool IVariable.Constant { get; set; } = true;
+
+    void IVariable.AddReference(Identifier identifierExpression)
+    {
+        References.Add(identifierExpression);
+    }
+
+    void IVariable.AddUsage()
+    {
+        _isUsed = true;
+    }
+
+    public void MarkUsed()
+    {
+        _isUsed = true;
+    }
 }
 
 public record FunctionDeclarationStatement(
     SourceRange Range,
-    FunctionName Name,
+    FunctionName? Name,
     LanguageType ReturnType,
     List<FunctionParameter> Parameters,
     BlockStatement Body,
@@ -67,6 +101,8 @@ public record FunctionDeclarationStatement(
 {
     private Function? _function;
     private InstructionLabel _returnLabel = null!;
+
+    public Function Function => _function!;
 
     public override void OnDeclare(YabalBuilder builder)
     {
@@ -156,7 +192,7 @@ public record FunctionDeclarationStatement(
         }
     }
 
-    public override Statement CloneStatement()
+    public override FunctionDeclarationStatement CloneStatement()
     {
         return new FunctionDeclarationStatement(
             Range,
@@ -168,7 +204,7 @@ public record FunctionDeclarationStatement(
         );
     }
 
-    public override Statement Optimize()
+    public override FunctionDeclarationStatement Optimize()
     {
         var body = Body.Optimize();
 

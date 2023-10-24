@@ -105,6 +105,17 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
         );
     }
 
+    public override LanguageType VisitFunctionType(YabalParser.FunctionTypeContext context)
+    {
+        return new LanguageType(
+            StaticType.Function,
+            FunctionType: new LanguageFunction(
+                VisitReturnType(context.returnType()),
+                context.typeList().type().Select(VisitType).ToList()
+            )
+        );
+    }
+
     public override LanguageType VisitVoidReturnType(YabalParser.VoidReturnTypeContext context)
     {
         return LanguageType.Void;

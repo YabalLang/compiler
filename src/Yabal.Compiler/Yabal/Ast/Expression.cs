@@ -2,6 +2,11 @@
 
 namespace Yabal.Ast;
 
+public interface ITypeExpression
+{
+    void Initialize(YabalBuilder builder, LanguageType type);
+}
+
 public abstract record Expression(SourceRange Range) : Node(Range), IExpression
 {
     public void BuildExpression(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)

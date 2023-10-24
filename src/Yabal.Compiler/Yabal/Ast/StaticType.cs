@@ -10,5 +10,6 @@ public enum StaticType
     Assembly,
     Reference,
     Unknown,
-    Char
+    Char,
+    Function
 }

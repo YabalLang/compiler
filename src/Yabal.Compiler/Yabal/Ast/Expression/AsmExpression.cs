@@ -4,7 +4,7 @@ namespace Yabal.Ast;
 
 public record AsmArgument;
 
-public record AsmVariable(string Name) : AsmArgument;
+public record AsmVariable(Identifier Identifier) : AsmArgument;
 
 public record AsmInteger(int Value) : AsmArgument;
 
@@ -29,9 +29,9 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
     {
         foreach (var statement in Statements.OfType<IAsmArgument>())
         {
-            if (statement.Value is AsmVariable value && builder.TryGetVariable(value.Name, out var variable))
+            if (statement.Value is AsmVariable value && builder.TryGetVariable(value.Identifier.Name, out var variable))
             {
-                variable.Constant = false;
+                variable.AddReference(value.Identifier);
             }
         }
     }
@@ -61,10 +61,10 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
         {
             switch (asmArgument)
             {
-                case AsmVariable {Name: var variableName}:
-                    if (!builder.TryGetVariable(variableName, out var variable))
+                case AsmVariable {Identifier: var identifier}:
+                    if (!builder.TryGetVariable(identifier.Name, out var variable))
                     {
-                        builder.AddError(ErrorLevel.Error, Range, ErrorMessages.UndefinedVariable(variableName));
+                        builder.AddError(ErrorLevel.Error, Range, ErrorMessages.UndefinedVariable(identifier.Name));
                         return 0;
                     }
 

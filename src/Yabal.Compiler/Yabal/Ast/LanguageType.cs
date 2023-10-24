@@ -34,7 +34,29 @@ public record LanguageStruct(Identifier Identifier)
     }
 }
 
-public record LanguageType(StaticType StaticType, LanguageType? ElementType = null, LanguageStruct? StructReference = null, bool IsReference = false)
+public record LanguageFunction(
+    LanguageType ReturnType,
+    List<LanguageType> Parameters)
+{
+    public virtual bool Equals(LanguageFunction? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ReturnType.Equals(other.ReturnType) && Parameters.SequenceEqual(other.Parameters);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(ReturnType, Parameters.Aggregate(0, HashCode.Combine));
+    }
+}
+
+public record LanguageType(
+    StaticType StaticType,
+    LanguageType? ElementType = null,
+    LanguageStruct? StructReference = null,
+    bool IsReference = false,
+    LanguageFunction? FunctionType = null)
 {
     public static readonly LanguageType Integer = new(StaticType.Integer);
     public static readonly LanguageType Boolean = new(StaticType.Boolean);
@@ -66,6 +88,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
         StaticType.Reference => 1,
         StaticType.Char => 1,
         StaticType.Struct => StructReference?.Size ?? 0,
+        StaticType.Function => 1,
         _ => throw new ArgumentOutOfRangeException()
     };
 
@@ -82,6 +105,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
             StaticType.Reference => $"ref {ElementType}",
             StaticType.Unknown => "unknown",
             StaticType.Char => "char",
+            StaticType.Function => $"({string.Join(", ", FunctionType?.Parameters ?? new List<LanguageType>())}) => {FunctionType?.ReturnType}",
             _ => throw new ArgumentOutOfRangeException()
         };
     }
@@ -90,7 +114,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return StaticType == other.StaticType && Equals(ElementType, other.ElementType) && Equals(StructReference, other.StructReference);
+        return StaticType == other.StaticType && Equals(ElementType, other.ElementType) && Equals(StructReference, other.StructReference) && Equals(FunctionType, other.FunctionType);
     }
 
     public override int GetHashCode()

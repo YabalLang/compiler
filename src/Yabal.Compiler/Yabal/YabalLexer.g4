@@ -82,6 +82,7 @@ Inline              : 'inline';
 Ref                 : 'ref';
 Namespace           : 'namespace';
 Use                 : 'use';
+Func                : 'func';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

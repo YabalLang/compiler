@@ -1768,4 +1768,37 @@ public class AssemblerTest
         Assert.Equal(65535, cpu.Banks[1][53870]);
         Assert.Equal(0, cpu.Banks[1][53871]);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FunctionPointer(bool optimize)
+    {
+        const string code = """
+            int add(int x, int y) => x + y
+
+            int func(int x, int y, func<int, int, int> f) {
+                return f(x, y) * 2;
+            }
+
+            func<int, int, int> cb;
+
+            cb = (x, y) => x + y;
+
+            var pointer = create_pointer(4000)
+            pointer[0] = func(1, 0, add);
+            pointer[1] = func(1, 1, (x, y) => x + y);
+            pointer[2] = func(1, 2, cb);
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(2, cpu.Memory[4000]);
+        Assert.Equal(4, cpu.Memory[4001]);
+        Assert.Equal(6, cpu.Memory[4002]);
+    }
 }

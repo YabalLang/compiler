@@ -21,7 +21,7 @@ public record ReferenceExpression(SourceRange Range, Expression Expression) : Ex
 
     public override bool OverwritesB => Expression.OverwritesB;
 
-    public (Variable, int? Offset) GetVariable(YabalBuilder builder)
+    public (IVariable, int? Offset) GetVariable(YabalBuilder builder)
     {
         if (Expression is not IVariableSource variableSource)
         {

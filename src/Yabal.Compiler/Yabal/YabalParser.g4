@@ -12,9 +12,14 @@ rawType
     | identifierName # StructType
     ;
 
+typeList
+    : (type (Comma type)*)?
+    ;
+
 type
-    : rawType                           # DefaultType
-    | type OpenCloseBracket             # ArrayType
+    : rawType                                           # DefaultType
+    | type OpenCloseBracket                             # ArrayType
+    | Func Less (typeList Comma) returnType Greater     # FunctionType
     ;
 
 returnType
@@ -62,6 +67,7 @@ expression
 	| Throw expression												    # ThrowExpression
 	| OpenBrace type CloseBrace expression                              # CastExpression
 	| OpenBrace expression CloseBrace								    # ExpressionExpression
+	| arrowFunction                                                     # ArrowFunctionExpression
     | string                                                            # StringExpression
     | char                                                              # CharExpression
 	| integer                       								    # IntegerExpression
@@ -245,6 +251,11 @@ variableDeclaration
     | Inline? Operator type functionParameterList functionBody                              # OperatorFunctionDeclaration
     ;
 
+arrowFunction
+    : OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow expression
+    | OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow blockStatement
+    ;
+
 operatorName
     : Operator (Add|Sub|Div|Mul|Mod|ShiftLeft|ShiftRight|GreaterEqual|Greater|LessEqual|Less|Equals|NotEquals|And|Or|Xor|AndAlso|OrElse)
     ;
@@ -253,6 +264,7 @@ operatorName
 identifierName
 	: Identifier
 	| Underscore
+	| Func
 	;
 
 functionParameterList
