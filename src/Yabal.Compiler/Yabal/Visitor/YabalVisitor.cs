@@ -482,6 +482,12 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                             label.asmIdentifier().GetText()
                         ));
                         break;
+                    case YabalParser.AsmCommentContext label:
+                        instructions.Add(new AsmComment(
+                            SourceRange.From(item, _file),
+                            label.AsmComment().GetText()
+                        ));
+                        break;
                     case YabalParser.AsmRawValueContext rawValue:
                         instructions.Add(new AsmRawValue(
                             SourceRange.From(item, _file),

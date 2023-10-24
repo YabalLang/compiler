@@ -421,6 +421,11 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     {
         return new InstructionBuildResult(_references, offset);
     }
+
+    public void EmitComment(string text)
+    {
+        Add(new InstructionItem(null, null, true, text));
+    }
 }
 
 public readonly record struct InstructionItem(InstructionReference? Instruction, Pointer? Pointer = null, bool IsRaw = false, string? Comment = null)

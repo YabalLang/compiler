@@ -13,7 +13,7 @@ public record CallExpression(
     private BlockStack _block = null!;
     private (Variable, Expression)[] _variables = null!;
     private BlockStatement? _body;
-    private InstructionLabel _returnLabel = null!;
+    private InstructionLabel? _returnLabel;
     private IReadOnlyList<Expression>? _arguments;
     private LanguageFunction? _functionType;
 
@@ -140,7 +140,7 @@ public record CallExpression(
                 _block.Namespace = functionNamespace;
             }
 
-            _returnLabel = builder.CreateLabel();
+            _returnLabel = _body is { Statements: [ReturnStatement] } ? null : builder.CreateLabel();
             _block.Return = _returnLabel;
 
             _variables = new (Variable, Expression)[_arguments.Count];
@@ -242,9 +242,20 @@ public record CallExpression(
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
+        BuildExpressionCore(builder, true);
+    }
+
+    private void BuildExpressionCore(YabalBuilder builder, bool loadReturn)
+    {
         if (FunctionReference != null)
         {
             builder.Call(FunctionReference, _arguments ?? Arguments, isReference: true);
+
+            if (loadReturn)
+            {
+                builder.LoadA(builder.ReturnValue);
+            }
+
             return;
         }
 
@@ -268,8 +279,19 @@ public record CallExpression(
                 }
             }
 
-            _body!.Build(builder);
-            builder.Mark(_returnLabel);
+            if (_body is { Statements: [ReturnStatement statement]})
+            {
+                statement.Expression?.BuildExpression(builder, false, Function.ReturnType);
+            }
+            else
+            {
+                _body!.Build(builder);
+            }
+
+            if (_returnLabel != null)
+            {
+                builder.Mark(_returnLabel);
+            }
 
             builder.PopBlock();
             builder.ReturnType = previousReturn;
@@ -277,6 +299,11 @@ public record CallExpression(
         else
         {
             builder.Call(Function.Label, _arguments ?? Arguments);
+
+            if (loadReturn)
+            {
+                builder.LoadA(builder.ReturnValue);
+            }
         }
     }
 
@@ -299,8 +326,19 @@ public record CallExpression(
                 }
             }
 
-            _body!.Build(builder);
-            builder.Mark(_returnLabel);
+            if (_body is { Statements: [ReturnStatement statement]})
+            {
+                statement.Expression?.BuildExpressionToPointer(builder, Function.ReturnType, pointer);
+            }
+            else
+            {
+                _body!.Build(builder);
+            }
+
+            if (_returnLabel != null)
+            {
+                builder.Mark(_returnLabel);
+            }
 
             builder.PopBlock();
             builder.ReturnValue = previousPointer;
@@ -308,7 +346,7 @@ public record CallExpression(
         }
         else
         {
-            BuildExpression(builder, false, suggestedType);
+            BuildExpressionCore(builder, false);
 
             for (var i = 0; i < suggestedType.Size; i++)
             {

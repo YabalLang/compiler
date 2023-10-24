@@ -561,7 +561,7 @@ AsmWhiteSpaces			: WhiteSpaces -> channel(HIDDEN);
 AsmLineTerminator		: LineTerminator;
 AsmSemiColon			: SemiColon -> type(SemiColon);
 
-AsmComment	            : ',' ~[\r\n\u2028\u2029]* -> channel(HIDDEN);
+AsmComment	            : ',' ~[\r\n\u2028\u2029}]*;
 AsmMultiLineComment	    : MultiLineComment -> channel(HIDDEN);
 AsmSingleLineComment	: SingleLineComment -> channel(HIDDEN);
 

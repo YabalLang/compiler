@@ -9,17 +9,16 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
     public override void Initialize(YabalBuilder builder)
     {
         Expression?.Initialize(builder);
-
-        if (builder.Block.Return == null)
-        {
-            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.ReturnOutsideFunction);
-        }
-
         ReturnType = builder.ReturnType;
     }
 
     public override void Build(YabalBuilder builder)
     {
+        if (builder.Block.Return == null)
+        {
+            builder.AddError(ErrorLevel.Error, Range, ErrorMessages.ReturnOutsideFunction);
+        }
+
         var returnType = builder.ReturnType ?? throw new InvalidCodeException("Cannot return outside of a function", Range);
 
         Expression?.BuildExpressionToPointer(builder, returnType, builder.ReturnValue);

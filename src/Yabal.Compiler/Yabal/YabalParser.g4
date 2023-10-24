@@ -157,6 +157,7 @@ asmStatementItem
     : asmIdentifier asmArgument?   # AsmInstruction
     | AsmHere asmArgument?         # AsmRawValue
     | asmIdentifier AsmColon       # AsmLabel
+    | AsmComment                   # AsmComment
     ;
 
 asmArgument

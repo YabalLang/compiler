@@ -72,6 +72,12 @@ public class InstructionBuildResult : IProgram
 
             var (instructionRef, pointer, raw, comment) = either.Right;
 
+            if (raw && pointer is null && comment is not null)
+            {
+                writer.WriteLine(comment);
+                continue;
+            }
+
             if (!instructionRef.HasValue)
             {
                 if (pointer is null)

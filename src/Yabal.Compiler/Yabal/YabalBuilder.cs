@@ -590,7 +590,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
         _builder.Mark(returnAddress);
-        _builder.LoadA(ReturnValue);
     }
 
     private void CreateReturn(InstructionBuilderBase builder)
@@ -1036,16 +1035,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 break;
             }
             default:
-                if (size == 1)
-                {
-                    expression.BuildExpression(this, false, type);
-                    StorePointer(pointer);
-                }
-                else
-                {
-                    expression.BuildExpressionToPointer(this, type, pointer);
-                }
-
+                expression.BuildExpressionToPointer(this, type, pointer);
                 break;
         }
 
@@ -1224,5 +1214,10 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         // Store the result
         StoreA(target);
+    }
+
+    public void EmitComment(string text)
+    {
+        _builder.EmitComment(text);
     }
 }

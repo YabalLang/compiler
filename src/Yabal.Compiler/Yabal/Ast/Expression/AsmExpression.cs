@@ -12,6 +12,8 @@ public record AsmLabel(string Name) : AsmArgument;
 
 public record AsmInstruction(SourceRange Range, string Name, AsmArgument? Value) : AsmStatement(Range), IAsmArgument;
 
+public record AsmComment(SourceRange Range, string Text) : AsmStatement(Range);
+
 public record AsmDefineLabel(SourceRange Range, string Name) : AsmStatement(Range);
 
 public record AsmRawValue(SourceRange Range, AsmArgument Value) : AsmStatement(Range), IAsmArgument;
@@ -90,6 +92,9 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                     break;
                 case AsmDefineLabel { Name: var name }:
                     builder.Mark(GetLabel(name));
+                    break;
+                case AsmComment { Text: var text }:
+                    builder.EmitComment(text);
                     break;
                 case AsmInstruction(var range, var nameValue, var argument):
                 {
