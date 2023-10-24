@@ -14,25 +14,65 @@ using Yabal.Utils;
 using Zio.FileSystems;
 using Command = System.CommandLine.Command;
 
-var filePathOption = new Argument<FileInfo?>(
+var filePathOption = new Argument<FilePath>(
     name: "path",
     description: "File to compile.",
     parse: result =>
     {
         if (result.Tokens.Count == 0)
         {
-            return null;
+            return default;
         }
 
         var filePath = Path.GetFullPath(string.Join(" ", result.Tokens.Select(i => i.Value)));
 
+        // Check for ' -' and if the last char is a '.', and not a '/' or '\'
+        var startIndex = 0;
+        var rest = "";
+
+        while (true)
+        {
+            var index = filePath.IndexOf(" -", startIndex, StringComparison.Ordinal);
+
+            if (index == -1)
+            {
+                break;
+            }
+
+            var isValid = false;
+
+            for (var i = index; i >= 0; i--)
+            {
+                if (filePath[i] is '/' or '\\')
+                {
+                    break;
+                }
+
+                if (filePath[i] == '.')
+                {
+                    isValid = true;
+                    break;
+                }
+            }
+
+            if (!isValid)
+            {
+                startIndex = index + 1;
+                continue;
+            }
+
+            rest = filePath.AsSpan(index).Trim().ToString();
+            filePath = filePath.Substring(0, index);
+            break;
+        }
+
         if (!File.Exists(filePath))
         {
             result.ErrorMessage = $"File '{filePath}' does not exist";
-            return null;
+            return default;
         }
 
-        return new FileInfo(filePath);
+        return new FilePath(new FileInfo(filePath), rest);
     })
 {
     Arity = ArgumentArity.OneOrMore
@@ -124,7 +164,7 @@ async Task Build(InvocationContext ctx)
 {
     var path = ctx.ParseResult.GetValueForArgument(filePathOption);
 
-    if (path == null)
+    if (path.Info == null)
     {
         return;
     }
@@ -137,7 +177,7 @@ async Task Build(InvocationContext ctx)
         formats.Add(OutputFormat.Assembly);
     }
 
-    await BuildOutput(path, outPath, formats);
+    await BuildOutput(path.Info, outPath, formats);
 }
 
 async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> formats)
@@ -246,14 +286,14 @@ async Task Execute(InvocationContext ctx)
 {
     var path = ctx.ParseResult.GetValueForArgument(filePathOption);
 
-    if (path == null)
+    if (path.Info == null)
     {
         return;
     }
 
-    var code = File.ReadAllText(path.FullName);
+    var code = File.ReadAllText(path.Info.FullName);
     var fs = new PhysicalFileSystem();
-    var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
+    var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.Info.FullName));
     using var context = new YabalContext(fs)
         .AddFileLoader(FileType.Font, FontLoader.Instance)
         .AddFileLoader(FileType.Image, ImageLoader.Instance);
@@ -277,13 +317,13 @@ async Task Execute(InvocationContext ctx)
             return;
         }
 
-        await BuildOutput(path, null, new List<OutputFormat> { OutputFormat.AssemblyWithComments });
+        await BuildOutput(path.Info, null, new List<OutputFormat> { OutputFormat.AssemblyWithComments });
         await RunNativeAsync(ctx.Console, fileName, path);
 
         return;
     }
 
-    var config = ConfigContext.Load(path.Directory?.FullName);
+    var config = ConfigContext.Load(path.Info.Directory?.FullName);
     using var handler = new DesktopHandler(
         config.Screen.Width,
         config.Screen.Height,
@@ -463,17 +503,14 @@ async Task Execute(InvocationContext ctx)
     }
 }
 
-async Task RunNativeAsync(IConsole console, string fileName, FileSystemInfo fileInfo, bool chmod = true)
+async Task RunNativeAsync(IConsole console, string fileName, FilePath fileInfo, bool chmod = true)
 {
     try
     {
         (int Left, int Top)? lastFreq = null;
 
         await Cli.Wrap(fileName)
-            .WithArguments(new[]
-            {
-                Path.ChangeExtension(fileInfo.FullName, ".asmc"),
-            })
+            .WithArguments($"{ Path.ChangeExtension(fileInfo.Info!.FullName, ".asmc")} {fileInfo.Arguments}")
             .WithStandardOutputPipe(PipeTarget.ToDelegate(s =>
             {
                 if (string.IsNullOrWhiteSpace(s))
@@ -481,7 +518,7 @@ async Task RunNativeAsync(IConsole console, string fileName, FileSystemInfo file
                     return;
                 }
 
-                if (s.StartsWith("Freq:"))
+                if (s.Contains("FPS:", StringComparison.OrdinalIgnoreCase))
                 {
                     if (lastFreq is { } freq)
                     {
@@ -570,3 +607,5 @@ void WriteError(CompileError compileError)
     Console.Write(": ");
     Console.WriteLine(compileError.Message);
 }
+
+internal record struct FilePath(FileInfo? Info, string Arguments);
