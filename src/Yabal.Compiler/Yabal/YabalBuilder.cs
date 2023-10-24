@@ -72,11 +72,11 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _callLabel = _builder.CreateLabel("__call");
         _returnLabel = _builder.CreateLabel("__return");
 
-        ReturnValue = _builder.CreatePointer(name: "Yabal:return_value");
+        ReturnValue = _builder.CreatePointer(name: "Yabal:return_value", isSmall: true);
 
-        _tempPointer = _builder.CreatePointer(name: "Yabal:temp");
-        _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer");
-        _stackAllocPointer = new InstructionPointer(name: "Yabal:stack_alloc_pointer");
+        _tempPointer = _builder.CreatePointer(name: "Yabal:temp", isSmall: true);
+        _stackPointer = new InstructionPointer(name: "Yabal:stack_pointer", isSmall: true);
+        _stackAllocPointer = new InstructionPointer(name: "Yabal:stack_alloc_pointer", isSmall: true);
         Stack = new PointerCollection("Stack");
         Globals = new PointerCollection("Global");
         Temporary = new PointerCollection("Temp");
@@ -420,7 +420,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         // Increment stack pointer
         builder.LoadA(_stackPointer);
-        builder.SetB(Stack.Count + 1);
+        builder.SetB(Stack.Size + 1);
         builder.Add();
         builder.StoreA(_stackPointer);
 
@@ -493,12 +493,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                         }
                         else if (stackVariable != null)
                         {
-                            _builder.LoadA(currentStackPointer);
-                            _builder.SetB(stackOffset);
-                            _builder.Add();
-
-                            _builder.StoreA(variable);
-                            _builder.SetComment("store stack pointer as reference");
+                            for (var j = 0; j < size; j++)
+                            {
+                                _builder.LoadA(currentStackPointer);
+                                _builder.SetB(stackOffset + j);
+                                _builder.Add();
+                                _builder.StoreA(variable.Add(j));
+                            }
                         }
                         else
                         {
@@ -546,12 +547,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     {
         builder.Mark(_returnLabel);
 
-        // Store return value
-        builder.StoreA(ReturnValue);
-
         // Decrement the stack pointer
         builder.LoadA(_stackPointer);
-        builder.SetB(Stack.Count + 1);
+        builder.SetB(Stack.Size + 1);
         builder.Sub();
         builder.StoreA(_stackPointer);
 
@@ -560,13 +558,16 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         foreach (var pointer in Stack)
         {
-            builder.LoadA(_tempPointer);
-            builder.SetB(1);
-            builder.Add();
-            builder.StoreA(_tempPointer);
+            for (var i = 0; i < pointer.Size; i++)
+            {
+                builder.LoadA(_tempPointer);
+                builder.SetB(1);
+                builder.Add();
+                builder.StoreA(_tempPointer);
 
-            builder.LoadA_FromAddressUsingA();
-            builder.StoreA(pointer);
+                builder.LoadA_FromAddressUsingA();
+                builder.StoreA(pointer.Add(i));
+            }
         }
 
         // Go to the return address
@@ -605,9 +606,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         return _builder.CreateLabel(name);
     }
 
-    public override InstructionPointer CreatePointer(string? name = null, int? index = null)
+    public override InstructionPointer CreatePointer(string? name = null, int? index = null, bool isSmall = false)
     {
-        return _builder.CreatePointer(name, index);
+        return _builder.CreatePointer(name, index, isSmall);
     }
 
     public override void Mark(InstructionPointer pointer)
@@ -991,12 +992,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     {
         if (pointer.Bank == 0)
         {
-            StoreA_Large(pointer);
+            StoreA(pointer);
         }
         else
         {
             SwapA_B();
-            SetA_Large(pointer);
+            SetA(pointer);
 
             SetBank(pointer.Bank);
             StoreB_ToAddressInA();
@@ -1071,11 +1072,26 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             target.Left.StoreA(this);
         }
-        else
+        else if (!target.Right.OverwritesB)
         {
             SwapA_B();
             target.Right.StoreAddressInA(this);
+
+            if (target.Right.Bank > 0) SetBank(target.Right.Bank.Value);
             StoreB_ToAddressInA();
+            if (target.Right.Bank > 0) SetBank(0);
+        }
+        else
+        {
+            using var variable = GetTemporaryVariable();
+
+            StoreA(variable);
+            target.Right.StoreAddressInA(this);
+            LoadB(variable);
+
+            if (target.Right.Bank > 0) SetBank(target.Right.Bank.Value);
+            StoreB_ToAddressInA();
+            if (target.Right.Bank > 0) SetBank(0);
         }
     }
 

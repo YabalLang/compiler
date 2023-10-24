@@ -64,7 +64,7 @@ public record IdentifierExpression(SourceRange Range, Identifier Identifier) : A
         for (var i = 0; i < suggestedType.Size; i++)
         {
             builder.LoadA(Variable.Pointer.Add(i));
-            builder.StoreA(pointer, i);
+            builder.StoreA(pointer.Add(i));
         }
     }
 

@@ -12,7 +12,7 @@ public abstract class InstructionBuilderBase
 
     public abstract InstructionLabel CreateLabel(string? name = null);
 
-    public abstract InstructionPointer CreatePointer(string? name = null, int? index = null);
+    public abstract InstructionPointer CreatePointer(string? name = null, int? index = null, bool isSmall = false);
 
     public abstract void Mark(InstructionPointer pointer);
 
@@ -73,7 +73,7 @@ public abstract class InstructionBuilderBase
 
     public void StoreA(PointerOrData address, int? index = null)
     {
-        if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
+        if (!index.HasValue && address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
             StoreA_Large(address);
         }
@@ -216,11 +216,11 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
         label = CreateLabel();
     }
 
-    public override InstructionPointer CreatePointer(string? name = null, int? index = null)
+    public override InstructionPointer CreatePointer(string? name = null, int? index = null, bool isSmall = false)
     {
         index ??= _references.Count - 1;
 
-        var pointer = new InstructionPointer(name ?? $"P{_pointerCount++}");
+        var pointer = new InstructionPointer(name ?? $"P{_pointerCount++}", isSmall: isSmall);
 
         if (_references.Count == 0)
         {

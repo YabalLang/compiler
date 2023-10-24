@@ -51,7 +51,7 @@ public record LanguageType(StaticType StaticType, LanguageType? ElementType = nu
     {
         return elementType.IsReference
             ? elementType
-            : new LanguageType(StaticType.Reference, elementType, IsReference: true);
+            : new LanguageType(StaticType.Reference, elementType, elementType.StructReference, IsReference: true);
     }
 
     public static LanguageType RefPointer(LanguageType elementType) => new(StaticType.Pointer, elementType, IsReference: true);

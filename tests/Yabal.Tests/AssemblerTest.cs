@@ -1187,7 +1187,7 @@ public class AssemblerTest
         Assert.Equal(17, cpu.Memory[builder.GetVariable("test").Pointer.Address]);
     }
 
-    [Theory(Skip = "Not implemented yet")]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task StructReferenceStack(bool optimize)
@@ -1200,12 +1200,25 @@ public class AssemblerTest
 
             void set_value(ref Test value) {
                 value.a = 1
-                value.b = 2
+                value.b = 10
             }
 
             Test get_value() {
                 Test test
                 set_value(ref test)
+            
+                asm {
+                    LDIA @test
+                    LDAIN
+                    STLGE 4095
+
+                    LDIA @test
+                    LDIB 1
+                    ADD
+                    LDAIN
+                    STLGE 4096
+                }
+                
                 return test
             }
 
@@ -1219,7 +1232,79 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
+        Assert.Equal(1, cpu.Memory[4095]);
+        Assert.Equal(10, cpu.Memory[4096]);
+
+        var returnValue = builder.ReturnValue.Address;
+        Assert.Equal(1, cpu.Memory[returnValue]);
+        Assert.Equal(10, cpu.Memory[returnValue + 1]);
+
         var address = builder.GetVariable("test").Pointer.Address;
+        Assert.Equal(1, cpu.Memory[address]);
+        Assert.Equal(10, cpu.Memory[address + 1]);
+    }
+
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UpdateFieldInPointerDifferentBank(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a : 4
+                int b : 4
+            }
+
+            int get_value(int result) => result
+
+            var pointer = create_pointer<Test>(4095, 1)
+            var offset = get_value(0)
+
+            pointer[offset].a = 1
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Banks[1][4095]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AssignStruct(bool optimize)
+    {
+        const string code = """
+            struct Test {
+                int a
+                int b
+            }
+            
+            Test get_value() {
+                return { a: 1, b: 2 }
+            }
+
+            Test test
+            test = get_value()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var returnAddress = builder.ReturnValue.Address;
+
+        Assert.Equal(1, cpu.Memory[returnAddress]);
+        Assert.Equal(2, cpu.Memory[returnAddress + 1]);
+
+        var address = builder.GetVariable("test").Pointer.Address;
+
         Assert.Equal(1, cpu.Memory[address]);
         Assert.Equal(2, cpu.Memory[address + 1]);
     }
@@ -1486,7 +1571,8 @@ public class AssemblerTest
                 color: { r: 255, g: 0, b: 0 }
             }
 
-            var result = player.position.x + player.position.y
+            int result;
+            result = player.position.x + player.position.y
             """;
 
         var builder = new YabalBuilder();

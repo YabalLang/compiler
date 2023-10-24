@@ -18,6 +18,8 @@ public class PointerCollection : IEnumerable<InstructionPointer>
 
     public int Count => _pointersBySize.Sum(i => i.Value.Count);
 
+    public int Size => _pointersBySize.Sum(i => i.Value.Count * i.Key);
+
     public InstructionPointer Get(int index, int size)
     {
         if (!_pointersBySize.TryGetValue(size, out var pointers))

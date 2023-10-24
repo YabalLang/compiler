@@ -39,10 +39,29 @@ public record InitStructExpression(SourceRange Range, List<InitStructItem> Items
 
     public override Expression Optimize(LanguageType? suggestedType)
     {
-        var items = Items.Select(i => i with { Value = i.Value.Optimize(suggestedType) }).ToList();
+        List<InitStructItem> items;
 
-        if (suggestedType is not { StructReference: { } structRef } ||
-            !items.All(i => i.Value is IConstantValue { HasConstantValue: true }))
+        if (suggestedType is not { StructReference: { } structRef })
+        {
+            items = Items.Select(i => i with { Value = i.Value.Optimize(null) }).ToList();
+            return new InitStructExpression(Range, items, StructType);
+        }
+
+        items = Items
+            .Select((i, index) =>
+            {
+                var field = i.Name != null
+                    ? structRef.Fields.FirstOrDefault(f => f.Name == i.Name.Name)
+                    : structRef.Fields[index];
+
+                return i with
+                {
+                    Value = i.Value.Optimize(field?.Type)
+                };
+            })
+            .ToList();
+
+        if (!items.All(i => i.Value is IConstantValue { HasConstantValue: true }))
         {
             return new InitStructExpression(Range, items, StructType);
         }
@@ -59,8 +78,7 @@ public record InitStructExpression(SourceRange Range, List<InitStructItem> Items
 
             if (field == null)
             {
-                throw new InvalidCodeException(
-                    $"Struct {structRef.Name} does not have a field named {name?.Name ?? $"at index {i}"}", range);
+                throw new InvalidCodeException($"Struct {structRef.Name} does not have a field named {name?.Name ?? $"at index {i}"}", range);
             }
 
             var value = expression as IConstantValue;
