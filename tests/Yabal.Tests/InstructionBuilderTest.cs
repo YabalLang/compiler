@@ -1,6 +1,6 @@
+using NSubstitute;
 using Yabal.Devices;
 using Yabal.Instructions;
-using Moq;
 using Xunit.Abstractions;
 using Yabal;
 
@@ -20,7 +20,7 @@ public class InstructionBuilderTest
         _output.WriteLine("Instructions:");
         _output.WriteLine(builder.ToString());
 
-        var mock = Mock.Of<Handler>();
+        var mock = Substitute.For<Handler>();
         var cpu = CpuBuilder.Create(mock)
             .WithMemory()
             .WithProgram(builder)

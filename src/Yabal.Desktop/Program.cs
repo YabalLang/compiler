@@ -317,7 +317,7 @@ async Task Execute(InvocationContext ctx)
             return;
         }
 
-        await BuildOutput(path.Info, null, new List<OutputFormat> { OutputFormat.AssemblyWithComments });
+        await BuildOutput(path.Info, null, new List<OutputFormat> { OutputFormat.Assembly });
         await RunNativeAsync(ctx.Console, fileName, path);
 
         return;
@@ -510,7 +510,10 @@ async Task RunNativeAsync(IConsole console, string fileName, FilePath fileInfo, 
         (int Left, int Top)? lastFreq = null;
 
         await Cli.Wrap(fileName)
-            .WithArguments($"{ Path.ChangeExtension(fileInfo.Info!.FullName, ".asmc")} {fileInfo.Arguments}")
+            .WithArguments(new []
+            {
+                Path.ChangeExtension(fileInfo.Info!.FullName, ".asm")
+            })
             .WithStandardOutputPipe(PipeTarget.ToDelegate(s =>
             {
                 if (string.IsNullOrWhiteSpace(s))

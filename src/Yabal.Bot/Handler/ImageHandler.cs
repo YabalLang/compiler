@@ -46,4 +46,8 @@ public class ImageHandler : global::Yabal.Handler
         DidFlush = true;
         _frame = null;
     }
+
+    public override void Halt()
+    {
+    }
 }

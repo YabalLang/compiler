@@ -26,7 +26,7 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
 
     public override Expression CloneExpression()
     {
-        return new AssignExpression(Range, Object.CloneExpression(), Value.CloneExpression());
+        return new AssignExpression(Range, (AssignableExpression) Object.CloneExpression(), Value.CloneExpression());
     }
 
     public override Expression Optimize(LanguageType? suggestedType)

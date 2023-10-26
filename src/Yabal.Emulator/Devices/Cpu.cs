@@ -95,6 +95,7 @@ public sealed partial class Cpu<THandler> : IDisposable
     public void Halt()
     {
         _halt = true;
+        _handler.Halt();
     }
 
     public unsafe int? Step(int amount)

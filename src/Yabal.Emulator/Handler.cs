@@ -9,4 +9,6 @@ public abstract class Handler
     public abstract void LogSpeed(int steps, float value);
 
     public abstract void FlushScreen();
+
+    public abstract void Halt();
 }

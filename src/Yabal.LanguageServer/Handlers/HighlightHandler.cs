@@ -53,7 +53,7 @@ public class HighlightHandler : IDocumentHighlightHandler
     {
         return new DocumentHighlightRegistrationOptions
         {
-            DocumentSelector = DocumentSelector.ForLanguage("yabal")
+            DocumentSelector = TextDocumentSelector.ForLanguage("yabal")
         };
     }
 }

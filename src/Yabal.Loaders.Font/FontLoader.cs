@@ -84,7 +84,7 @@ public class FontLoader : IFileLoader
         var charLength = charWidth * charHeight;
         var content = new int[charLength * 49];
 
-        var options = new TextOptions(font)
+        var options = new RichTextOptions(font)
         {
             TextAlignment = TextAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -101,7 +101,7 @@ public class FontLoader : IFileLoader
 
             image.Mutate(x =>
             {
-                x.DrawText(drawingOptions, options, c.ToString(), brush, null);
+                x.DrawText(drawingOptions, options, c.ToString(), brush, pen: null);
                 if (scale > 1) x.Resize(charWidth, charHeight, KnownResamplers.Robidoux);
             });
 

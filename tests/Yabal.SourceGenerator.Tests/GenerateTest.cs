@@ -12,7 +12,7 @@ public class GenerateTest
     [Fact]
     public Task GenerateInstructions()
     {
-        VerifySourceGenerators.Enable();
+        VerifySourceGenerators.Initialize();
 
         var compilation = CSharpCompilation.Create("name");
         var generator = new InstructionGenerator();

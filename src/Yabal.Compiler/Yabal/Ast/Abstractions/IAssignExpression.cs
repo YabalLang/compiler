@@ -8,8 +8,6 @@ public abstract record AssignableExpression(SourceRange Range) : Expression(Rang
 
     public abstract void StoreFromA(YabalBuilder builder, int offset);
 
-    public abstract override AssignableExpression CloneExpression();
-
     public virtual void MarkModified()
     {
     }

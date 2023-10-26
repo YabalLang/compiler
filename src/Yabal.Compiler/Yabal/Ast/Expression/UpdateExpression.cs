@@ -58,6 +58,6 @@ public record UpdateExpression(SourceRange Range, AssignableExpression Value, bo
 
     public override Expression CloneExpression()
     {
-        return new UpdateExpression(Range, Value.CloneExpression(), Prefix, Operator);
+        return new UpdateExpression(Range, (AssignableExpression) Value.CloneExpression(), Prefix, Operator);
     }
 }

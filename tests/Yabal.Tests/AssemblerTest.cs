@@ -1,6 +1,6 @@
-﻿using Yabal.Devices;
+﻿using NSubstitute;
+using Yabal.Devices;
 using Yabal.Instructions;
-using Moq;
 using Xunit.Abstractions;
 using Yabal;
 using Zio;
@@ -35,7 +35,7 @@ public class AssemblerTest
 
         _output.WriteLine(result.ToAssembly(addComments: true));
 
-        var mock = Mock.Of<Handler>();
+        var mock = Substitute.For<Handler>();
         var cpu = CpuBuilder.Create(mock)
             .WithMemory(0xFFFF)
             .WithProgram(builder)

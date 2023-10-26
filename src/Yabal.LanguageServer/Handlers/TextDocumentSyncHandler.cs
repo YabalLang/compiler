@@ -64,13 +64,13 @@ internal class TextDocumentHandler : TextDocumentSyncHandlerBase
     }
 
     protected override TextDocumentSyncRegistrationOptions CreateRegistrationOptions(
-        SynchronizationCapability capability,
+        TextSynchronizationCapability capability,
         ClientCapabilities clientCapabilities)
     {
         return new TextDocumentSyncRegistrationOptions
         {
             Change = TextDocumentSyncKind.Full,
-            DocumentSelector = DocumentSelector.ForLanguage("yabal"),
+            DocumentSelector = TextDocumentSelector.ForLanguage("yabal"),
             Save = new SaveOptions { IncludeText = true }
         };
     }

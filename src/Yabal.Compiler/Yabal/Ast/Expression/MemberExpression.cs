@@ -148,6 +148,6 @@ public record MemberExpression(SourceRange Range, AddressExpression Expression, 
 
     public override MemberExpression CloneExpression()
     {
-        return new MemberExpression(Range, Expression.CloneExpression(), Name);
+        return new MemberExpression(Range, (AddressExpression)Expression.CloneExpression(), Name);
     }
 }

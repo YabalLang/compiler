@@ -397,6 +397,43 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
     }
 
+    public bool CompileCodeWithoutFiles(string code, bool optimize = true, Uri? file = null)
+    {
+        file ??= new Uri("memory://");
+
+        try
+        {
+            var program = Parse(_context, file, code);
+
+            program.Declare(this);
+            program.Initialize(this);
+
+            if (optimize)
+            {
+                program = program.Optimize();
+            }
+
+            program.Build(this);
+
+            return Errors.SelectMany(x => x.Value).All(x => x.Level != ErrorLevel.Error);
+        }
+        catch (ParseCanceledException e) when (e.InnerException is InputMismatchException innerException)
+        {
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.OffendingToken, file), "Unexpected token");
+            return false;
+        }
+        catch (ParseCanceledException e) when (e.InnerException is NoViableAltException innerException)
+        {
+            AddError(ErrorLevel.Error, SourceRange.From(innerException.StartToken, file), "Unexpected token");
+            return false;
+        }
+        catch (InvalidCodeException e)
+        {
+            AddError(ErrorLevel.Error, e.Range ?? default, e.Message);
+            return false;
+        }
+    }
+
     public ProgramStatement Parse(YabalContext context, Uri file, string code)
     {
         var inputStream = new AntlrInputStream(code);

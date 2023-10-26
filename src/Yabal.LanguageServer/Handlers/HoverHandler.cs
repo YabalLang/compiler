@@ -63,7 +63,7 @@ public class HoverHandler : IHoverHandler
     {
         return new HoverRegistrationOptions
         {
-            DocumentSelector = DocumentSelector.ForLanguage("yabal")
+            DocumentSelector = TextDocumentSelector.ForLanguage("yabal")
         };
     }
 }

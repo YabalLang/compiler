@@ -235,19 +235,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            // ADD
-            context.Bus = context.A + context.B;
-            context.FlagA = context.Bus == 0;
-
-            if (context.Bus >= 65534)
-            {
-                context.Bus -= 65534;
-                context.FlagB = true;
-            }
-            else
-            {
-                context.FlagB = false;
-            }
+                    // ADD
+                    context.Bus = context.A + context.B;
+                    context.FlagA = context.Bus == 0;
+        
+                    if (context.Bus >= 65534)
+                    {
+                        context.Bus -= 65534;
+                        context.FlagB = true;
+                    }
+                    else
+                    {
+                        context.FlagB = false;
+                    }
             // WA
             context.A = context.Bus;
         }
@@ -262,19 +262,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            // SU
-            context.Bus = context.A - context.B;
-            context.FlagA = context.Bus == 0;
-
-            if (context.Bus < 0)
-            {
-                context.Bus = 65534 + context.Bus;
-                context.FlagB = false;
-            }
-            else
-            {
-                context.FlagB = true;
-            }
+                    // SU
+                    context.Bus = context.A - context.B;
+                    context.FlagA = context.Bus == 0;
+        
+                    if (context.Bus < 0)
+                    {
+                        context.Bus = 65534 + context.Bus;
+                        context.FlagB = false;
+                    }
+                    else
+                    {
+                        context.FlagB = true;
+                    }
             // WA
             context.A = context.Bus;
         }
@@ -289,19 +289,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            // MU
-            context.Bus = context.A * context.B;
-            context.FlagA = context.Bus == 0;
-
-            if (context.Bus >= 65534)
-            {
-                context.Bus -= 65534;
-                context.FlagB = true;
-            }
-            else
-            {
-                context.FlagB = false;
-            }
+                    // MU
+                    context.Bus = context.A * context.B;
+                    context.FlagA = context.Bus == 0;
+        
+                    if (context.Bus >= 65534)
+                    {
+                        context.Bus -= 65534;
+                        context.FlagB = true;
+                    }
+                    else
+                    {
+                        context.FlagB = false;
+                    }
             // WA
             context.A = context.Bus;
         }
@@ -316,27 +316,27 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            // DI
-            if (context.B != 0)
-            {
-                context.Bus = context.A / context.B;
-                context.FlagA = context.Bus == 0;
-            }
-            else
-            {
-                context.FlagA = false;
-                context.Bus = 0;
-            }
-
-            if (context.Bus >= 65534)
-            {
-                context.Bus -= 65534;
-                context.FlagB = true;
-            }
-            else
-            {
-                context.FlagB = false;
-            }
+                    // DI
+                    if (context.B != 0)
+                    {
+                        context.Bus = context.A / context.B;
+                        context.FlagA = context.Bus == 0;
+                    }
+                    else
+                    {
+                        context.FlagA = false;
+                        context.Bus = 0;
+                    }
+        
+                    if (context.Bus >= 65534)
+                    {
+                        context.Bus -= 65534;
+                        context.FlagB = true;
+                    }
+                    else
+                    {
+                        context.FlagB = false;
+                    }
             // WA
             context.A = context.Bus;
         }
@@ -639,19 +639,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = context.A << (context.B);
-
-            
-           if (context.Bus == 0)
-           {
-               context.FlagA = true;
-           }
-           else if (context.Bus >= 65534)
-           {
-               context.Bus -= 65534;
-               context.FlagB = true;
-           }
+                    context.Bus = context.A << (context.B);
         
+                    
+                       if (context.Bus == 0)
+                       {
+                           context.FlagA = true;
+                       }
+                       else if (context.Bus >= 65534)
+                       {
+                           context.Bus -= 65534;
+                           context.FlagB = true;
+                       }
+                    
             // WA
             context.A = context.Bus;
         }
@@ -666,19 +666,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = context.A >> (context.B);
-
-            
-           if (context.Bus == 0)
-           {
-               context.FlagA = true;
-           }
-           else if (context.Bus >= 65534)
-           {
-               context.Bus -= 65534;
-               context.FlagB = true;
-           }
+                    context.Bus = context.A >> (context.B);
         
+                    
+                       if (context.Bus == 0)
+                       {
+                           context.FlagA = true;
+                       }
+                       else if (context.Bus >= 65534)
+                       {
+                           context.Bus -= 65534;
+                           context.FlagB = true;
+                       }
+                    
             // WA
             context.A = context.Bus;
         }
@@ -693,19 +693,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = context.A & context.B;
-
-            
-           if (context.Bus == 0)
-           {
-               context.FlagA = true;
-           }
-           else if (context.Bus >= 65534)
-           {
-               context.Bus -= 65534;
-               context.FlagB = true;
-           }
+                    context.Bus = context.A & context.B;
         
+                    
+                       if (context.Bus == 0)
+                       {
+                           context.FlagA = true;
+                       }
+                       else if (context.Bus >= 65534)
+                       {
+                           context.Bus -= 65534;
+                           context.FlagB = true;
+                       }
+                    
             // WA
             context.A = context.Bus;
         }
@@ -720,19 +720,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = context.A | context.B;
-
-            
-           if (context.Bus == 0)
-           {
-               context.FlagA = true;
-           }
-           else if (context.Bus >= 65534)
-           {
-               context.Bus -= 65534;
-               context.FlagB = true;
-           }
+                    context.Bus = context.A | context.B;
         
+                    
+                       if (context.Bus == 0)
+                       {
+                           context.FlagA = true;
+                       }
+                       else if (context.Bus >= 65534)
+                       {
+                           context.Bus -= 65534;
+                           context.FlagB = true;
+                       }
+                    
             // WA
             context.A = context.Bus;
         }
@@ -747,19 +747,19 @@ public partial class Cpu<THandler>
             context.FlagA = false;
             context.FlagB = false;
         
-            context.Bus = ~context.A & ushort.MaxValue;
-
-            
-           if (context.Bus == 0)
-           {
-               context.FlagA = true;
-           }
-           else if (context.Bus >= 65534)
-           {
-               context.Bus -= 65534;
-               context.FlagB = true;
-           }
+                    context.Bus = ~context.A & ushort.MaxValue;
         
+                    
+                       if (context.Bus == 0)
+                       {
+                           context.FlagA = true;
+                       }
+                       else if (context.Bus >= 65534)
+                       {
+                           context.Bus -= 65534;
+                           context.FlagB = true;
+                       }
+                    
             // WA
             context.A = context.Bus;
         }

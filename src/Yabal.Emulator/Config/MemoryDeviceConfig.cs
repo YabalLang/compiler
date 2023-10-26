@@ -4,7 +4,7 @@ namespace Yabal;
 
 public class MemoryDeviceConfig
 {
-    public Address Screen { get; set; } = new(1, 0xD26F);
+    public Address Screen { get; set; } = new(1, 53870);
 
     public Address Character { get; set; } = new(1, 0xD12A);
 

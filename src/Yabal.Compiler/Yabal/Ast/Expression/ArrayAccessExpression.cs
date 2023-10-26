@@ -228,7 +228,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
     {
         return new ArrayAccessExpression(
             Range,
-            Array.CloneExpression(),
+            (AddressExpression)Array.CloneExpression(),
             Key.CloneExpression());
     }
 }

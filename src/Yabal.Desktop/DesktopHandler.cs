@@ -183,6 +183,10 @@ public class DesktopHandler : Handler, IDisposable
         _updateTexture = true;
     }
 
+    public override void Halt()
+    {
+    }
+
     public void Dispose()
     {
         ReleaseUnmanagedResources();

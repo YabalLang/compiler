@@ -1,9 +1,32 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PublishTrimmed>true</PublishTrimmed>
+        <SelfContained>true</SelfContained>
+        <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+        <NativeLib>Shared</NativeLib>
+        <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
+        <EmitLegacyAssetsFileItems>true</EmitLegacyAssetsFileItems>
+        <TargetArchitecture>wasm</TargetArchitecture>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <IlcTrimMetadata>true</IlcTrimMetadata>
+        <IlcDisableReflection>true</IlcDisableReflection>
+        <EmccExtraArgs>-s EXPORTED_RUNTIME_METHODS=cwrap</EmccExtraArgs>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="8.0.0-*" />
+        <PackageReference Include="runtime.win-x64.Microsoft.DotNet.ILCompiler.LLVM" Version="8.0.0-*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Yabal.Compiler\Yabal.Compiler.csproj" />
+        <ProjectReference Include="..\Yabal.Emulator\Yabal.Emulator.csproj" />
+    </ItemGroup>
 
 </Project>

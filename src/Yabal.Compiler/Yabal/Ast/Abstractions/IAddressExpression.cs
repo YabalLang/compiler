@@ -204,6 +204,4 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
             StoreFromA(builder, i);
         }
     }
-
-    public abstract override AddressExpression CloneExpression();
 }
