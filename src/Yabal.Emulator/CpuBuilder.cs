@@ -10,6 +10,7 @@ public class CpuBuilder<THandler>
     private readonly THandler _handler;
     private Screen<THandler>? _screen;
     private CharacterDevice<THandler>? _character;
+    private DebugDevice<THandler>? _debug;
     private Address? _keyboardAddress;
     private Address? _mouseAddress;
     private readonly CpuMemory<THandler>?[] _memory;
@@ -113,6 +114,14 @@ public class CpuBuilder<THandler>
         return this;
     }
 
+    public CpuBuilder<THandler> WithDebug(Address? address = null)
+    {
+        var (bank, offset) = address ?? new Address(Bank: 5, Offset: 0);
+
+        _debug = new DebugDevice<THandler>(bank, offset, _handler);
+        return this;
+    }
+
     public Cpu<THandler> Create()
     {
         for (var i = 0; i < _memory.Length; i++)
@@ -130,6 +139,11 @@ public class CpuBuilder<THandler>
         if (_character != null)
         {
             _memory[_character.Bank]!.MapCharacterScreen(_character);
+        }
+
+        if (_debug != null)
+        {
+            _memory[_debug.Bank]!.MapDebug(_debug);
         }
 
         return cpu;

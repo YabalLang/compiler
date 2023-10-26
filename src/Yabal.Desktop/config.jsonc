@@ -24,7 +24,7 @@
   "Memory": {
     // Max amount of memory in bytes.
     "Size": "0xFFFF",
-    "Banks": 2,
+    "Banks": 5,
 
     // Mapping of device in memory.
     "Devices": {

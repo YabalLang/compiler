@@ -185,6 +185,12 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
                 }
                 else
                 {
+                    if (bitOffset > 0)
+                    {
+                        bitOffset = 0;
+                        offset++;
+                    }
+
                     offset += type.Size;
                 }
             }

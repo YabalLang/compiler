@@ -4,7 +4,10 @@ using Yabal.Visitor;
 
 namespace Yabal.Ast;
 
-public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefault);
+public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefault)
+{
+    public Variable? Variable { get; set; }
+}
 
 public record FunctionName(SourceRange Range);
 
@@ -132,7 +135,7 @@ public record FunctionDeclarationStatement(
 
             foreach (var parameter in Parameters)
             {
-                functionBuilder.CreateVariable(parameter.Name, parameter.Type);
+                parameter.Variable = functionBuilder.CreateVariable(parameter.Name, parameter.Type);
             }
 
             Body.Declare(builder);
@@ -177,6 +180,14 @@ public record FunctionDeclarationStatement(
 
             builder.LoadA(builder.StackAllocPointer);
             builder.StoreA(stackAllocationAddress);
+        }
+
+        foreach (var parameter in Parameters)
+        {
+            if (parameter.Variable != null)
+            {
+                builder.AddVariableDebug(parameter.Name.Range, parameter.Type, parameter.Variable?.Pointer);
+            }
         }
 
         Body.Build(builder);

@@ -13,6 +13,10 @@ public sealed class CpuMemory<THandler>
     private int _characterDeviceStart;
     private int _characterDeviceEnd;
 
+    private DebugDevice<THandler>? _debugDevice;
+    private int _debugDeviceStart;
+    private int _debugDeviceEnd;
+
     public CpuMemory(int bank, int[] data)
     {
         Data = data;
@@ -67,6 +71,15 @@ public sealed class CpuMemory<THandler>
         characterDevice.Initialize(Data.AsSpan(address, characterDevice.Length), false);
     }
 
+    public void MapDebug(DebugDevice<THandler> debugDevice)
+    {
+        var address = debugDevice.Address;
+        _debugDeviceStart = address;
+        _debugDeviceEnd = address + debugDevice.Length;
+        _debugDevice = debugDevice;
+        debugDevice.Initialize(Data.AsSpan(address, debugDevice.Length), false);
+    }
+
     public int this[int address]
     {
         get => Data[address];
@@ -96,6 +109,10 @@ public sealed class CpuMemory<THandler>
         else if (address >= _characterDeviceStart && address < _characterDeviceEnd)
         {
             _characterDevice?.Write(address - _characterDeviceStart, value);
+        }
+        else if (address >= _debugDeviceStart && address < _debugDeviceEnd)
+        {
+            _debugDevice?.Write(address - _debugDeviceStart, value);
         }
     }
 

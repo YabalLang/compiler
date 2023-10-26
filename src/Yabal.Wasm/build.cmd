@@ -1,4 +1,4 @@
-set EMSDK=C:\Sources\emsdk
+set EMSDK=C:\Temp\emsdk
 
 touch Interop.cs
 dotnet publish -c Release

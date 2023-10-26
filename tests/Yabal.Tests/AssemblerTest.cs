@@ -725,6 +725,37 @@ public class AssemblerTest
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StructPointerBank(bool optimize)
+    {
+        var code = """
+            var structs = create_pointer<Struct>(53870, 1)
+            
+            structs[0] = { a: 1, b: 2 }
+            structs[1] = { a: 3, b: 4 }
+
+            struct Struct {
+                int a
+                int b
+            };
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var bank = cpu.Banks[1];
+
+        Assert.Equal(1, bank[53870]);
+        Assert.Equal(2, bank[53871]);
+        Assert.Equal(3, bank[53872]);
+        Assert.Equal(4, bank[53873]);
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task ForContinue(bool optimize)

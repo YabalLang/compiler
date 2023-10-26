@@ -11,4 +11,6 @@ public abstract class Handler
     public abstract void FlushScreen();
 
     public abstract void Halt();
+
+    public abstract void ShowVariable(int line, int offset, Span<int> value);
 }

@@ -28,7 +28,7 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
 
     public override void Build(YabalBuilder builder)
     {
-        if (Value == null || Variable.CanBeRemoved)
+        if (Value == null || Variable.CanBeRemoved && !builder.Debug)
         {
             return;
         }
@@ -45,6 +45,8 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
         {
             builder.SetValue(Variable.Pointer, Variable.Type, Value);
         }
+
+        builder.AddVariableDebug(Name.Range, Variable.Type, Variable.Pointer);
     }
 
     public override Statement CloneStatement()

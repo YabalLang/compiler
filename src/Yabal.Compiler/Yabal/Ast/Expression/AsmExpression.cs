@@ -148,7 +148,7 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                         continue;
                     }
 
-                    if (argValue.Value.IsLeft)
+                    if (bank > 0 && argValue.Value.IsLeft)
                     {
                         builder.AddError(ErrorLevel.Error, range, ErrorMessages.PointerBankSwitched);
                     }

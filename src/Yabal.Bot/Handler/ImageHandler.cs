@@ -50,4 +50,8 @@ public class ImageHandler : global::Yabal.Handler
     public override void Halt()
     {
     }
+
+    public override void ShowVariable(int line, int offset, Span<int> value)
+    {
+    }
 }

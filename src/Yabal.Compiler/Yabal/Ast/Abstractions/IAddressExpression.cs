@@ -204,4 +204,12 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
             StoreFromA(builder, i);
         }
     }
+
+    public override void ShowDebug(YabalBuilder builder, SourceRange? range = null)
+    {
+        if (Pointer is { } pointer)
+        {
+            builder.AddVariableDebug(Range, Type, pointer);
+        }
+    }
 }

@@ -10,6 +10,11 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
     public override void Build(YabalBuilder builder)
     {
         Expression.BuildExpression(builder, true, null);
+
+        if (Expression is AddressExpression address and (IdentifierExpression or MemberExpression))
+        {
+            address.ShowDebug(builder);
+        }
     }
 
     public override Statement CloneStatement()
@@ -17,5 +22,12 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
         return new ExpressionStatement(Range, Expression.CloneExpression());
     }
 
-    public override Statement Optimize() => new ExpressionStatement(Range, Expression.Optimize(null));
+    public override Statement Optimize()
+    {
+        return new ExpressionStatement(Range, Expression switch
+        {
+            IdentifierExpression or MemberExpression => Expression,
+            _ => Expression.Optimize(null)
+        });
+    }
 }

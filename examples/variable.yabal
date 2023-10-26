@@ -1,0 +1,10 @@
+int a = 1
+
+asm {
+    AIN @a // Read the value of a into register A
+    LDIB 1 // Load the value 1 into register B
+    ADD // Add the value of register B to register A
+    STA @a // Store the value of register A into a
+}
+
+a

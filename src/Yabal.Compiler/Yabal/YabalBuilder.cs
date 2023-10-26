@@ -114,6 +114,8 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _errors = parent._errors;
         BinaryOperators = parent.BinaryOperators;
         CastOperators = parent.CastOperators;
+
+        Debug = parent.Debug;
     }
 
     public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; }
@@ -686,6 +688,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public bool HasStackAllocation { get; set; }
 
     public LanguageType? ReturnType { get; set; }
+    public bool Debug { get; set; }
 
     public override InstructionLabel CreateLabel(string? name = null)
     {
@@ -730,6 +733,81 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     public void ToLogisimFile(StreamWriter writer, int minSize = 0)
     {
         Build().ToLogisimFile(writer, minSize);
+    }
+
+    public void AddVariableDebug(SourceRange range, LanguageType type, Pointer? pointer = null)
+    {
+        if (!Debug)
+        {
+            return;
+        }
+
+        const int debugBank = 5;
+
+        const int offset = 0;
+
+        TemporaryVariable? temp = null;
+
+        if (pointer == null)
+        {
+            // Store value in temporary variable
+            temp = GetTemporaryVariable();
+            StoreA(temp);
+
+            SetBank(debugBank);
+
+            // Value
+            StoreA(offset + DebugOffset.Value);
+
+            // Size
+            SetA(1);
+            StoreA(offset + DebugOffset.Size);
+
+            SetBank(0);
+        }
+        else
+        {
+            SetBank(debugBank);
+
+            // Size
+            SetA(type.Size);
+            StoreA(offset + DebugOffset.Size);
+
+            SetBank(0);
+
+            for (var i = 0; i < type.Size; i++)
+            {
+                LoadA(pointer.Add(i));
+
+                // Value
+                SetBank(debugBank);
+                StoreA(offset + DebugOffset.Value + i);
+
+                SetBank(0);
+            }
+        }
+
+        // Store line and column
+        SetA(range.EndLine);
+        SetB(range.EndColumn);
+
+        SetBank(debugBank);
+
+        StoreA(offset + DebugOffset.Line); // Line
+        SwapA_B();
+        StoreA(offset + DebugOffset.Column); // Column
+
+        // Flush
+        SetA(1);
+        StoreA(offset + DebugOffset.Flush);
+
+        SetBank(0);
+
+        if (temp != null)
+        {
+            LoadA(temp);
+            temp.Dispose();
+        }
     }
 
     public override string ToString()

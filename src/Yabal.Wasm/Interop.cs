@@ -21,7 +21,11 @@ public static class Interop
 
 			using (var context = new YabalContext())
 			{
-				var builder = new YabalBuilder(context);
+				var builder = new YabalBuilder(context)
+				{
+					Debug = true
+				};
+
 				builder.CompileCodeWithoutFiles(code);
 
 				var program = builder.Build();
@@ -33,6 +37,7 @@ public static class Interop
 				.WithMemory(0, data)
 				.WithScreen()
 				.WithCharacter()
+				.WithDebug()
 				.Create();
 		}
 		catch (Exception)
@@ -63,6 +68,9 @@ public static class Interop
 
 	[DllImport("NativeLib")]
 	public static extern unsafe void UpdateScreen(int* screen);
+
+	[DllImport("NativeLib")]
+	public static extern unsafe void ShowVariable(int line, int offset, int size, int* screen);
 
 	[DllImport("NativeLib")]
 	public static extern unsafe void Halt();

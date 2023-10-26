@@ -12,12 +12,14 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        Object.BuildExpressionToPointer(builder, suggestedType, pointer);
+        Object.Assign(builder, Value, Range);
+        Object.ShowDebug(builder);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
         Object.Assign(builder, Value, Range);
+        Object.ShowDebug(builder);
     }
 
     public override bool OverwritesB => true;

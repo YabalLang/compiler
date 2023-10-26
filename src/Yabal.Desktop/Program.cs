@@ -103,6 +103,12 @@ var output = new Option<bool>(
 
 output.AddAlias("-o");
 
+var debugOption = new Option<bool>(
+    name: "--debug",
+    description: "Print variable allocation to the console.");
+
+debugOption.AddAlias("-d");
+
 var charactersToConsoleOption = new Option<bool>(
     name: "--console",
     description: "Redirect character set to the console.");
@@ -125,7 +131,8 @@ var run = new Command(
     charactersToConsoleOption,
     stateOption,
     nativeOption,
-    output
+    output,
+    debugOption
 };
 
 run.SetHandler(Execute);
@@ -297,8 +304,6 @@ async Task Execute(InvocationContext ctx)
     using var context = new YabalContext(fs)
         .AddFileLoader(FileType.Font, FontLoader.Instance)
         .AddFileLoader(FileType.Image, ImageLoader.Instance);
-    var builder = new YabalBuilder(context);
-    await builder.CompileCodeAsync(code, file: uri);
 
     var showOutput = ctx.ParseResult.GetValueForOption(output);
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);
@@ -306,6 +311,14 @@ async Task Execute(InvocationContext ctx)
     var statePath = ctx.ParseResult.GetValueForOption(stateOption);
     var charactersToConsole = ctx.ParseResult.GetValueForOption(charactersToConsoleOption);
     var native = ctx.ParseResult.GetValueForOption(nativeOption);
+    var debug = ctx.ParseResult.GetValueForOption(debugOption);
+
+    var builder = new YabalBuilder(context)
+    {
+        Debug = debug
+    };
+
+    await builder.CompileCodeAsync(code, file: uri);
 
     if (native)
     {
@@ -335,6 +348,11 @@ async Task Execute(InvocationContext ctx)
     cpuBuilder.WithMemory();
     cpuBuilder.WithKeyboard();
     cpuBuilder.WithMouse();
+
+    if (debug)
+    {
+        cpuBuilder.WithDebug();
+    }
 
     if (!disableScreen)
     {

@@ -28,13 +28,28 @@ public abstract class InstructionBuilderBase
 
     public void LoadA(PointerOrData address)
     {
+        var bank = address.Left?.Bank ?? 0;
+
         if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
-            LoadA_Large(address);
+            if (bank > 0)
+            {
+                SetA_Large(address);
+
+                SetBank(bank);
+                LoadA_FromAddressUsingA();
+                SetBank(0);
+            }
+            else
+            {
+                LoadA_Large(address);
+            }
         }
         else
         {
+            if (bank > 0) SetBank(bank);
             Emit("AIN", address);
+            if (bank > 0) SetBank(0);
         }
     }
 
@@ -73,13 +88,30 @@ public abstract class InstructionBuilderBase
 
     public void StoreA(PointerOrData address, int? index = null)
     {
+        var bank = address.Left?.Bank ?? 0;
+
+
         if (!index.HasValue && address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
-            StoreA_Large(address);
+            if (bank > 0)
+            {
+                SwapA_B();
+                SetA_Large(address);
+
+                SetBank(bank);
+                StoreB_ToAddressInA();
+                SetBank(0);
+            }
+            else
+            {
+                StoreA_Large(address);
+            }
         }
         else
         {
+            if (bank > 0) SetBank(bank);
             Emit("STA", address, index);
+            if (bank > 0) SetBank(0);
         }
     }
 

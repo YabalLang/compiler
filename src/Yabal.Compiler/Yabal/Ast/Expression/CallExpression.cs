@@ -11,7 +11,7 @@ public record CallExpression(
 ) : Expression(Range)
 {
     private BlockStack _block = null!;
-    private (Variable, Expression)[] _variables = null!;
+    private (FunctionParameter, Variable, Expression)[] _variables = null!;
     private BlockStatement? _body;
     private InstructionLabel? _returnLabel;
     private IReadOnlyList<Expression>? _arguments;
@@ -143,7 +143,7 @@ public record CallExpression(
             _returnLabel = _body is { Statements: [ReturnStatement] } ? null : builder.CreateLabel();
             _block.Return = _returnLabel;
 
-            _variables = new (Variable, Expression)[_arguments.Count];
+            _variables = new (FunctionParameter, Variable, Expression)[_arguments.Count];
 
             // Copy variables from parent blocks
             if (Function.Block is { } functionBlock)
@@ -171,7 +171,7 @@ public record CallExpression(
                 var parameter = Function.Parameters[i];
                 var expression = _arguments[i];
                 var variable = builder.CreateVariable(parameter.Name, parameter.Type, expression);
-                _variables[i] = (variable, expression);
+                _variables[i] = (parameter, variable, expression);
             }
 
             _body.Initialize(builder);
@@ -271,12 +271,14 @@ public record CallExpression(
             builder.ReturnType = Function.ReturnType;
             builder.PushBlock(_block);
 
-            foreach (var (variable, expression) in _variables)
+            foreach (var (parameter, variable, expression) in _variables)
             {
-                if (!variable.CanBeRemoved)
+                if (!variable.CanBeRemoved || builder.Debug)
                 {
                     builder.SetValue(variable.Pointer, variable.Type, expression);
                 }
+
+                builder.AddVariableDebug(parameter.Name.Range, variable.Type, variable.Pointer);
             }
 
             if (_body is { Statements: [ReturnStatement statement]})
@@ -318,12 +320,14 @@ public record CallExpression(
             builder.ReturnValue = pointer;
             builder.PushBlock(_block);
 
-            foreach (var (variable, expression) in _variables)
+            foreach (var (parameter, variable, expression) in _variables)
             {
-                if (!variable.CanBeRemoved)
+                if (!variable.CanBeRemoved || builder.Debug)
                 {
                     builder.SetValue(variable.Pointer, variable.Type, expression);
                 }
+
+                builder.AddVariableDebug(parameter.Name.Range, variable.Type, variable.Pointer);
             }
 
             if (_body is { Statements: [ReturnStatement statement]})

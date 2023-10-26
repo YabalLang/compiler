@@ -187,6 +187,18 @@ public class DesktopHandler : Handler, IDisposable
     {
     }
 
+    public override void ShowVariable(int line, int offset, Span<int> value)
+    {
+        Console.Write($"[{line}:{offset}]");
+
+        foreach (var b in value)
+        {
+            Console.Write($" {b}");
+        }
+
+        Console.WriteLine();
+    }
+
     public void Dispose()
     {
         ReleaseUnmanagedResources();

@@ -50,6 +50,8 @@ public record UpdateExpression(SourceRange Range, AssignableExpression Value, bo
             builder.LoadA(variable);
             variable.Dispose();
         }
+
+        builder.AddVariableDebug(Range, Type);
     }
 
     public override bool OverwritesB => true;
