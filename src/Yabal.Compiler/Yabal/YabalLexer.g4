@@ -83,6 +83,7 @@ Ref                 : 'ref';
 Namespace           : 'namespace';
 Use                 : 'use';
 Func                : 'func';
+TypeDef             : 'typedef';
 
 Identifier			: IdentifierStart IdentifierPart*;
 

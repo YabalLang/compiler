@@ -372,29 +372,26 @@ public partial class Cpu<THandler>
             context.MemoryIndex = context.Bus;
         }
         // Step 3
-        {
-            // RM
-            context.Bus = context.Get(context.MemoryIndex);
-            // CE
-            context.ProgramCounter += 1;
-        }
-        // Step 4
         if (context.FlagA == false && context.FlagB == false)
         {
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == false && context.FlagB == true)
         {
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == true && context.FlagB == false)
         {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
             // J
             context.ProgramCounter = context.Bus;
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == true && context.FlagB == true)
         {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
             // J
             context.ProgramCounter = context.Bus;
         }
@@ -411,29 +408,26 @@ public partial class Cpu<THandler>
             context.MemoryIndex = context.Bus;
         }
         // Step 3
-        {
-            // RM
-            context.Bus = context.Get(context.MemoryIndex);
-            // CE
-            context.ProgramCounter += 1;
-        }
-        // Step 4
         if (context.FlagA == false && context.FlagB == false)
         {
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == false && context.FlagB == true)
         {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
             // J
             context.ProgramCounter = context.Bus;
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == true && context.FlagB == false)
         {
         }
-        // Step 4
+        // Step 3
         if (context.FlagA == true && context.FlagB == true)
         {
+            // RM
+            context.Bus = context.Get(context.MemoryIndex);
             // J
             context.ProgramCounter = context.Bus;
         }
@@ -494,12 +488,19 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.Bank = context.Bus;
+        }
+        // Step 3
+        {
             // CR
             context.Bus = context.ProgramCounter;
             // AW
             context.MemoryIndex = context.Bus;
         }
-        // Step 3
+        // Step 4
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);
@@ -508,7 +509,7 @@ public partial class Cpu<THandler>
             // CE
             context.ProgramCounter += 1;
         }
-        // Step 4
+        // Step 5
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);
@@ -522,12 +523,19 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.Bank = context.Bus;
+        }
+        // Step 3
+        {
             // CR
             context.Bus = context.ProgramCounter;
             // AW
             context.MemoryIndex = context.Bus;
         }
-        // Step 3
+        // Step 4
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);
@@ -536,7 +544,7 @@ public partial class Cpu<THandler>
             // CE
             context.ProgramCounter += 1;
         }
-        // Step 4
+        // Step 5
         {
             // RA
             context.Bus = context.A;
@@ -550,12 +558,19 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.Bank = context.Bus;
+        }
+        // Step 3
+        {
             // CR
             context.Bus = context.ProgramCounter;
             // AW
             context.MemoryIndex = context.Bus;
         }
-        // Step 3
+        // Step 4
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);
@@ -804,12 +819,19 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.Bank = context.Bus;
+        }
+        // Step 3
+        {
             // CR
             context.Bus = context.ProgramCounter;
             // AW
             context.MemoryIndex = context.Bus;
         }
-        // Step 3
+        // Step 4
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);

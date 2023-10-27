@@ -473,7 +473,8 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
                         instructions.Add(new AsmInstruction(
                             SourceRange.From(item, _file),
                             instruction.asmIdentifier().GetText(),
-                            instruction.asmArgument() is {} arg ? visitor.Visit(arg) : null
+                            instruction.asmArgument(0) is {} firstArg ? visitor.Visit(firstArg) : null,
+                            instruction.asmArgument(1) is {} secondArg ? visitor.Visit(secondArg) : null
                         ));
                         break;
                     case YabalParser.AsmLabelContext label:

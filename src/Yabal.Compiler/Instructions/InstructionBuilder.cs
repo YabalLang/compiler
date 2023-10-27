@@ -287,7 +287,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
     {
         if (data.IsRight && data.Right > InstructionReference.MaxData)
         {
-            throw new ArgumentOutOfRangeException(nameof(data));
+            throw new ArgumentOutOfRangeException(nameof(data), $"Data must be less than {InstructionReference.MaxData} for instruction '{name}'");
         }
 
         if (!_instructions.TryGetValue(name, out var instruction))

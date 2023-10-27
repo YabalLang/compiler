@@ -167,8 +167,8 @@ public record Instruction(
 		"mult( 2=wa,eo,mu,fl & 3=ei", // Multiply
 		"div( 2=wa,eo,di,fl & 3=ei", // Divide
 		"jmp( 2=cr,aw & 3=rm,j & 4=ei", // Jump to address following instruction
-		"jmpz( 2=cr,aw & 3=ce,rm & 4=j | zeroflag & 5=ei", // Jump if zero to address following instruction
-		"jmpc( 2=cr,aw & 3=ce,rm & 4=j | carryflag & 5=ei", // Jump if carry to address following instruction
+		"jmpz( 2=cr,aw & 3=rm,j | zeroflag & 4=ei", // Jump if zero to address following instruction
+		"jmpc( 2=cr,aw & 3=rm,j | carryflag & 4=ei", // Jump if carry to address following instruction
 		"jreg( 2=ra,j & 3=ei", // Jump to the address stored in Reg A
 		"ldain( 2=ra,aw & 3=wa,rm & 4=ei", // Use reg A as memory address, then copy value from memory into A
 		"staout( 2=ra,aw & 3=rb,wm & 4=ei", // Use reg A as memory address, then copy value from B into memory

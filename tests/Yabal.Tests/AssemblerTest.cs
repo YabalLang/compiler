@@ -1241,13 +1241,13 @@ public class AssemblerTest
                 asm {
                     LDIA @test
                     LDAIN
-                    STLGE 4095
+                    STLGE 0 4095
 
                     LDIA @test
                     LDIB 1
                     ADD
                     LDAIN
-                    STLGE 4096
+                    STLGE 0 4096
                 }
                 
                 return test
@@ -1352,7 +1352,7 @@ public class AssemblerTest
 
                 asm {
                     AIN @array
-                    STLGE 4095
+                    STLGE 0 4095
                 }
 
                 var array2 = stackalloc int[2]
@@ -1360,7 +1360,7 @@ public class AssemblerTest
 
                 asm {
                     AIN @array2
-                    STLGE 4096
+                    STLGE 0 4096
                 }
 
                 return array[0] + array2[1]
@@ -1398,7 +1398,7 @@ public class AssemblerTest
 
                 asm {
                     AIN @array
-                    STLGE 4096
+                    STLGE 0 4096
                 }
             }
 
@@ -1408,7 +1408,7 @@ public class AssemblerTest
 
                 asm {
                     AIN @array
-                    STLGE 4095
+                    STLGE 0 4095
                 }
 
                 return array[0]
@@ -1841,7 +1841,7 @@ public class AssemblerTest
             ticks[0] = () => {
                 asm {
                     LDIA 1
-                    STLGE 4000
+                    STLGE 0 4000
                 }
             }
             

@@ -19,7 +19,7 @@ typeList
 type
     : rawType                                           # DefaultType
     | type OpenCloseBracket                             # ArrayType
-    | Func Less (typeList Comma)? returnType Greater     # FunctionType
+    | Func Less (typeList Comma)? returnType Greater    # FunctionType
     ;
 
 returnType
@@ -154,10 +154,10 @@ asmItems
     ;
 
 asmStatementItem
-    : asmIdentifier asmArgument?   # AsmInstruction
-    | AsmHere asmArgument?         # AsmRawValue
-    | asmIdentifier AsmColon       # AsmLabel
-    | AsmComment                   # AsmComment
+    : asmIdentifier asmArgument? asmArgument?   # AsmInstruction
+    | AsmHere asmArgument?                      # AsmRawValue
+    | asmIdentifier AsmColon                    # AsmLabel
+    | AsmComment                                # AsmComment
     ;
 
 asmArgument

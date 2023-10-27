@@ -10,19 +10,24 @@ public record AsmInteger(int Value) : AsmArgument;
 
 public record AsmLabel(string Name) : AsmArgument;
 
-public record AsmInstruction(SourceRange Range, string Name, AsmArgument? Value) : AsmStatement(Range), IAsmArgument;
+public record AsmInstruction(SourceRange Range, string Name, AsmArgument? FirstValue, AsmArgument? SecondValue) : AsmStatement(Range), IAsmArgument;
 
 public record AsmComment(SourceRange Range, string Text) : AsmStatement(Range);
 
 public record AsmDefineLabel(SourceRange Range, string Name) : AsmStatement(Range);
 
-public record AsmRawValue(SourceRange Range, AsmArgument Value) : AsmStatement(Range), IAsmArgument;
+public record AsmRawValue(SourceRange Range, AsmArgument FirstValue) : AsmStatement(Range), IAsmArgument
+{
+    public AsmArgument? SecondValue => null;
+}
 
 public abstract record AsmStatement(SourceRange Range);
 
 public interface IAsmArgument
 {
-    AsmArgument? Value { get; }
+    AsmArgument? FirstValue { get; }
+
+    AsmArgument? SecondValue { get; }
 }
 
 public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : Expression(Range)
@@ -31,9 +36,15 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
     {
         foreach (var statement in Statements.OfType<IAsmArgument>())
         {
-            if (statement.Value is AsmVariable value && builder.TryGetVariable(value.Identifier.Name, out var variable))
+            if (statement.FirstValue is AsmVariable firstValue && builder.TryGetVariable(firstValue.Identifier.Name, out var variable))
             {
-                variable.AddReference(value.Identifier);
+                variable.AddReference(firstValue.Identifier);
+            }
+
+
+            if (statement.SecondValue is AsmVariable secondValue && builder.TryGetVariable(secondValue.Identifier.Name, out variable))
+            {
+                variable.AddReference(secondValue.Identifier);
             }
         }
     }
@@ -87,7 +98,7 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
         {
             switch (statement)
             {
-                case AsmRawValue {Value: var value}:
+                case AsmRawValue {FirstValue: var value}:
                     builder.EmitRaw(GetPointerOrData(value) ?? 0);
                     break;
                 case AsmDefineLabel { Name: var name }:
@@ -96,12 +107,13 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                 case AsmComment { Text: var text }:
                     builder.EmitComment(text);
                     break;
-                case AsmInstruction(var range, var nameValue, var argument):
+                case AsmInstruction(var range, var nameValue, var firstValue, var secondValue):
                 {
                     var name = nameValue.ToUpperInvariant();
                     var instruction = Instruction.Default.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-                    var argValue = GetPointerOrData(argument);
+                    var argFirstValue = GetPointerOrData(firstValue);
+                    var argSecondValue = GetPointerOrData(secondValue);
 
                     BinaryOperator? binaryOperator = name switch
                     {
@@ -118,13 +130,13 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                     {
                         var skipLabel = builder.CreateLabel();
 
-                        if (!argValue.HasValue)
+                        if (!argFirstValue.HasValue)
                         {
                             builder.AddError(ErrorLevel.Error, range, ErrorMessages.BinaryInstructionRequiresLabel);
-                            argValue = skipLabel;
+                            argFirstValue = skipLabel;
                         }
 
-                        BinaryExpression.Jump(binaryOperator.Value, builder, skipLabel, argValue.Value);
+                        BinaryExpression.Jump(binaryOperator.Value, builder, skipLabel, argFirstValue.Value);
                         builder.Mark(skipLabel);
                         continue;
                     }
@@ -135,38 +147,49 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                         continue;
                     }
 
-                    if (bank != 0 &&
-                        instruction.MicroInstructions.Skip(4).Any(mi => mi.IsCR && mi.IsAW) &&
-                        instruction.MicroInstructions.Skip(4).Any(mi => mi.IsRM))
+                    var readsInstructionData = instruction.MicroInstructions.Any(mi => mi.IsIR);
+                    var switchesBank = instruction.MicroInstructions.Any(mi => mi.IsIR && mi.IsBNK);
+                    var readsLargeValue = instruction.MicroInstructions.Skip(4).Any(mi => mi.IsCR && mi.IsAW) &&
+                                          instruction.MicroInstructions.Skip(4).Any(mi => mi.IsRM);
+
+                    if (switchesBank)
+                    {
+                        bank = (argFirstValue?.IsRight ?? false) ? argFirstValue.Value.Right : 0;
+                        lastBankSwitch = range;
+                    }
+                    else if (bank != 0 && readsLargeValue)
                     {
                         builder.AddError(ErrorLevel.Error, range, ErrorMessages.InstructionBankSwitched);
                     }
 
-                    if (!argValue.HasValue)
+                    if (!argFirstValue.HasValue)
                     {
                         builder.Emit(name);
                         continue;
                     }
 
-                    if (bank > 0 && argValue.Value.IsLeft)
+                    if (bank > 0 && argFirstValue.Value.IsLeft)
                     {
                         builder.AddError(ErrorLevel.Error, range, ErrorMessages.PointerBankSwitched);
                     }
 
-                    if (instruction.MicroInstructions.Any(mi => mi.IsIR))
+                    if (readsInstructionData && readsLargeValue)
                     {
-                        if (name == "BNK")
-                        {
-                            bank = argValue.Value.IsRight ? argValue.Value.Right : 0;
-                            lastBankSwitch = range;
-                        }
+                        builder.Emit(name, argFirstValue.Value);
 
-                        builder.Emit(name, argValue.Value);
+                        if (argSecondValue is not null)
+                        {
+                            builder.EmitRaw(argSecondValue.Value);
+                        }
+                    }
+                    else if (readsInstructionData)
+                    {
+                        builder.Emit(name, argFirstValue.Value);
                     }
                     else
                     {
                         builder.Emit(name);
-                        builder.EmitRaw(argValue.Value);
+                        builder.EmitRaw(argFirstValue.Value);
                     }
 
                     break;

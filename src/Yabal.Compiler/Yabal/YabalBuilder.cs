@@ -830,6 +830,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         AddHeader(builder);
         builder.AddRange(_builder);
+        builder.Jump(0xFFFF);
         AddStrings(builder);
 
         return builder.Build(offset);
