@@ -849,6 +849,43 @@ public class AssemblerTest
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task WriteCharsFunc(bool optimize)
+    {
+        const string code = """
+            var chars = create_pointer(0xD12A, 1)
+
+            void write(int[] data, int size) {
+                for (int i = 0; i < size; i++) {
+                    chars[i] = data[i]
+                }
+            }
+
+            var message = "TEST"
+            write(message, sizeof(message))
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        var offset = 0xD12A;
+        var bank = cpu.Banks[1];
+        var str = builder.GetString("TEST");
+
+        Assert.Equal(offset, cpu.Memory[builder.GetVariable("chars").Pointer.Address]);
+        Assert.Equal(str.Address, cpu.Memory[builder.GetVariable("message").Pointer.Address]);
+
+        Assert.Equal(Character.CharToInt['T'], bank[offset]);
+        Assert.Equal(Character.CharToInt['E'], bank[offset + 1]);
+        Assert.Equal(Character.CharToInt['S'], bank[offset + 2]);
+        Assert.Equal(Character.CharToInt['T'], bank[offset + 3]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ReadFromBank(bool optimize)
     {
         const string code = """

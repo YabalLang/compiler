@@ -2,13 +2,13 @@
 
 namespace Yabal.Ast;
 
-public record AsmArgument;
+public record AsmArgument(SourceRange Range);
 
-public record AsmVariable(Identifier Identifier) : AsmArgument;
+public record AsmVariable(SourceRange Range, Identifier Identifier) : AsmArgument(Range);
 
-public record AsmInteger(int Value) : AsmArgument;
+public record AsmInteger(SourceRange Range, int Value) : AsmArgument(Range);
 
-public record AsmLabel(string Name) : AsmArgument;
+public record AsmLabel(SourceRange Range, string Name) : AsmArgument(Range);
 
 public record AsmInstruction(SourceRange Range, string Name, AsmArgument? FirstValue, AsmArgument? SecondValue) : AsmStatement(Range), IAsmArgument;
 
@@ -182,14 +182,22 @@ public record AsmExpression(SourceRange Range, List<AsmStatement> Statements) : 
                             builder.EmitRaw(argSecondValue.Value);
                         }
                     }
-                    else if (readsInstructionData)
-                    {
-                        builder.Emit(name, argFirstValue.Value);
-                    }
                     else
                     {
-                        builder.Emit(name);
-                        builder.EmitRaw(argFirstValue.Value);
+                        if (secondValue != null)
+                        {
+                            builder.AddError(ErrorLevel.Error, secondValue.Range, "Instruction does not support second value");
+                        }
+
+                        if (readsInstructionData)
+                        {
+                            builder.Emit(name, argFirstValue.Value);
+                        }
+                        else
+                        {
+                            builder.Emit(name);
+                            builder.EmitRaw(argFirstValue.Value);
+                        }
                     }
 
                     break;

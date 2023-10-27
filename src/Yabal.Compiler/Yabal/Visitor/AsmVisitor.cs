@@ -13,16 +13,16 @@ public class AsmArgumentVisitor : YabalParserBaseVisitor<AsmArgument>
 
     public override AsmArgument VisitAsmInteger(YabalParser.AsmIntegerContext context)
     {
-        return new AsmInteger(YabalVisitor.ParseInt(context.GetText()));
+        return new AsmInteger(SourceRange.From(context, _file), YabalVisitor.ParseInt(context.GetText()));
     }
 
     public override AsmArgument VisitAsmAddress(YabalParser.AsmAddressContext context)
     {
-        return new AsmVariable(new Identifier(SourceRange.From(context, _file), context.asmIdentifier().GetText()));
+        return new AsmVariable(SourceRange.From(context, _file), new Identifier(SourceRange.From(context, _file), context.asmIdentifier().GetText()));
     }
 
     public override AsmArgument VisitAsmLabelReference(YabalParser.AsmLabelReferenceContext context)
     {
-        return new AsmLabel(context.asmIdentifier().GetText());
+        return new AsmLabel(SourceRange.From(context, _file), context.asmIdentifier().GetText());
     }
 }

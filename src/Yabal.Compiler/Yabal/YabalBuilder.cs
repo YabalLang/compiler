@@ -928,9 +928,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
             return;
         }
 
-        var endLabel = builder.CreateLabel("End");
-        builder.Jump(endLabel);
-
         foreach (var (value, pointer) in _strings)
         {
             builder.Mark(pointer);
@@ -970,8 +967,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 builder.EmitRaw(content[i]);
             }
         }
-
-        builder.Mark(endLabel);
     }
 
     public void DeclareFunction(Function function)
