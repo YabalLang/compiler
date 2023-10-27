@@ -108,18 +108,13 @@ public sealed partial class Cpu<THandler> : IDisposable
         var steps = 0;
         var i = 0;
 
-        fetch_memory:
-        var activeBankId = _context.Bank;
-        var activeBank = Banks[activeBankId];
         var programMemory = Banks[0];
 
-        fixed (int* bankPointer = activeBank.Data)
         fixed (InstructionReference* instructionPointer = programMemory.Instruction)
         {
             var context = new StepContext(
+                Banks,
                 _context,
-                activeBank,
-                bankPointer,
                 instructionPointer,
                 _handler
             );
@@ -137,6 +132,7 @@ public sealed partial class Cpu<THandler> : IDisposable
                         break;
                     }
 
+                    context.Bus = 0;
                     context.ProgramCounter += 1;
 
                     // Get instruction
@@ -171,12 +167,6 @@ public sealed partial class Cpu<THandler> : IDisposable
 
                     Step(ref context);
                     steps++;
-
-                    if (context.Bank != activeBankId)
-                    {
-                        // Bank changed, so the pointer should be updated
-                        goto fetch_memory;
-                    }
                 }
             }
             finally
@@ -245,8 +235,9 @@ public sealed partial class Cpu<THandler> : IDisposable
 
     private unsafe ref struct StepContext
     {
-        private readonly CpuMemory<THandler> _memory;
-        private readonly int* _memoryPointer;
+        private CpuMemory<THandler> _memory;
+        private Span<int> _memoryPointer;
+        private readonly CpuMemory<THandler>[] _banks;
         private readonly InstructionReference* _instructionPointer;
 
         public int InstructionId;
@@ -264,14 +255,14 @@ public sealed partial class Cpu<THandler> : IDisposable
         public int Bank;
 
         public StepContext(
+            CpuMemory<THandler>[] banks,
             CpuContext context,
-            CpuMemory<THandler> memory,
-            int* memoryPointer,
             InstructionReference* instructionPointer,
             Handler handler)
         {
-            _memory = memory;
-            _memoryPointer = memoryPointer;
+            _banks = banks;
+            _memory = banks[context.Bank];
+            _memoryPointer = _memory.Data.AsSpan();
             _instructionPointer = instructionPointer;
             Handler = handler;
             A = context.A;
@@ -286,17 +277,28 @@ public sealed partial class Cpu<THandler> : IDisposable
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetBank(int id)
+        {
+            if (Bank != id)
+            {
+                Bank = id;
+                _memory = _banks[id];
+                _memoryPointer = _memory.Data.AsSpan();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Get(int id)
         {
-            return *(_memoryPointer + id);
+            return _memoryPointer[id];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(int address, int value)
         {
-            *(_memoryPointer + address) = value;
+            _memoryPointer[address] = value;
             _memory.OnChange(address, value);
-            *(_instructionPointer + address) = default;
+            _instructionPointer[address] = default;
         }
 
         public CpuContext ToCpuContext()

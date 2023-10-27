@@ -13,18 +13,18 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
-        builder.SetA_Large(_pointer);
+        builder.SetA(_pointer);
         builder.StoreA(pointer);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
     {
-        builder.SetA_Large(_pointer);
+        builder.SetA(_pointer);
     }
 
     public override void StoreAddressInA(YabalBuilder builder, int offset)
     {
-        builder.SetA_Large(_pointer.Add(offset));
+        builder.SetA(_pointer.Add(offset));
     }
 
     public override bool OverwritesB => false;

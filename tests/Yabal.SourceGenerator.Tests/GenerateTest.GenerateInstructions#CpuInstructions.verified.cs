@@ -488,10 +488,8 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
-            // IR
-            context.Bus = context.InstructionData;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
         // Step 3
         {
@@ -506,10 +504,17 @@ public partial class Cpu<THandler>
             context.Bus = context.Get(context.MemoryIndex);
             // AW
             context.MemoryIndex = context.Bus;
+        }
+        // Step 5
+        {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.SetBank(context.Bus);
             // CE
             context.ProgramCounter += 1;
         }
-        // Step 5
+        // Step 6
         {
             // RM
             context.Bus = context.Get(context.MemoryIndex);
@@ -523,10 +528,8 @@ public partial class Cpu<THandler>
     {
         // Step 2
         {
-            // IR
-            context.Bus = context.InstructionData;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
         // Step 3
         {
@@ -541,10 +544,17 @@ public partial class Cpu<THandler>
             context.Bus = context.Get(context.MemoryIndex);
             // AW
             context.MemoryIndex = context.Bus;
+        }
+        // Step 5
+        {
+            // IR
+            context.Bus = context.InstructionData;
+            // BNK
+            context.SetBank(context.Bus);
             // CE
             context.ProgramCounter += 1;
         }
-        // Step 5
+        // Step 6
         {
             // RA
             context.Bus = context.A;
@@ -561,7 +571,7 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.InstructionData;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
         // Step 3
         {
@@ -788,7 +798,7 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.InstructionData;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
     }
 
@@ -810,7 +820,7 @@ public partial class Cpu<THandler>
             // RC
             context.Bus = context.C;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
     }
 
@@ -822,7 +832,7 @@ public partial class Cpu<THandler>
             // IR
             context.Bus = context.InstructionData;
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         }
         // Step 3
         {

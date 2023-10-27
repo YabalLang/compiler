@@ -182,7 +182,7 @@ public partial class Cpu<THandler>
             context.MemoryIndex = context.Bus;
         {{- else if step.MicroInstruction.IsBNK }}
             // BNK
-            context.Bank = context.Bus;
+            context.SetBank(context.Bus);
         {{- else if step.MicroInstruction.IsVBUF }}
             // VBUF
             context.Handler.FlushScreen();

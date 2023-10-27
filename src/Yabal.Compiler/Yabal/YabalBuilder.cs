@@ -1160,21 +1160,6 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         }
 
     }
-    
-    public void LoadPointer(Pointer pointer)
-    {
-        if (pointer.Bank == 0)
-        {
-            LoadA_Large(pointer);
-        }
-        else
-        {
-            SetA_Large(pointer);
-            SetBank(pointer.Bank);
-            LoadA_FromAddressUsingA();
-            SetBank(0);
-        }
-    }
 
     public void StorePointer(Pointer pointer)
     {

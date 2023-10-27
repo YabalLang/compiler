@@ -32,18 +32,7 @@ public abstract class InstructionBuilderBase
 
         if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
-            if (bank > 0)
-            {
-                SetA_Large(address);
-
-                SetBank(bank);
-                LoadA_FromAddressUsingA();
-                SetBank(0);
-            }
-            else
-            {
-                LoadA_Large(address);
-            }
+            LoadA_Large(address);
         }
         else
         {
@@ -92,19 +81,7 @@ public abstract class InstructionBuilderBase
 
         if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
-            if (bank > 0)
-            {
-                SwapA_B();
-                SetA_Large(address);
-
-                SetBank(bank);
-                StoreB_ToAddressInA();
-                SetBank(0);
-            }
-            else
-            {
-                StoreA_Large(address);
-            }
+            StoreA_Large(address);
         }
         else
         {
@@ -158,19 +135,22 @@ public abstract class InstructionBuilderBase
 
     public void StoreA_Large(PointerOrData address)
     {
-        if (address.Left?.Bank > 0)
-        {
-            throw new InvalidOperationException();
-        }
+        var bank = address.Left?.Bank ?? 0;
 
-        Emit("STLGE");
+        Emit("STLGE", bank);
         EmitRaw(address);
+
+        if (bank > 0) SetBank(0);
     }
 
     public void LoadA_Large(PointerOrData address)
     {
-        Emit("LDLGE");
+        var bank = address.Left?.Bank ?? 0;
+
+        Emit("LDLGE", bank);
         EmitRaw(address);
+
+        if (bank > 0) SetBank(0);
     }
 
     public void SwapA_B() => Emit("SWP");

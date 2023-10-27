@@ -172,8 +172,8 @@ public record Instruction(
 		"jreg( 2=ra,j & 3=ei", // Jump to the address stored in Reg A
 		"ldain( 2=ra,aw & 3=wa,rm & 4=ei", // Use reg A as memory address, then copy value from memory into A
 		"staout( 2=ra,aw & 3=rb,wm & 4=ei", // Use reg A as memory address, then copy value from B into memory
-		"ldlge( 2=bnk,ir & 3=cr,aw & 4=ce,rm,aw & 5=rm,wa & 6=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
-		"stlge( 2=bnk,ir & 3=cr,aw & 4=ce,rm,aw & 5=ra,wm & 6=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
+		"ldlge( 2=bnk & 3=cr,aw & 4=rm,aw & 5=bnk,ir,ce & 6=rm,wa & 7=ei", // Use value directly after counter as address, then copy value from memory to reg A and advance counter by 2
+		"stlge( 2=bnk & 3=cr,aw & 4=rm,aw & 5=bnk,ir,ce & 6=ra,wm & 7=ei", // Use value directly after counter as address, then copy value from reg A to memory and advance counter by 2
 		"ldw( 2=bnk,ir & 3=cr,aw & 4=ce,rm,wa & 5=ei", // Load value directly after counter into A, and advance counter by 2
 		"swp( 2=ra,wc & 3=wa,rb & 4=rc,wb & 5=ei", // Swap register A and register B (this will overwrite the contents of register C, using it as a temporary swap area)
 		"swpc( 2=ra,wb & 3=wa,rc & 4=rb,wc & 5=ei", // Swap register A and register C (this will overwrite the contents of register B, using it as a temporary swap area)
