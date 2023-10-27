@@ -41,6 +41,11 @@ public sealed class YabalContext : IDisposable
     }
 }
 
+public class BuilderOptions
+{
+    public int StackAllocationStart { get; set; } = 61294;
+}
+
 public class YabalBuilder : InstructionBuilderBase, IProgram
 {
     private readonly TypeVisitor _visitor;
@@ -87,6 +92,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         _visitor = new TypeVisitor();
         _globalBlock = new BlockStack { IsGlobal = true };
+        Options = new BuilderOptions();
         Block = _globalBlock;
     }
 
@@ -114,9 +120,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _errors = parent._errors;
         BinaryOperators = parent.BinaryOperators;
         CastOperators = parent.CastOperators;
+        Options = parent.Options;
 
         Debug = parent.Debug;
     }
+
+    public BuilderOptions Options { get; }
 
     public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; }
 
@@ -485,7 +494,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         builder.JumpToA();
     }
 
-    public void Call(PointerOrData address, IReadOnlyList<Expression>? arguments = null, bool isReference = false)
+    public void Call(Either<InstructionLabel, Expression> address, IReadOnlyList<Expression>? arguments = null)
     {
         var hasArguments = arguments is { Count: > 0 };
         var hasReferenceArguments = arguments?.Any(a => a is IVariableSource) ?? false;
@@ -496,13 +505,13 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         {
             _builder.SetA_Large(setArguments);
         }
-        else if (isReference)
+        else if (address.IsLeft)
         {
-            _builder.LoadA(address);
+            _builder.SetA(address.Left);
         }
         else
         {
-            _builder.SetA(address);
+            address.Right.BuildExpression(this, false, null);
         }
 
         _builder.SwapA_C();
@@ -617,14 +626,14 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 sizes[size] = offset + 1;
             }
 
-            if (isReference)
+            if (address.IsLeft)
             {
-                _builder.LoadA(address);
-                _builder.JumpToA();
+                _builder.Jump(address.Left);
             }
             else
             {
-                _builder.Jump(address);
+                address.Right.BuildExpression(this, false, null);
+                _builder.JumpToA();
             }
         }
 
@@ -870,7 +879,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         if (hasFunction)
         {
-            var stackAllocStart = 61294;
+            var stackAllocStart = Options.StackAllocationStart;
             var stackStart = stackAllocStart - (1 + Stack.Sum(i => i.Size) * 16);
 
             builder.Mark(_stackPointer);
@@ -1083,12 +1092,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                 if (variable.IsDirectReference)
                 {
                     _builder.SetA(valuePointer);
-                    pointer.StoreA(this);
+                    _builder.StoreA(pointer);
                 }
                 else
                 {
                     _builder.LoadA(valuePointer);
-                    pointer.StoreA(this);
+                    _builder.StoreA(pointer);
                 }
 
                 break;
@@ -1253,7 +1262,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     {
         if (target.IsLeft)
         {
-            target.Left.StoreA(this);
+            StoreA((PointerOrData) target.Left);
         }
         else if (!target.Right.OverwritesB)
         {
@@ -1282,7 +1291,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
     {
         if (target.IsLeft)
         {
-            target.Left.LoadToA(this);
+            LoadA((PointerOrData) target.Left);
         }
         else
         {

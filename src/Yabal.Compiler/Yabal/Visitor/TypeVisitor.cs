@@ -111,7 +111,7 @@ public class TypeVisitor : YabalParserBaseVisitor<LanguageType>
             StaticType.Function,
             FunctionType: new LanguageFunction(
                 VisitReturnType(context.returnType()),
-                context.typeList().type().Select(VisitType).ToList()
+                context.typeList()?.type().Select(VisitType).ToList() ?? new List<LanguageType>()
             )
         );
     }

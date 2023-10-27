@@ -1,6 +1,6 @@
 namespace Yabal.Ast;
 
-public record CreatePointerExpression(SourceRange Range, Expression Value, int BankValue, LanguageType ElementType) : AddressExpression(Range), IConstantValue, IPointerSource
+public record CreatePointerExpression(SourceRange Range, Expression Value, int BankValue, LanguageType ElementType) : AddressExpression(Range), IConstantValue, IBankSource
 {
     public override void Initialize(YabalBuilder builder)
     {
@@ -10,12 +10,12 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
         Value.BuildExpression(builder, false, null);
-        pointer.StoreA(builder);
+        builder.StoreA(pointer);
 
         if (suggestedType.Size == 2)
         {
             builder.SetA(1);
-            pointer.StoreA(builder, offset: 1);
+            builder.StoreA(pointer.Add(1));
         }
     }
 
@@ -63,5 +63,5 @@ public record CreatePointerExpression(SourceRange Range, Expression Value, int B
         ? new AbsolutePointer(value, BankValue)
         : null;
 
-    int IPointerSource.Bank => BankValue;
+    int IBankSource.Bank => BankValue;
 }

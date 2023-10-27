@@ -971,7 +971,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
     {
         return new StackAllocationExpression(
             SourceRange.From(context, _file),
-            _typeVisitor.VisitType(context.type()),
+            _typeVisitor.Visit(context.type()),
             VisitExpression(context.expression())
         );
     }

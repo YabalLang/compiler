@@ -156,7 +156,8 @@ var build = new Command(
 {
     filePathOption,
     outOption,
-    formatOption
+    formatOption,
+    debugOption
 };
 
 build.SetHandler(Build);
@@ -178,16 +179,17 @@ async Task Build(InvocationContext ctx)
 
     var outPath = ctx.ParseResult.GetValueForOption(outOption);
     var formats = ctx.ParseResult.GetValueForOption(formatOption) ?? new List<OutputFormat>();
+    var debug = ctx.ParseResult.GetValueForOption(debugOption);
 
     if (formats.Count == 0)
     {
         formats.Add(OutputFormat.Assembly);
     }
 
-    await BuildOutput(path.Info, outPath, formats);
+    await BuildOutput(path.Info, outPath, formats, debug);
 }
 
-async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> formats)
+async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> formats, bool debug)
 {
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
@@ -195,7 +197,12 @@ async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> 
     using var context = new YabalContext(fs)
         .AddFileLoader(FileType.Font, FontLoader.Instance)
         .AddFileLoader(FileType.Image, ImageLoader.Instance);
-    var builder = new YabalBuilder(context);
+
+    var builder = new YabalBuilder(context)
+    {
+        Debug = debug
+    };
+
     await builder.CompileCodeAsync(code, file: uri);
     PrintErrors(uri, builder.Errors, code);
 
@@ -330,7 +337,7 @@ async Task Execute(InvocationContext ctx)
             return;
         }
 
-        await BuildOutput(path.Info, null, new List<OutputFormat> { OutputFormat.Assembly });
+        await BuildOutput(path.Info, null, new List<OutputFormat> { OutputFormat.Assembly }, debug);
         await RunNativeAsync(ctx.Console, fileName, path);
 
         return;

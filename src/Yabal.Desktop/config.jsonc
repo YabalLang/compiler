@@ -24,7 +24,7 @@
   "Memory": {
     // Max amount of memory in bytes.
     "Size": "0xFFFF",
-    "Banks": 5,
+    "Banks": 10,
 
     // Mapping of device in memory.
     "Devices": {
@@ -32,7 +32,7 @@
         "Character": [1, "0xD12A"],
         "Keyboard": [1, "0xD0FC"],
         "Mouse": [1, "0xD0FD"],
-        "Screen": [1, "0xD26F"],
+        "Screen": [1, "0xD26E"],
     }
   }
 }

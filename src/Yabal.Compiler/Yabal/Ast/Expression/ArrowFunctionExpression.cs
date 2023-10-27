@@ -7,10 +7,13 @@ public record ArrowFunctionExpression(
 	SourceRange Range,
 	List<Identifier> Identifiers,
 	BlockStatement Body
-) : Expression(Range), ITypeExpression
+) : Expression(Range), ITypeExpression, IBankSource, IExpressionToB
 {
+	private bool _didBuild = false;
 	private FunctionDeclarationStatement _declarationStatement = null!;
 	private LanguageFunction? _typeFunctionType;
+
+	public Function Function => _declarationStatement.Function;
 
 	public override void Initialize(YabalBuilder builder)
 	{
@@ -39,17 +42,28 @@ public record ArrowFunctionExpression(
 		_declarationStatement.Function.MarkUsed();
 	}
 
+	private void Build(YabalBuilder builder)
+	{
+		if (_didBuild)
+		{
+			return;
+		}
+
+		_declarationStatement.Build(builder);
+		_didBuild = true;
+	}
+
 	public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
 	{
-		_declarationStatement.Build(builder);
+		Build(builder);
 
 		builder.SetA(_declarationStatement.Function.Label);
-		pointer.StoreA(builder);
+		builder.StoreA(pointer);
 	}
 
 	protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
 	{
-		_declarationStatement.Build(builder);
+		Build(builder);
 
 		builder.SetA(_declarationStatement.Function.Label);
 	}
@@ -64,7 +78,8 @@ public record ArrowFunctionExpression(
 		return new ArrowFunctionExpression(Range, Identifiers, Body.Optimize())
 		{
 			_declarationStatement = _declarationStatement.CloneStatement(),
-			_typeFunctionType = _typeFunctionType
+			_typeFunctionType = _typeFunctionType,
+			_didBuild = _didBuild
 		};
 	}
 
@@ -73,7 +88,19 @@ public record ArrowFunctionExpression(
 		return new ArrowFunctionExpression(Range, Identifiers, Body.Optimize())
 		{
 			_declarationStatement = _declarationStatement?.Optimize()!,
-			_typeFunctionType = _typeFunctionType
+			_typeFunctionType = _typeFunctionType,
+			_didBuild = _didBuild
 		};
 	}
+
+	int IBankSource.Bank => 0;
+
+	public void BuildExpressionToB(YabalBuilder builder)
+	{
+		Build(builder);
+
+		builder.SetB(_declarationStatement.Function.Label);
+	}
+
+	bool IExpressionToB.OverwritesA => false;
 }

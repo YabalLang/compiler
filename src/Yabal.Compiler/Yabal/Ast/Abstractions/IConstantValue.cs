@@ -11,9 +11,14 @@ public interface IConstantValue
     void StoreConstantValue(Span<int> buffer);
 }
 
-public interface IPointerSource : IExpression
+public interface IBankSource : IExpression
 {
     int Bank { get; }
+}
+
+public interface IPointerSource : IExpression
+{
+    Pointer? Pointer { get; }
 }
 
 public interface IVariableSource : IExpression

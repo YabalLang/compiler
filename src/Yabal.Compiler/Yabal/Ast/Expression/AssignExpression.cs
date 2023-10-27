@@ -7,7 +7,17 @@ public record AssignExpression(SourceRange Range, AssignableExpression Object, E
         Object.Initialize(builder);
         Value.Initialize(builder);
 
+        if (Value is ITypeExpression typeExpression)
+        {
+            typeExpression.Initialize(builder, Object.Type);
+        }
+
         Object.MarkModified();
+
+        if (Value is ArrowFunctionExpression arrowFunction)
+        {
+            arrowFunction.Function.MarkUsed();
+        }
     }
 
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)

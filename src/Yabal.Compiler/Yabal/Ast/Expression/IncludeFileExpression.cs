@@ -2,7 +2,7 @@
 
 namespace Yabal.Ast;
 
-public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue, IPointerSource
+public record IncludeFileExpression(SourceRange Range, string Path, FileType FileType) : Expression(Range), IConstantValue, IPointerSource, IBankSource
 {
     private FileAddress _address = null!;
     private readonly LanguageType _type = LanguageType.Pointer(LanguageType.Integer);
@@ -15,7 +15,7 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
         builder.SetA_Large(_address.Pointer);
-        pointer.StoreA(builder);
+        builder.StoreA(pointer);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
@@ -43,7 +43,8 @@ public record IncludeFileExpression(SourceRange Range, string Path, FileType Fil
         };
     }
 
-    int IPointerSource.Bank => 0;
+    int IBankSource.Bank => 0;
+    Pointer IPointerSource.Pointer => _address.Pointer;
 }
 
 public enum FileType

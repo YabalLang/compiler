@@ -2,7 +2,7 @@
 
 namespace Yabal.Ast;
 
-public record StringExpression(SourceRange Range, string Value) : AddressExpression(Range), IConstantValue, IPointerSource
+public record StringExpression(SourceRange Range, string Value) : AddressExpression(Range), IConstantValue, IPointerSource, IBankSource
 {
     private InstructionPointer _pointer = null!;
 
@@ -14,7 +14,7 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
     public override void BuildExpressionToPointer(YabalBuilder builder, LanguageType suggestedType, Pointer pointer)
     {
         builder.SetA_Large(_pointer);
-        pointer.StoreA(builder);
+        builder.StoreA(pointer);
     }
 
     protected override void BuildExpressionCore(YabalBuilder builder, bool isVoid, LanguageType? suggestedType)
@@ -53,7 +53,7 @@ public record StringExpression(SourceRange Range, string Value) : AddressExpress
 
     public override int? Bank => 0;
 
-    int IPointerSource.Bank => 0;
+    int IBankSource.Bank => 0;
 
     public override bool DirectCopy => false;
 }

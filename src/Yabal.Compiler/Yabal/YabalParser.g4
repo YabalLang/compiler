@@ -19,7 +19,7 @@ typeList
 type
     : rawType                                           # DefaultType
     | type OpenCloseBracket                             # ArrayType
-    | Func Less (typeList Comma) returnType Greater     # FunctionType
+    | Func Less (typeList Comma)? returnType Greater     # FunctionType
     ;
 
 returnType
@@ -253,8 +253,8 @@ variableDeclaration
     ;
 
 arrowFunction
-    : OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow expression
-    | OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow blockStatement
+    : OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow blockStatement
+    | OpenBrace (identifierName (Comma identifierName)*)? CloseBrace Arrow expression
     ;
 
 operatorName

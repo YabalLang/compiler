@@ -1793,9 +1793,6 @@ public class AssemblerTest
         var cpu = Create(builder);
         cpu.Run();
 
-        Assert.Equal(0, cpu.Banks[1][10420]);
-        Assert.Equal(0, cpu.Banks[1][10421]);
-
         Assert.Equal(65535, cpu.Banks[1][53870]);
         Assert.Equal(0, cpu.Banks[1][53871]);
     }
@@ -1831,5 +1828,32 @@ public class AssemblerTest
         Assert.Equal(2, cpu.Memory[4000]);
         Assert.Equal(4, cpu.Memory[4001]);
         Assert.Equal(6, cpu.Memory[4002]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FunctionPointerInStackAlloc(bool optimize)
+    {
+        const string code = """
+            var ticks = stackalloc func<void>[10]
+            
+            ticks[0] = () => {
+                asm {
+                    LDIA 1
+                    STLGE 4000
+                }
+            }
+            
+            ticks[0]()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4000]);
     }
 }

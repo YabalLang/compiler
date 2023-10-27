@@ -18,23 +18,14 @@ public class InstructionBuildResult : IProgram
 
     public int Length => _references.Count;
 
-    public void ToAssembly(TextWriter writer, bool addComments = false, bool htmlHighlight = false)
+    public void ToAssembly(TextWriter writer, bool addComments = false)
     {
-        var i = 0;
-
         foreach (var either in _references)
         {
             if (either is { IsLeft: true })
             {
                 if (addComments)
                 {
-                    if (htmlHighlight)
-                    {
-                        writer.Write(@"<div class=""asm-line asm-pointer-line"">");
-                        writer.Write(@"<span class=""asm-line-number""></span>");
-                        writer.Write(@"<span class=""asm-comment"">");
-                    }
-
                     writer.Write(", ");
                     writer.Write(either.Left is InstructionLabel ? "label " : "reference ");
 
@@ -48,31 +39,14 @@ public class InstructionBuildResult : IProgram
                     }
 
                     writer.WriteLine();
-
-                    if (htmlHighlight)
-                    {
-                        writer.Write(@"</span>");
-                        writer.Write(@"</div>");
-                    }
                 }
 
                 continue;
             }
 
-            i++;
-
-            if (htmlHighlight)
-            {
-                writer.Write(@"<div class=""asm-line asm-instruction-line"">");
-
-                writer.Write(@"<span class=""asm-line-number"">");
-                writer.Write(i.ToString());
-                writer.Write(@"</span>");
-            }
-
             var (instructionRef, pointer, raw, comment) = either.Right;
 
-            if (raw && pointer is null && comment is not null)
+            if (!raw && !instructionRef.HasValue && pointer is null && comment is not null && comment.StartsWith(", "))
             {
                 writer.WriteLine(comment);
                 continue;
@@ -85,16 +59,8 @@ public class InstructionBuildResult : IProgram
                     throw new InvalidOperationException("Invalid instruction");
                 }
 
-                if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
-
                 writer.Write("HERE ");
-
-                if (htmlHighlight) writer.Write(@"</span>");
-                if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
-
                 writer.Write(pointer.Get(_pointerOffsets));
-
-                if (htmlHighlight) writer.Write(@"</span>");
             }
             else
             {
@@ -105,35 +71,19 @@ public class InstructionBuildResult : IProgram
 
                 if (raw)
                 {
-                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
-
                     writer.Write("HERE ");
-
-                    if (htmlHighlight) writer.Write(@"</span>");
-                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
-
                     writer.Write(instructionRef.Value.Raw);
-
-                    if (htmlHighlight) writer.Write(@"</span>");
                 }
                 else
                 {
                     var instruction = instructionRef.Value.Instruction;
 
-                    if (htmlHighlight) writer.Write(@"<span class=""asm-instruction"">");
-
                     writer.Write(instruction.Name);
-
-                    if (htmlHighlight) writer.Write(@"</span>");
 
                     if (instruction.MicroInstructions.Any(i => i.IsIR))
                     {
-                        if (htmlHighlight) writer.Write(@"<span class=""asm-instruction-data"">");
-
                         writer.Write(" ");
                         writer.Write(instructionRef.Value.Data);
-
-                        if (htmlHighlight) writer.Write(@"</span>");
                     }
                 }
             }
@@ -141,8 +91,6 @@ public class InstructionBuildResult : IProgram
 
             if (addComments && (comment != null || pointer != null))
             {
-                if (htmlHighlight) writer.Write(@"<span class=""asm-comment"">");
-
                 writer.Write(" , ");
                 if (pointer != null) writer.Write(pointer.Name);
 
@@ -151,19 +99,16 @@ public class InstructionBuildResult : IProgram
                     if (pointer != null) writer.Write(", ");
                     writer.Write(comment);
                 }
-
-                if (htmlHighlight) writer.Write(@"</span>");
             }
 
-            if (htmlHighlight) writer.Write(@"</div>");
             writer.WriteLine();
         }
     }
 
-    public string ToAssembly(bool addComments = false, bool htmlHighlight = false)
+    public string ToAssembly(bool addComments = false)
     {
         using var writer = new StringWriter();
-        ToAssembly(writer, addComments, htmlHighlight);
+        ToAssembly(writer, addComments);
         return writer.ToString();
     }
 

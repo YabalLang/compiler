@@ -1,6 +1,6 @@
 ﻿namespace Yabal.Ast;
 
-public abstract record AddressExpression(SourceRange Range) : AssignableExpression(Range)
+public abstract record AddressExpression(SourceRange Range) : AssignableExpression(Range), IPointerSource
 {
     public abstract Pointer? Pointer { get; }
 
@@ -106,7 +106,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                 builder.LoadB(variable.Pointer.Add(1));
                 builder.StoreB_ToAddressInA();
             }
-            else if (expression is AddressExpression { Pointer: { } valuePointer })
+            else if (expression is IPointerSource { Pointer: { } valuePointer })
             {
                 StoreAddressInA(builder);
                 builder.SetB_Large(valuePointer);
@@ -164,7 +164,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
                 return;
             }
 
-            if (expression is AddressExpression { Pointer: {} valuePointer })
+            if (expression is IPointerSource { Pointer: {} valuePointer })
             {
                 CopyFromPointer(builder, expression.Type, valuePointer, range);
                 return;
@@ -180,7 +180,7 @@ public abstract record AddressExpression(SourceRange Range) : AssignableExpressi
     {
         for (var i = 0; i < type.Size; i++)
         {
-            valuePointer.LoadToA(builder, i);
+            builder.LoadA(valuePointer.Add(i));
             StoreFromA(builder, i);
         }
 

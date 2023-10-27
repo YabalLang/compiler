@@ -79,7 +79,7 @@ public record BinaryExpression(SourceRange Range, BinaryOperator Operator, Expre
         else
         {
             BuildExpressionCore(builder, false, suggestedType);
-            pointer.StoreA(builder);
+            builder.StoreA(pointer);
         }
     }
 

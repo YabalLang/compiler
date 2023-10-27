@@ -86,12 +86,11 @@ public abstract class InstructionBuilderBase
         Emit("LDIB", value);
     }
 
-    public void StoreA(PointerOrData address, int? index = null)
+    public void StoreA(PointerOrData address)
     {
         var bank = address.Left?.Bank ?? 0;
 
-
-        if (!index.HasValue && address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
+        if (address is { IsLeft: true, Left.IsSmall: false } or { IsRight: true, Right: > InstructionReference.MaxData })
         {
             if (bank > 0)
             {
@@ -110,7 +109,7 @@ public abstract class InstructionBuilderBase
         else
         {
             if (bank > 0) SetBank(bank);
-            Emit("STA", address, index);
+            Emit("STA", address);
             if (bank > 0) SetBank(0);
         }
     }
@@ -456,7 +455,7 @@ public class InstructionBuilder : InstructionBuilderBase, IProgram
 
     public void EmitComment(string text)
     {
-        Add(new InstructionItem(null, null, true, text));
+        Add(new InstructionItem(null, null, false, text));
     }
 }
 

@@ -38,7 +38,7 @@ public record ArrayAccessExpression(SourceRange Range, AddressExpression Array, 
         for (var i = 0; i < suggestedType.Size; i++)
         {
             LoadValue(builder, i);
-            pointer.StoreA(builder, i);
+            builder.StoreA(pointer.Add(i));
         }
     }
 

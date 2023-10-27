@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 using Yabal.Devices;
+using Exception = System.Exception;
 
 namespace Yabal.Browser;
 
@@ -30,6 +31,16 @@ public static class Interop
 
 				var program = builder.Build();
 
+				foreach (var (range, errors) in builder.Errors)
+				{
+					Console.WriteLine(range);
+
+					foreach (var error in errors)
+					{
+						Console.WriteLine($" - {error.Level} {error.Message}");
+					}
+				}
+
 				data = program.ToArray();
 			}
 
@@ -39,10 +50,12 @@ public static class Interop
 				.WithCharacter()
 				.WithDebug()
 				.Create();
+
+			Start();
 		}
-		catch (Exception)
+		catch (Exception e)
 		{
-			Console.WriteLine("Failed to compile");
+			Console.WriteLine("Failed to compile: " + e.Message);
 		}
 	}
 
@@ -74,4 +87,7 @@ public static class Interop
 
 	[DllImport("NativeLib")]
 	public static extern unsafe void Halt();
+
+	[DllImport("NativeLib")]
+	public static extern unsafe void Start();
 }

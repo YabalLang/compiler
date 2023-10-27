@@ -38,7 +38,7 @@ public class HoverHandler : IHoverHandler
         sb.AppendLine($"Size: {size}  ");
         sb.AppendLine($"Variable address: {variable.Pointer.Address}  ");
 
-        if (variable.Initializer is AddressExpression { Pointer: {} pointer })
+        if (variable.Initializer is IPointerSource { Pointer: {} pointer })
         {
             sb.AppendLine($"Pointer address: {pointer.Address}  ");
             sb.AppendLine($"Pointer bank: {pointer.Bank}  ");

@@ -33,7 +33,7 @@ public record VariableDeclarationStatement(SourceRange Range, Identifier Name, b
             return;
         }
 
-        if (Value is IPointerSource createPointer)
+        if (Value is IBankSource createPointer)
         {
             createPointer.BuildExpression(builder, false, Type);
             builder.StoreA(Variable.Pointer);
