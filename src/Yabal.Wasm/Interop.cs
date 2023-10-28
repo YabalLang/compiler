@@ -55,7 +55,7 @@ public static class Interop
 		}
 		catch (Exception e)
 		{
-			Console.WriteLine("Failed to compile: " + e.Message);
+			Console.WriteLine("Failed to compile: " + e);
 		}
 	}
 
@@ -72,8 +72,9 @@ public static class Interop
 			cpu.Step(amount);
 			return cpu.ProgramCounter;
 		}
-		catch (Exception)
+		catch (Exception e)
 		{
+			Console.WriteLine("Failed to step: " + e);
 			cpu.Halt();
 			return -1;
 		}

@@ -126,8 +126,9 @@ public sealed partial class Cpu<THandler> : IDisposable
                     var index = context.ProgramCounter;
                     context.MemoryIndex = index;
 
-                    if (index >= 0x3FFE)
+                    if (index >= 0xFFFF)
                     {
+                        _handler.Halt();
                         _halt = true;
                         break;
                     }
@@ -236,7 +237,7 @@ public sealed partial class Cpu<THandler> : IDisposable
     private unsafe ref struct StepContext
     {
         private CpuMemory<THandler> _memory;
-        private Span<int> _memoryPointer;
+        private int* _memoryPointer;
         private readonly CpuMemory<THandler>[] _banks;
         private readonly InstructionReference* _instructionPointer;
 
@@ -262,7 +263,7 @@ public sealed partial class Cpu<THandler> : IDisposable
         {
             _banks = banks;
             _memory = banks[context.Bank];
-            _memoryPointer = _memory.Data.AsSpan();
+            _memoryPointer = (int*) Unsafe.AsPointer(ref _memory.Data[0]);
             _instructionPointer = instructionPointer;
             Handler = handler;
             A = context.A;
@@ -283,7 +284,7 @@ public sealed partial class Cpu<THandler> : IDisposable
             {
                 Bank = id;
                 _memory = _banks[id];
-                _memoryPointer = _memory.Data.AsSpan();
+                _memoryPointer = (int*) Unsafe.AsPointer(ref _memory.Data[0]);
             }
         }
 

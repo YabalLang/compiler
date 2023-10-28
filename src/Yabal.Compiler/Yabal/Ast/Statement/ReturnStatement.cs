@@ -10,6 +10,11 @@ public record ReturnStatement(SourceRange Range, Expression? Expression) : State
     {
         Expression?.Initialize(builder);
         ReturnType = builder.ReturnType;
+
+        if (ReturnType != null && Expression is ITypeExpression typeExpression)
+        {
+            typeExpression.Initialize(builder, ReturnType);
+        }
     }
 
     public override void Build(YabalBuilder builder)

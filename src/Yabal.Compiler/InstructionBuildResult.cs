@@ -114,7 +114,7 @@ public class InstructionBuildResult : IProgram
 
     public int[] ToArray()
     {
-        var array = new int[_length];
+        var array = new int[0xFFFF];
         var i = 0;
 
         foreach (var value in GetBytes())

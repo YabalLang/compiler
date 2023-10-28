@@ -9,13 +9,28 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
 
     public override void Build(YabalBuilder builder)
     {
-        Expression.BuildExpression(builder, true, null);
-
-        if (Expression is AddressExpression address and (IdentifierExpression or MemberExpression))
+        if (builder.Debug && Expression is CallExpression { Type.StaticType: not (StaticType.Void or StaticType.Unknown) } callExpression)
         {
-            address.ShowDebug(builder);
+            var temp = builder.GetTemporaryVariable(global: true, size: callExpression.Type.Size);
+
+            callExpression.BuildExpressionToPointer(builder, callExpression.Type, temp);
+
+            builder.AddVariableDebug(Range, callExpression.Type, temp);
+        }
+        else
+        {
+            Expression.BuildExpression(builder, true, null);
+
+            if (Expression is AddressExpression address and (IdentifierExpression or MemberExpression or ArrayAccessExpression))
+            {
+                address.ShowDebug(builder);
+            }
         }
     }
+
+    public bool ShowDebug => Expression is
+        (AddressExpression and (IdentifierExpression or MemberExpression or ArrayAccessExpression)) or
+        (CallExpression { Type.StaticType: not StaticType.Void });
 
     public override Statement CloneStatement()
     {
@@ -26,7 +41,7 @@ public record ExpressionStatement(SourceRange Range, Expression Expression) : St
     {
         return new ExpressionStatement(Range, Expression switch
         {
-            IdentifierExpression or MemberExpression => Expression,
+            IdentifierExpression or MemberExpression or ArrayAccessExpression or CallExpression => Expression,
             _ => Expression.Optimize(null)
         });
     }

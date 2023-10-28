@@ -736,7 +736,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
     public override Node VisitShiftExpression(YabalParser.ShiftExpressionContext context)
     {
-        var @operator = context.ShiftLeft() != null ? BinaryOperator.LeftShift : BinaryOperator.RightShift;
+        var @operator = context.Less()?.Length > 0 ? BinaryOperator.LeftShift : BinaryOperator.RightShift;
         return CreateBinary(context, context.expression(), @operator);
     }
 

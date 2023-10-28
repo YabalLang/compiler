@@ -1893,4 +1893,116 @@ public class AssemblerTest
 
         Assert.Equal(1, cpu.Memory[4000]);
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task FunctionPointerInFunction(bool optimize)
+    {
+        const string code = """
+            var screen = create_pointer(53870, 1)
+
+            void callback(func<void> cb) {
+                cb()
+            }
+
+            inline int get_color(int r, int g, int b) {
+                return (r / 8 << 10) + (g / 8 << 5) + (b / 8)
+            }
+
+            callback(() => {
+                screen[1] = get_color(255, 0, 0)
+            })
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(31744, cpu.Banks[1][53871]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TickExample(bool optimize)
+    {
+        const string code = """
+            var chars = create_pointer(0xD12A, 1)
+
+            var tick_callbacks = stackalloc func<void>[10]
+            var tick_callback_count = 0
+
+            // Register a callback
+            void register_tick_callback(func<void> callback) {
+                tick_callbacks[tick_callback_count++] = callback
+            }
+
+            // Call all the callbacks
+            void tick() {
+                for (int i = 0; i < tick_callback_count; i++) {
+                    tick_callbacks[i]()
+                }
+            }
+
+            // Register a callback that clears the screen
+            register_tick_callback(() => {
+                for (int i = 0; i < 17 * 17; i++) {
+                    chars[i] = ' '
+                }
+            })
+
+            // Register a callback that draws a 'x' on the screen
+            // and moves it to the right every time it is called
+            var offset = 0
+
+            register_tick_callback(() => {
+                chars[offset++] = 'x'
+            })
+
+            // Tick 3 times
+            tick()
+            tick()
+            tick()
+
+            // The 'x' should be on the 3rd column
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(36, cpu.Banks[1][53548]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task MisMatchBitShift(bool optimize)
+    {
+        const string code = """
+            func<func<void>> get_callback() {
+                return () => {
+                    asm {
+                        LDIA 1
+                        STLGE 0 4000
+                    }
+                }
+            }
+            
+            get_callback()()
+            """;
+
+        var builder = new YabalBuilder();
+        await builder.CompileCodeAsync(code, optimize);
+
+        var cpu = Create(builder);
+        cpu.Run();
+
+        Assert.Equal(1, cpu.Memory[4000]);
+    }
 }

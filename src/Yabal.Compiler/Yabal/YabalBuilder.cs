@@ -89,6 +89,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _errors = new Dictionary<SourceRange, List<CompileError>>();
         BinaryOperators = new Dictionary<(BinaryOperator, LanguageType, LanguageType), Function>();
         CastOperators = new Dictionary<(LanguageType, LanguageType), Function>();
+        ArrowFunctions = new List<Function>();
 
         _visitor = new TypeVisitor();
         _globalBlock = new BlockStack { IsGlobal = true };
@@ -120,6 +121,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
         _errors = parent._errors;
         BinaryOperators = parent.BinaryOperators;
         CastOperators = parent.CastOperators;
+        ArrowFunctions = parent.ArrowFunctions;
         Options = parent.Options;
 
         Debug = parent.Debug;
@@ -129,9 +131,9 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public Dictionary<(BinaryOperator, LanguageType, LanguageType), Function> BinaryOperators { get; }
 
-    public Dictionary<(LanguageType, LanguageType), Function> CastOperators { get; } = new();
+    public Dictionary<(LanguageType, LanguageType), Function> CastOperators { get; }
 
-    public List<Function> ArrowFunctions { get; } = new();
+    public List<Function> ArrowFunctions { get; }
 
     public InstructionPointer StackAllocPointer => _stackAllocPointer;
 
@@ -830,7 +832,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
         AddHeader(builder);
         builder.AddRange(_builder);
-        builder.Jump(0xFFFF);
+        builder.Jump(0xFFFE);
         AddStrings(builder);
 
         return builder.Build(offset);
