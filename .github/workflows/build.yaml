@@ -1,0 +1,46 @@
+name: dotnet publish
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+        architecture:
+          - x64
+          - arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+          
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Publish native
+        run: dotnet publish src/Yabal.Desktop/Yabal.Desktop.csproj -c Release -p:DesktopAot=true -o .output-native
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yabal-native-${{ matrix.os }}-${{ matrix.architecture }}
+          path: .output-native
+
+      - name: Publish
+        run: dotnet publish src/Yabal.Desktop/Yabal.Desktop.csproj -c Release -o .output
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yabal-${{ matrix.os }}-${{ matrix.architecture }}
+          path: .output

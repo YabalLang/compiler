@@ -8,6 +8,7 @@
         <RootNamespace>Yabal</RootNamespace>
         <LangVersion>preview</LangVersion>
         <DebugType>embedded</DebugType>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     </PropertyGroup>
 
     <ItemGroup>

@@ -8,6 +8,7 @@
         <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
         <DebugType>embedded</DebugType>
         <WarningsAsErrors>True</WarningsAsErrors>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     </PropertyGroup>
 
     <ItemGroup>
