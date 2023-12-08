@@ -55,7 +55,7 @@ jobs:
       - name: Create zip files
         run: |
           for f in files/*; do
-            zip -r "${f}.zip" "release/${f}"
+            zip -r "release/${f}.zip" "${f}"
           done
 
       - name: Release
