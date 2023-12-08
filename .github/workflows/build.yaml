@@ -4,17 +4,15 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.config.os }}
 
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-
-        architecture:
-          - x64
-          - arm64
+        config:
+          - { os: ubuntu-latest, arch: x64, name: linux-x64 }
+          - { os: ubuntu-latest, arch: arm64, name: linux-arm64 }
+          - { os: windows-latest, arch: x64, name: windows-x64 }
+          - { os: windows-latest, arch: arm64, name: windows-arm64 }
 
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +31,7 @@ jobs:
       - name: Upload native artifact
         uses: actions/upload-artifact@v3
         with:
-          name: yabal-native-${{ matrix.os }}-${{ matrix.architecture }}
+          name: yabal-native-${{ matrix.config.name }}
           path: .output-native
 
       - name: Publish
@@ -42,5 +40,20 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: yabal-${{ matrix.os }}-${{ matrix.architecture }}
+          name: yabal-${{ matrix.config.name }}
           path: .output
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: files
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: files/*
+          tag_name: 1.0.0-alpha.2

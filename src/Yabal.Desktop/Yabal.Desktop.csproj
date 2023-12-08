@@ -23,6 +23,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <DebugType>embedded</DebugType>
         <InvariantGlobalization>true</InvariantGlobalization>
     </PropertyGroup>
 
