@@ -51,9 +51,16 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: files
+      
+      - name: Create zip files
+        run: |
+          for f in files/*; do
+            zip -r "${f}.zip" "release/${f}"
+          done
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: files/*
-          tag_name: 1.0.0-alpha.2
+          files: release/*.zip
+          tag_name: 0.1.0-alpha.2
+          token: ${{ secrets.GITHUB_TOKEN }}
