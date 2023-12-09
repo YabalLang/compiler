@@ -57,7 +57,9 @@ jobs:
         run: |
           mkdir -p release
           for f in files/*; do
-            zip -r "release/$(basename "${f}").zip" "${f}"
+            pushd "${f}"
+            zip -r "../../release/$(basename "${f}").zip" *
+            popd
           done
 
       - name: Release
