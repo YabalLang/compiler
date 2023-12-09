@@ -2,13 +2,14 @@
     "private": true,
     "name": "vscode-yabal",
     "displayName": "Yabal",
+    "icon": "images/icon.jpeg",
     "description": "Language server support for Yabal",
     "repository": {
         "type": "git",
         "url": "https://github.com/GerardSmit/Astro8.git"
     },
     "license": "MIT",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "GerardSmit",
     "author": "GerardSmit",
     "keywords": [

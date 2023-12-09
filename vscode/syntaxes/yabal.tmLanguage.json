@@ -1,0 +1,754 @@
+{
+  "fileTypes": [
+    "yabal"
+  ],
+  "name": "yabal",
+  "patterns": [
+    {
+      "include": "#main"
+    }
+  ],
+  "scopeName": "source.yabal",
+  "repository": {
+    "main": {
+      "patterns": [
+        {
+          "include": "#assembly"
+        },
+        {
+          "match": "(\\btrue\\b|\\bfalse\\b)",
+          "name": "constant.yabal"
+        },
+        {
+          "match": "(\\breturn\\b|\\bfor\\b|\\bif\\b|\\binline\\b|\\belse\\b|\\bconst\\b|\\bswitch\\b|\\bwhile\\b)",
+          "name": "keyword.yabal"
+        },
+        {
+          "begin": "(\\binline)?(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s*)(\\()",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "keyword.yabal"
+            },
+            "3": {
+              "name": "source.yabal"
+            },
+            "4": {
+              "name": "variable.other.yabal"
+            },
+            "5": {
+              "name": "source.yabal"
+            },
+            "6": {
+              "name": "meta.brace.round.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__1"
+            }
+          ],
+          "end": "(\\))",
+          "endCaptures": {
+            "1": {
+              "name": "meta.brace.round.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\binline)?(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s*)(\\()",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "entity.name.yabal"
+            },
+            "3": {
+              "name": "source.yabal"
+            },
+            "4": {
+              "name": "variable.other.yabal"
+            },
+            "5": {
+              "name": "source.yabal"
+            },
+            "6": {
+              "name": "meta.brace.round.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__2"
+            }
+          ],
+          "end": "(\\))",
+          "endCaptures": {
+            "1": {
+              "name": "meta.brace.round.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\bstruct)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s*)(\\{)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "entity.name.yabal"
+            },
+            "4": {
+              "name": "source.yabal"
+            },
+            "5": {
+              "name": "punctuation.curlybrace.open.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__3"
+            }
+          ],
+          "end": "(\\})",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.curlybrace.close.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\bstackalloc)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__4"
+            }
+          ],
+          "end": "(;|(?=^))",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.terminator.statement.yabal"
+            }
+          }
+        },
+        {
+          "include": "#generic_types"
+        },
+        {
+          "match": "(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)",
+          "name": "keyword.yabal"
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s+)(?!switch)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "name": "variable.other.yabal"
+        },
+        {
+          "include": "#numeric"
+        },
+        {
+          "begin": "(\\{)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.curlybrace.open.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__6"
+            }
+          ],
+          "end": "(\\})",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.curlybrace.close.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\[)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.squarebracket.open.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__7"
+            }
+          ],
+          "end": "(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.squarebracket.close.yabal"
+            }
+          }
+        },
+        {
+          "match": "(;)",
+          "name": "punctuation.terminator.statement.yabal"
+        },
+        {
+          "begin": "(\\\")",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.begin.yabal"
+            }
+          },
+          "contentName": "text.yabal",
+          "end": "(\\\")",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\')([^\\x{0027}]?)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.begin.yabal"
+            },
+            "2": {
+              "name": "text.yabal"
+            }
+          },
+          "contentName": "invalid.yabal",
+          "end": "(\\')",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.string.end.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\()",
+          "beginCaptures": {
+            "1": {
+              "name": "meta.brace.round.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__10"
+            }
+          ],
+          "end": "(\\))",
+          "endCaptures": {
+            "1": {
+              "name": "meta.brace.round.yabal"
+            }
+          }
+        },
+        {
+          "include": "#multi_line_comment"
+        },
+        {
+          "include": "#single_line_comment"
+        },
+        {
+          "match": "(\\|\\||\\||\\^|&|%|~|<<|>>|\\+|-|\\*|/|==|\\+=|-=|\\+\\+|--|\\+\\+|--|\\*=|/=|=|>|<|>=|<=)",
+          "name": "keyword.operator.yabal"
+        },
+        {
+          "match": "(.)",
+          "name": "source.yabal"
+        }
+      ]
+    },
+    "assembly": {
+      "patterns": [
+        {
+          "begin": "(asm)(\\s*)(\\{)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.asm.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.curlybrace.open.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#assembly__1"
+            }
+          ],
+          "end": "(\\})",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.curlybrace.close.yabal"
+            }
+          }
+        }
+      ]
+    },
+    "assembly__1": {
+      "patterns": [
+        {
+          "match": "(,[^\\x{007d}]+)",
+          "name": "comment.yabal"
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\:)",
+          "captures": {
+            "1": {
+              "name": "entity.name.goto-label.yabal"
+            },
+            "2": {
+              "name": "punctuation.separator.colon.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s+)(\\@)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.definition.variable.yabal"
+            },
+            "4": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "entity.name.label.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "name": "keyword.yabal"
+        },
+        {
+          "include": "#numeric"
+        },
+        {
+          "include": "#multi_line_comment"
+        },
+        {
+          "include": "#single_line_comment"
+        }
+      ]
+    },
+    "function_parameter": {
+      "patterns": [
+        {
+          "begin": "(func)(\\s*)(<)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.definition.typeparameters.begin.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#function_parameter__1"
+            }
+          ],
+          "end": "(\\>)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.typeparameters.end.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)(\\s*)(\\[)(\\s*)(\\])(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.squarebracket.open.yabal"
+            },
+            "4": {
+              "name": "source.yabal"
+            },
+            "5": {
+              "name": "punctuation.squarebracket.close.yabal"
+            },
+            "6": {
+              "name": "source.yabal"
+            },
+            "7": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s*)(\\[)(\\s*)(\\])(\\s+)(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "captures": {
+            "1": {
+              "name": "entity.name.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.squarebracket.open.yabal"
+            },
+            "4": {
+              "name": "source.yabal"
+            },
+            "5": {
+              "name": "punctuation.squarebracket.close.yabal"
+            },
+            "6": {
+              "name": "source.yabal"
+            },
+            "7": {
+              "name": "variable.other.yabal"
+            }
+          }
+        },
+        {
+          "match": "(,)",
+          "name": "punctuation.separator.comma.yabal"
+        },
+        {
+          "include": "#multi_line_comment"
+        },
+        {
+          "include": "#single_line_comment"
+        }
+      ]
+    },
+    "function_parameter__1": {
+      "patterns": [
+        {
+          "include": "#function_types"
+        }
+      ]
+    },
+    "function_types": {
+      "patterns": [
+        {
+          "include": "#generic_types"
+        },
+        {
+          "match": "(\\bint\\b|\\bbool\\b|\\bvar\\b|\\bvoid\\b)",
+          "name": "keyword.yabal"
+        },
+        {
+          "match": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)",
+          "name": "entity.name.yabal"
+        },
+        {
+          "match": "(,)",
+          "name": "punctuation.separator.comma.yabal"
+        },
+        {
+          "include": "#multi_line_comment"
+        },
+        {
+          "include": "#single_line_comment"
+        }
+      ]
+    },
+    "generic_types": {
+      "patterns": [
+        {
+          "begin": "(\\bfunc)(\\s*)(<)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.definition.typeparameters.begin.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#generic_types__1"
+            }
+          ],
+          "end": "(\\>)",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.typeparameters.end.yabal"
+            }
+          }
+        },
+        {
+          "begin": "(\\b[a-zA-Z\\x{0024}_][a-zA-Z0-9\\x{0024}_]*)(\\s*)(<)",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "punctuation.definition.typeparameters.begin.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#generic_types__2"
+            }
+          ],
+          "end": "(\\>)",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.definition.typeparameters.end.yabal"
+            }
+          }
+        }
+      ]
+    },
+    "generic_types__1": {
+      "patterns": [
+        {
+          "include": "#function_types"
+        }
+      ]
+    },
+    "generic_types__2": {
+      "patterns": [
+        {
+          "include": "#function_types"
+        }
+      ]
+    },
+    "main__1": {
+      "patterns": [
+        {
+          "include": "#function_parameter"
+        }
+      ]
+    },
+    "main__10": {
+      "patterns": [
+        {
+          "include": "#main"
+        }
+      ]
+    },
+    "main__2": {
+      "patterns": [
+        {
+          "include": "#function_parameter"
+        }
+      ]
+    },
+    "main__3": {
+      "patterns": [
+        {
+          "include": "#struct"
+        }
+      ]
+    },
+    "main__4": {
+      "patterns": [
+        {
+          "begin": "(\\[)",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.squarebracket.open.yabal"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#main__5"
+            }
+          ],
+          "end": "(\\])",
+          "endCaptures": {
+            "1": {
+              "name": "punctuation.squarebracket.close.yabal"
+            }
+          }
+        },
+        {
+          "include": "#function_types"
+        }
+      ]
+    },
+    "main__5": {
+      "patterns": [
+        {
+          "include": "#main"
+        }
+      ]
+    },
+    "main__6": {
+      "patterns": [
+        {
+          "include": "#main"
+        }
+      ]
+    },
+    "main__7": {
+      "patterns": [
+        {
+          "include": "#main"
+        }
+      ]
+    },
+    "main__8": {
+      "patterns": []
+    },
+    "main__9": {
+      "patterns": []
+    },
+    "multi_line_comment": {
+      "patterns": [
+        {
+          "begin": "(/\\*)",
+          "beginCaptures": {
+            "1": {
+              "name": "comment.yabal"
+            }
+          },
+          "contentName": "comment.yabal",
+          "end": "(\\*/)",
+          "endCaptures": {
+            "1": {
+              "name": "comment.yabal"
+            }
+          }
+        }
+      ]
+    },
+    "multi_line_comment__1": {
+      "patterns": []
+    },
+    "numeric": {
+      "patterns": [
+        {
+          "match": "(\\b\\d+)",
+          "name": "constant.numeric.yabal"
+        }
+      ]
+    },
+    "single_line_comment": {
+      "patterns": [
+        {
+          "match": "(//.*)",
+          "name": "comment.yabal"
+        }
+      ]
+    },
+    "struct": {
+      "patterns": [
+        {
+          "include": "#function_parameter"
+        },
+        {
+          "match": "(\\:)(\\s*)(\\d+)",
+          "captures": {
+            "1": {
+              "name": "keyword.operator.yabal"
+            },
+            "2": {
+              "name": "source.yabal"
+            },
+            "3": {
+              "name": "constant.numeric.yabal"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

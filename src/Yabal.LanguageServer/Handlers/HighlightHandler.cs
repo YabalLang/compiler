@@ -8,20 +8,13 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace Yabal.LanguageServer.Handlers;
 
-public class HighlightHandler : IDocumentHighlightHandler
+public class HighlightHandler(TextDocumentContainer documentContainer) : IDocumentHighlightHandler
 {
-    private readonly TextDocumentContainer _documentContainer;
-
-    public HighlightHandler(TextDocumentContainer documentContainer)
-    {
-        _documentContainer = documentContainer;
-    }
-
     public Task<DocumentHighlightContainer?> Handle(DocumentHighlightParams request, CancellationToken cancellationToken)
     {
         var items = new List<DocumentHighlight>();
 
-        if (_documentContainer.Documents.TryGetValue(request.TextDocument.Uri, out var document))
+        if (documentContainer.Documents.TryGetValue(request.TextDocument.Uri, out var document))
         {
             AddHighlights(request, document, items);
         }
@@ -31,7 +24,7 @@ public class HighlightHandler : IDocumentHighlightHandler
 
     private static void AddHighlights(TextDocumentPositionParams request, Document document, List<DocumentHighlight> items)
     {
-        var (_, variable) = document.Builder.Variables.Find(request.Position);
+        var (_, variable) = document.Builder.Find(request.Position);
 
         if (variable == null) return;
 

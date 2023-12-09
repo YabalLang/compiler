@@ -13,7 +13,7 @@ export async function activate(context: vscode.ExtensionContext) {
         command = process.env.SERVER_PATH;
         args = [];
     } else {
-        command = await acquireDotNet('7.0', 'GerardSmit.vscode-yabal');
+        command = await acquireDotNet('8.0', 'GerardSmit.vscode-yabal');
         args = [path.join(__dirname, 'bin', 'Yabal.LanguageServer.dll')];
     }
 

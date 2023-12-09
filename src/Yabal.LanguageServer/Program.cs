@@ -16,6 +16,8 @@ var server = await LanguageServer.From(options =>
         .WithHandler<TextDocumentHandler>()
         .WithHandler<HighlightHandler>()
         .WithHandler<HoverHandler>()
+        .WithHandler<RenameHandler>()
+        .WithHandler<DefinitionHandler>()
         .WithServices(services =>
         {
             services.AddSingleton<TextDocumentContainer>();

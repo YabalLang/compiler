@@ -6,14 +6,9 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Yabal.LanguageServer;
 
-public class TextDocumentContainer
+public class TextDocumentContainer(ILanguageServerFacade server)
 {
-    public TextDocumentContainer(ILanguageServerFacade server)
-    {
-        Server = server;
-    }
-
-    public ILanguageServerFacade Server { get; }
+    public ILanguageServerFacade Server { get; } = server;
 
     public ConcurrentDictionary<DocumentUri, Document> Documents { get; } = new();
 

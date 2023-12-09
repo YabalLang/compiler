@@ -973,12 +973,12 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
     public void DeclareFunction(Function function)
     {
-        if (function.Name is FunctionIdentifier identifier)
+        if (function.Name is FunctionIdentifier name)
         {
-            if (!_functions.TryGetValue(identifier.Name, out var functions))
+            if (!_functions.TryGetValue(name.Identifier.Name, out var functions))
             {
                 functions = new List<Function>();
-                _functions.Add(identifier.Name, functions);
+                _functions.Add(name.Identifier.Name, functions);
             }
 
             if (functions.Any(i =>
@@ -986,7 +986,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
                     i.Parameters.Count == function.Parameters.Count &&
                     i.Parameters.Zip(function.Parameters).All(j => j.First.Type == j.Second.Type)))
             {
-                throw new InvalidCodeException($"Function '{identifier.Name}' with the same parameters already exists.", identifier.Range);
+                throw new InvalidCodeException($"Function '{name.Identifier.Name}' with the same parameters already exists.", name.Range);
             }
 
             functions.Add(function);
@@ -1000,7 +1000,7 @@ public class YabalBuilder : InstructionBuilderBase, IProgram
 
             BinaryOperators.Add((op.Operator, function.Parameters[0].Type, function.Parameters[1].Type), function);
         }
-        else if (function.Name is FunctionCast cast)
+        else if (function.Name is FunctionCast)
         {
             if (function.Parameters.Count != 1)
             {

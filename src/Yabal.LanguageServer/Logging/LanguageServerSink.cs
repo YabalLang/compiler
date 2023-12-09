@@ -7,21 +7,13 @@ using Serilog.Events;
 
 namespace Yabal.LanguageServer.Logging;
 
-public class LanguageServerSink : ILogEventSink
+public class LanguageServerSink(IFormatProvider? formatProvider, ILanguageServerFacade server)
+    : ILogEventSink
 {
-    private readonly IFormatProvider? _formatProvider;
-    private readonly ILanguageServerFacade _server;
-
-    public LanguageServerSink(IFormatProvider? formatProvider, ILanguageServerFacade server)
-    {
-        _formatProvider = formatProvider;
-        _server = server;
-    }
-
     public void Emit(LogEvent logEvent)
     {
-        var message = logEvent.RenderMessage(_formatProvider);
-        _server.SendNotification("yabal/log", message);
+        var message = logEvent.RenderMessage(formatProvider);
+        server.SendNotification("yabal/log", message);
     }
 }
 

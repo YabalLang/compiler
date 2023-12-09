@@ -99,15 +99,22 @@ public record LanguageType(
             StaticType.Integer => "int",
             StaticType.Boolean => "bool",
             StaticType.Void => "void",
-            StaticType.Pointer => $"*{ElementType}",
+            StaticType.Pointer => $"{ElementType}[]",
             StaticType.Struct => StructReference?.Name ?? "struct",
             StaticType.Assembly => "assembly",
             StaticType.Reference => $"ref {ElementType}",
             StaticType.Unknown => "unknown",
             StaticType.Char => "char",
-            StaticType.Function => $"({string.Join(", ", FunctionType?.Parameters ?? new List<LanguageType>())}) => {FunctionType?.ReturnType}",
+            StaticType.Function => GetFunctionName(),
             _ => throw new ArgumentOutOfRangeException()
         };
+    }
+
+    private string GetFunctionName()
+    {
+        return FunctionType?.Parameters is null or { Count: 0 }
+            ? $"func<{FunctionType?.ReturnType ?? Void}>"
+            : $"func<{string.Join(", ", FunctionType.Parameters)}, {FunctionType?.ReturnType ?? Void}>";
     }
 
     public virtual bool Equals(LanguageType? other)

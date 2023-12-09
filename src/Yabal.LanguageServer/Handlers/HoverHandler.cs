@@ -5,26 +5,20 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Yabal.Ast;
+using Yabal.Instructions;
 
 namespace Yabal.LanguageServer.Handlers;
 
-public class HoverHandler : IHoverHandler
+public class HoverHandler(TextDocumentContainer documentContainer) : IHoverHandler
 {
-    private readonly TextDocumentContainer _documentContainer;
-
-    public HoverHandler(TextDocumentContainer documentContainer)
-    {
-        _documentContainer = documentContainer;
-    }
-
     public Task<Hover?> Handle(HoverParams request, CancellationToken cancellationToken)
     {
-        if (!_documentContainer.Documents.TryGetValue(request.TextDocument.Uri, out var document))
+        if (!documentContainer.Documents.TryGetValue(request.TextDocument.Uri, out var document))
         {
             return Task.FromResult<Hover?>(null);
         }
 
-        var (identifier, variable) = document.Builder.Variables.Find(request.Position);
+        var (identifier, variable) = document.Builder.Find(request.Position);
 
         if (identifier == null || variable == null)
         {
@@ -36,7 +30,11 @@ public class HoverHandler : IHoverHandler
 
         sb.AppendLine($"Type: {variable.Type}  ");
         sb.AppendLine($"Size: {size}  ");
-        sb.AppendLine($"Variable address: {variable.Pointer.Address}  ");
+
+        if (variable.Pointer is not InstructionLabel)
+        {
+            sb.AppendLine($"Variable address: {variable.Pointer.Address}  ");
+        }
 
         if (variable.Initializer is IPointerSource { Pointer: {} pointer })
         {

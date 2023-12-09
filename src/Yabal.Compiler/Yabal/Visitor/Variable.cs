@@ -9,6 +9,8 @@ public interface IVariable
 
     bool IsDirectReference { get; }
 
+    Identifier Identifier { get; }
+
     Pointer Pointer { get; }
 
     LanguageType Type { get; }
@@ -18,6 +20,8 @@ public interface IVariable
     bool ReadOnly { get; }
 
     public bool Constant { get; set; }
+
+    IEnumerable<Identifier> References { get; }
 
     void AddReference(Identifier identifierExpression);
 
@@ -48,6 +52,8 @@ public record Variable(
     public bool CanBeRemoved => HasBeenUsed && Usages == 0;
 
     public List<Identifier> References { get; } = new();
+
+    IEnumerable<Identifier> IVariable.References => References;
 
     void IVariable.AddReference(Identifier identifierExpression)
     {

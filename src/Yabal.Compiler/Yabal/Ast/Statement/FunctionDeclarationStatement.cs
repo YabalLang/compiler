@@ -11,11 +11,11 @@ public record FunctionParameter(Identifier Name, LanguageType Type, bool HasDefa
 
 public record FunctionName(SourceRange Range);
 
-public record FunctionIdentifier(SourceRange Range, string Name) : FunctionName(Range)
+public record FunctionIdentifier(Identifier Identifier) : FunctionName(Identifier.Range)
 {
     public override string ToString()
     {
-        return Name;
+        return Identifier.Name;
     }
 }
 
@@ -69,6 +69,14 @@ public record Function(
 
     public bool IsDirectReference => true;
 
+    Identifier IVariable.Identifier => Name switch
+    {
+        FunctionIdentifier { Identifier: { } identifier } => identifier,
+        FunctionOperator { Range: var range, Operator: var op } => new Identifier(range, $"operator:{op}"),
+        FunctionCast { Range: var range } => new Identifier(range, $"cast:{ReturnType}"),
+        _ => throw new NotSupportedException()
+    };
+
     Pointer IVariable.Pointer => Label;
 
     LanguageType IVariable.Type => new(StaticType.Function, FunctionType: new LanguageFunction(ReturnType, Parameters.Select(i => i.Type).ToList()));
@@ -76,6 +84,8 @@ public record Function(
     Expression? IVariable.Initializer => null;
 
     bool IVariable.Constant { get; set; } = true;
+
+    IEnumerable<Identifier> IVariable.References => References;
 
     void IVariable.AddReference(Identifier identifierExpression)
     {

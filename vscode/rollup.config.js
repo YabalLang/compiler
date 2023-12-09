@@ -18,7 +18,7 @@ export default [{
     plugins: [
         replace({
             'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'dev'),
-            'process.env.SERVER_PATH': JSON.stringify(path.join(__dirname, '..', 'src', 'Yabal.LanguageServer', 'bin', 'Debug', 'net7.0', 'Yabal.LanguageServer.exe'))
+            'process.env.SERVER_PATH': JSON.stringify(path.join(__dirname, '..', 'src', 'Yabal.LanguageServer', 'bin', 'Debug', 'net8.0', 'Yabal.LanguageServer.exe'))
         }),
         typescript(),
         nodeResolve(),

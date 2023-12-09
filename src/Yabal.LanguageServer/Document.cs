@@ -12,23 +12,14 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Yabal.LanguageServer;
 
-public class Document
+public class Document(DocumentUri uri, ILanguageServerFacade languageServer, TextDocumentContainer documentContainer)
 {
-    private readonly TextDocumentContainer _documentContainer;
-    private readonly ILanguageServerFacade _languageServer;
-    private readonly string _uriString;
-
-    public Document(DocumentUri uri, ILanguageServerFacade languageServer, TextDocumentContainer documentContainer)
-    {
-        _languageServer = languageServer;
-        _documentContainer = documentContainer;
-        Uri = uri;
-        _uriString = uri.ToString();
-    }
+    private readonly TextDocumentContainer _documentContainer = documentContainer;
+    private readonly string _uriString = uri.ToString();
 
     public YabalBuilder Builder { get; set; }
 
-    public DocumentUri Uri { get; }
+    public DocumentUri Uri { get; } = uri;
 
     public int? Version { get; set; }
 
@@ -69,7 +60,7 @@ public class Document
 
             builder.Build();
 
-            _languageServer.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
+            languageServer.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
             {
                 Uri = Uri,
                 Diagnostics = diagnostics

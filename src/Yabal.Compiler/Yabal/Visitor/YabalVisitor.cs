@@ -307,7 +307,7 @@ public class YabalVisitor : YabalParserBaseVisitor<Node>
 
         if (context.identifierName() is { } identifierName)
         {
-            name = new FunctionIdentifier(SourceRange.From(identifierName, _file), identifierName.GetText());
+            name = new FunctionIdentifier(new Identifier(SourceRange.From(identifierName, _file), identifierName.GetText()));
         }
         else if (context.operatorName() is { } operatorName)
         {

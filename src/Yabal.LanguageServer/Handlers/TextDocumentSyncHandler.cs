@@ -10,15 +10,8 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 
 namespace Yabal.LanguageServer.Handlers;
 
-internal class TextDocumentHandler : TextDocumentSyncHandlerBase
+internal class TextDocumentHandler(TextDocumentContainer documentContainer) : TextDocumentSyncHandlerBase
 {
-    private readonly TextDocumentContainer _documentContainer;
-
-    public TextDocumentHandler(TextDocumentContainer documentContainer)
-    {
-        _documentContainer = documentContainer;
-    }
-
     public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri)
     {
         return new TextDocumentAttributes(uri, "yabal");
@@ -26,7 +19,7 @@ internal class TextDocumentHandler : TextDocumentSyncHandlerBase
 
     public override async Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
     {
-        await _documentContainer.Update(
+        await documentContainer.Update(
             request.TextDocument.Uri,
             request.TextDocument.Version,
             request.TextDocument.Text
@@ -44,7 +37,7 @@ internal class TextDocumentHandler : TextDocumentSyncHandlerBase
             return Unit.Value;
         }
 
-        await _documentContainer.Update(
+        await documentContainer.Update(
             request.TextDocument.Uri,
             request.TextDocument.Version,
             text

@@ -43,4 +43,44 @@ public static class RangeExtensions
 
         return default;
     }
+
+    public static (Identifier?, Function?) Find(this IEnumerable<Function> functions, Position position)
+    {
+        foreach (var function in functions)
+        {
+            if (function.Name is not FunctionIdentifier { Identifier: {} name })
+            {
+                continue;
+            }
+
+            if (name.Range.IsInRange(position))
+            {
+                return (name, function);
+            }
+
+            foreach (var identifier in function.References)
+            {
+                if (identifier.Range.IsInRange(position))
+                {
+                    return (identifier, function);
+                }
+            }
+        }
+
+        return default;
+    }
+
+    public static (Identifier?, IVariable?) Find(this YabalBuilder builder, Position position)
+    {
+        (var identifier, IVariable? variable) = builder.Variables.Find(position);
+
+        if (identifier != null && variable != null)
+        {
+            return (identifier, variable);
+        }
+
+        (identifier, variable) = builder.Functions.Find(position);
+
+        return (identifier, variable);
+    }
 }
