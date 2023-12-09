@@ -66,5 +66,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: release/*.zip
-          tag_name: 0.1.0-alpha.2
           token: ${{ secrets.GITHUB_TOKEN }}
