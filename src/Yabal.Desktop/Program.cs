@@ -194,9 +194,12 @@ async Task BuildOutput(FileSystemInfo path, string? outPath, List<OutputFormat> 
     var code = File.ReadAllText(path.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.FullName));
-    using var context = new YabalContext(fs)
-        .AddFileLoader(FileType.Font, FontLoader.Instance)
-        .AddFileLoader(FileType.Image, ImageLoader.Instance);
+    using var context = new YabalContext(fs);
+
+    #if INCLUDE_LOADERS
+    context.AddFileLoader(FileType.Font, FontLoader.Instance);
+    context.AddFileLoader(FileType.Image, ImageLoader.Instance);
+    #endif
 
     var builder = new YabalBuilder(context)
     {
@@ -308,9 +311,12 @@ async Task Execute(InvocationContext ctx)
     var code = File.ReadAllText(path.Info.FullName);
     var fs = new PhysicalFileSystem();
     var uri = new Uri("file:///" + fs.ConvertPathFromInternal(path.Info.FullName));
-    using var context = new YabalContext(fs)
-        .AddFileLoader(FileType.Font, FontLoader.Instance)
-        .AddFileLoader(FileType.Image, ImageLoader.Instance);
+    using var context = new YabalContext(fs);
+
+    #if INCLUDE_LOADERS
+    context.AddFileLoader(FileType.Font, FontLoader.Instance);
+    context.AddFileLoader(FileType.Image, ImageLoader.Instance);
+    #endif
 
     var showOutput = ctx.ParseResult.GetValueForOption(output);
     var disableScreen = ctx.ParseResult.GetValueForOption(disableScreenOption);

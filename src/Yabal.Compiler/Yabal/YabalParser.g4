@@ -53,7 +53,7 @@ expression
 	| expression DivEqual expression								    # DivEqualExpression
     | expression (Div|Mul|Mod) expression							    # DivMulModBinaryExpression
     | expression (Add|Sub) expression								    # PlusSubBinaryExpression
-	| expression (ShiftLeft|ShiftRight) expression						# ShiftExpression
+	| expression (Less Less|Greater Greater) expression					# ShiftExpression
 	| expression (GreaterEqual|Greater|LessEqual|Less) expression		# ComparisonExpression
 	| expression (Equals|NotEquals) expression						    # EqualExpression
 	| expression And expression									        # AndExpression

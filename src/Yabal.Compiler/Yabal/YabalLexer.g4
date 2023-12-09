@@ -29,8 +29,6 @@ Xor                 : '^';
 And                 : '&';
 Mod                 : '%';
 Not                 : '~';
-ShiftLeft           : '<<';
-ShiftRight          : '>>';
 Add				    : '+';
 Sub					: '-';
 Mul					: '*';

@@ -30,15 +30,15 @@ public class WasmHandler : Handler
 
 	public override void Halt()
 	{
-		Interop.Halt();
 		FlushScreen();
+		Interop.Halt();
 	}
 
 	public override unsafe void ShowVariable(int line, int offset, Span<int> value)
 	{
 		fixed (int* screen = value)
 		{
-			Interop.ShowVariable(line, offset, value.Length, (int*)screen);
+			Interop.ShowVariable(line, offset, value.Length, screen);
 		}
 	}
 }
