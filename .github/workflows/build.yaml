@@ -1,0 +1,68 @@
+name: dotnet publish
+
+on: [push]
+
+jobs:
+  build:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      matrix:
+        config:
+          - { os: ubuntu-latest, arch: x64, name: linux-x64 }
+          - { os: ubuntu-latest, arch: arm64, name: linux-arm64 }
+          - { os: windows-latest, arch: x64, name: windows-x64 }
+          - { os: windows-latest, arch: arm64, name: windows-arm64 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+          
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Publish native
+        run: dotnet publish src/Yabal.Desktop/Yabal.Desktop.csproj -c Release -p:DesktopAot=true -p:Version=${GITHUB_REF#refs/*/} -o .output-native
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yabal-native-${{ matrix.config.name }}
+          path: .output-native
+
+      - name: Publish
+        run: dotnet publish src/Yabal.Desktop/Yabal.Desktop.csproj -c Release -p:Version=${GITHUB_REF#refs/*/} -o .output-runtime
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yabal-runtime-${{ matrix.config.name }}
+          path: .output-runtime
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: files
+      
+      - name: Create zip files
+        run: |
+          mkdir -p release
+          for f in files/*; do
+            zip -r "release/$(basename "${f}").zip" "${f}"
+          done
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*.zip
+          tag_name: 0.1.0-alpha.2
+          token: ${{ secrets.GITHUB_TOKEN }}

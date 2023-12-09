@@ -46,7 +46,7 @@ public class InstructionBuildResult : IProgram
 
             var (instructionRef, pointer, raw, comment) = either.Right;
 
-            if (!raw && !instructionRef.HasValue && pointer is null && comment is not null && comment.StartsWith(", "))
+            if (IsComment(either.Right))
             {
                 writer.WriteLine(comment);
                 continue;
@@ -190,6 +190,12 @@ public class InstructionBuildResult : IProgram
 
             var (instruction, pointer, _, _) = either.Right;
 
+            if (IsComment(either.Right))
+            {
+                // Skip comments
+                continue;
+            }
+
             if (!instruction.HasValue)
             {
                 if (pointer is null)
@@ -225,11 +231,23 @@ public class InstructionBuildResult : IProgram
             }
             else
             {
+                if (IsComment(either.Right))
+                {
+                    continue;
+                }
+
                 i++;
                 length++;
             }
         }
 
         return (labels, length);
+    }
+
+    private static bool IsComment(InstructionItem item)
+    {
+        var (instruction, pointer, raw, comment) = item;
+
+        return !raw && !instruction.HasValue && pointer is null && comment is not null && comment.StartsWith(", ");
     }
 }

@@ -439,3 +439,6 @@ src/Yabal.Bot/appsettings.json
 examples/**/*.asmc
 examples/**/*.asmc.aexe
 examples/**/*.hex
+
+.output-runtime
+.output-native

@@ -10,13 +10,37 @@
         <LangVersion>preview</LangVersion>
         <AssemblyName>yabal</AssemblyName>
         <ApplicationIcon>icon.ico</ApplicationIcon>
+        <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(DesktopAot)' == 'true'">
+        <!-- Workaround for https://github.com/dotnet/runtime/issues/94406 -->
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(PublishAot)' == ''">
+        <PublishAot>false</PublishAot>
     </PropertyGroup>
 
     <PropertyGroup>
+        <DebugType>embedded</DebugType>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>None</DebugType>
+        <NativeDebugSymbols>false</NativeDebugSymbols>
+        <DebuggerSupport>false</DebuggerSupport>
+        <EventSourceSupport>false</EventSourceSupport>
+        <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+        <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+        <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(PublishAot)' == 'false'">
         <SelfContained>true</SelfContained>
         <PublishTrimmed>true</PublishTrimmed>
-        <InvariantGlobalization>true</InvariantGlobalization>
-        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
@@ -27,7 +51,7 @@
         <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(PublishAot)' == 'false'">
         <PublishSingleFile>true</PublishSingleFile>
     </PropertyGroup>
 
@@ -56,8 +80,15 @@
     <ItemGroup>
       <ProjectReference Include="..\Yabal.Compiler\Yabal.Compiler.csproj" />
       <ProjectReference Include="..\Yabal.Emulator\Yabal.Emulator.csproj" />
-      <ProjectReference Include="..\Yabal.Loaders.Font\Yabal.Loaders.Font.csproj" />
-      <ProjectReference Include="..\Yabal.Loaders.Image\Yabal.Loaders.Image.csproj" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(PublishAot)' == 'false'">
+        <DefineConstants>$(DefineConstants);INCLUDE_LOADERS</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(PublishAot)' == 'false'">
+        <ProjectReference Include="..\Yabal.Loaders.Font\Yabal.Loaders.Font.csproj" />
+        <ProjectReference Include="..\Yabal.Loaders.Image\Yabal.Loaders.Image.csproj" />
     </ItemGroup>
 
 </Project>
