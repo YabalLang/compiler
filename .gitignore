@@ -440,5 +440,5 @@ examples/**/*.asmc
 examples/**/*.asmc.aexe
 examples/**/*.hex
 
-.output
+.output-runtime
 .output-native
